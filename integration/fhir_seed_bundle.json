@@ -1,0 +1,14 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {"fullUrl":"urn:uuid:patient-farid","resource":{"resourceType":"Patient","id":"careos-farid","identifier":[{"system":"https://careos.example/patient-no","value":"24681357"}],"name":[{"family":"Rahman","given":["Farid"]}],"gender":"male","birthDate":"1979-11-02"},"request":{"method":"PUT","url":"Patient/careos-farid"}},
+    {"resource":{"resourceType":"AllergyIntolerance","id":"careos-allergy-1","clinicalStatus":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical","code":"active"}]},"patient":{"reference":"Patient/careos-farid"},"code":{"text":"Penicillin"},"reaction":[{"manifestation":[{"text":"Hautausschlag"}]}],"recordedDate":"2023-03-10"},"request":{"method":"PUT","url":"AllergyIntolerance/careos-allergy-1"}},
+    {"resource":{"resourceType":"Condition","id":"careos-condition-1","clinicalStatus":{"coding":[{"system":"http://terminology.hl7.org/CodeSystem/condition-clinical","code":"active"}]},"subject":{"reference":"Patient/careos-farid"},"code":{"text":"Chronische Niereninsuffizienz G3b"},"recordedDate":"2024-05-22"},"request":{"method":"PUT","url":"Condition/careos-condition-1"}},
+    {"resource":{"resourceType":"Observation","id":"careos-creatinine","status":"final","code":{"text":"Kreatinin"},"subject":{"reference":"Patient/careos-farid"},"effectiveDateTime":"2026-08-15T08:20:00+02:00","valueQuantity":{"value":1.1,"unit":"mg/dl","system":"http://unitsofmeasure.org","code":"mg/dL"}},"request":{"method":"PUT","url":"Observation/careos-creatinine"}},
+    {"resource":{"resourceType":"Observation","id":"careos-egfr","status":"final","code":{"text":"eGFR"},"subject":{"reference":"Patient/careos-farid"},"effectiveDateTime":"2026-08-15T08:20:00+02:00","valueQuantity":{"value":76,"unit":"ml/min/1.73m2"}},"request":{"method":"PUT","url":"Observation/careos-egfr"}},
+    {"resource":{"resourceType":"MedicationStatement","id":"careos-med-ramipril","status":"active","subject":{"reference":"Patient/careos-farid"},"medicationCodeableConcept":{"text":"Ramipril 5 mg"},"dateAsserted":"2026-08-15"},"request":{"method":"PUT","url":"MedicationStatement/careos-med-ramipril"}},
+    {"resource":{"resourceType":"Task","id":"careos-task-echo","status":"requested","intent":"order","for":{"reference":"Patient/careos-farid"},"authoredOn":"2026-08-15T09:00:00+02:00","description":"Echo-Termin prüfen"},"request":{"method":"PUT","url":"Task/careos-task-echo"}},
+    {"resource":{"resourceType":"DocumentReference","id":"careos-doc-discharge","status":"current","subject":{"reference":"Patient/careos-farid"},"date":"2026-08-15T09:15:00+02:00","type":{"text":"Entlassungsbrief internistische Station 3A"},"content":[{"attachment":{"contentType":"application/pdf","title":"Synthetic discharge letter"}}]},"request":{"method":"PUT","url":"DocumentReference/careos-doc-discharge"}}
+  ]
+}
