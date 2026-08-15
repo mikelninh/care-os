@@ -1,0 +1,8 @@
+{
+  "dataset": {"count":500,"synthetic_only":true,"unseen_holdout":true,"seed":772331},
+  "exact_field_accuracy": {"allergies":0.432,"current_medications":0.45,"relevant_diagnoses":0.538,"last_renal_function":0.658,"open_followups":0.71,"discharge":0.616,"contradictions":0.748,"provenance":0.038},
+  "all_fields_exact": 0.012,
+  "critical_silent_contradiction_misses": 126,
+  "attack_failure_rate": {"allergy_dash_format":1.0,"conflict_passive_voice":1.0,"discharge_natural_language":1.0,"followup_arrow_format":1.0,"med_table_format":1.0,"problem_list_heading":1.0,"renal_unit_umol":1.0},
+  "interpretation": "Second unseen synthetic holdout created after V8 hardening. This is the honest current edge, not clinical validation."
+}
