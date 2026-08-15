@@ -6,33 +6,107 @@ CareOS is a clinician-first healthcare workflow prototype exploring one question
 
 **Can software give doctors and nurses meaningful administrative time back without increasing safety risk, correction rate, or cognitive load?**
 
-## V8 — Integration + Stress Lab
+## V9 — Specialty Packs + Global Composition
 
-V8 keeps the calm clinician experience from V7 and adds the engineering evidence needed to move toward a real hospital pilot:
+V9 keeps the calm clinician experience from V7/V8 and adds a scalable composition model:
 
-- **real FHIR R4 adapter path** with a local HAPI FHIR server;
-- **500-case gold-label benchmark generator** covering allergies, medication, diagnoses, renal function, follow-ups, discharge, contradictions and provenance;
-- **two red-team layers**, including a second unseen holdout created *after* the first hardening pass;
-- **production-readiness gates** that deliberately refuse to call the default demo “production ready”;
-- **guideline source registry + update watcher** with clinical review before any change can affect displayed guidance;
-- separate **Platform Lab** for IT/engineering so complexity does not leak into the clinician UI.
+```text
+CareOS Core
+  + Specialty Pack
+  + Country Pack
+  + Language Pack
+  + Audience View
+```
 
-## Clinician experience
+That means Infectiology, Oncology and Neurology are **not three separate products**. The same patient truth layer, provenance, security and interoperability core can surface different priorities for each specialty.
 
-1. **See what matters now** — only the few facts that deserve attention.
-2. **Keep the source visible** — every surfaced fact can be traced back.
-3. **Search one patient history** — KIS, ePA, lab, nursing, fax, calls, letters and scans can appear in one timeline.
-4. **Document once** — one captured note prepares documentation, handover, tasks and discharge material for human review.
-5. **Fail closed on identity ambiguity** — uncertain patient matching never silently attaches a document.
-6. **Measure usefulness** — Pilot Mode records real task time, corrections and cognitive effort.
+### Clinician focus
+
+![CareOS clinician focus](docs/screenshots/clinical-focus.svg)
+
+The default experience remains intentionally quiet: what matters now, where it came from, and what still needs a human.
+
+### Infectiology Pack — first executable specialty pack
+
+![CareOS Infectiology Pack](docs/screenshots/infectiology-pack.svg)
+
+For an infectious-disease team, the first view prioritises:
+
+- specimen + collection time + organism;
+- preliminary vs final microbiology;
+- susceptibility/resistance;
+- current anti-infective therapy **as documented**, not automatically recommended;
+- isolation / infection-prevention status;
+- relevant devices and insertion dates;
+- fever/inflammatory-marker trends;
+- pending cultures, screens and follow-ups;
+- source provenance on every surfaced fact.
+
+Oncology and Neurology implement the same pack contract. See [`docs/SPECIALTY_PACKS.md`](docs/SPECIALTY_PACKS.md).
+
+## Global architecture
+
+Example compositions:
+
+- `Core + Infectiology + Germany + German + Clinician`
+- `Core + Oncology + Germany + English + Clinician`
+- `Core + Neurology + Vietnam + Vietnamese + Patient/Family` *(planned V10)*
+
+Clinical facts should remain coded/structured where possible; presentation language is a separate layer. High-risk translations retain the original source text one click away.
+
+For cross-border portability, CareOS treats the **International Patient Summary (IPS)** as a baseline portable patient-summary contract, with country packs adding national identity, terminology, consent, infrastructure and regulatory rules.
+
+See [`docs/GLOBAL_ARCHITECTURE.md`](docs/GLOBAL_ARCHITECTURE.md).
+
+## Audience separation
+
+The same data does **not** mean the same screen or access policy.
+
+- **Clinician** — clinical context necessary for care.
+- **Patient & Family** — plain-language timeline, medications, appointments, documents and permissioned sharing *(planned V10)*.
+- **Payer / Care Coordination** — purpose-limited minimum dataset only; never a default mirror of the clinician record.
+
+See [`docs/PAYER_VIEW.md`](docs/PAYER_VIEW.md) and [`docs/V10_PATIENT_FAMILY.md`](docs/V10_PATIENT_FAMILY.md).
+
+## Ethical Monetization Agent
+
+CareOS includes an explicit commercial-ethics charter at `/api/monetization/ethical-agent`.
+
+Preferred early models:
+
+1. fixed-price hospital workflow pilots → platform/integration fee only after measured usefulness;
+2. simple practice/MVZ subscription without metering safety-critical patient access;
+3. public-interest/grant pilots when they accelerate evidence and interoperability;
+4. later purpose-bound payer care-coordination programmes — **never sale of patient data or unrestricted record access**.
+
+See [`docs/ETHICAL_MONETIZATION_AGENT.md`](docs/ETHICAL_MONETIZATION_AGENT.md).
+
+## Integration evidence
+
+CareOS includes a real FHIR R4 transport adapter and a local HAPI FHIR JPA development server. GitHub CI starts HAPI, waits for a CapabilityStatement, seeds synthetic resources, and reads them through the CareOS adapter with upstream IDs retained as provenance.
+
+```bash
+docker compose -f integration/docker-compose.fhir.yml up -d
+python scripts/seed_fhir.py
+FHIR_BASE_URL=http://localhost:8080/fhir uvicorn app.main:app --reload
+```
+
+Then:
+
+```bash
+curl http://localhost:8000/api/fhir/capability
+curl http://localhost:8000/api/fhir/patients/careos-farid/timeline
+```
+
+**FHIR R4 support is not an ISiK certification claim.** The Germany-specific next step is validation against applicable gematik ISiK profiles and one read-only KIS/vendor sandbox.
+
+See [`docs/FHIR_INTEGRATION.md`](docs/FHIR_INTEGRATION.md).
 
 ## Stress test — honest current edge
 
-The original synthetic benchmark was too easy and reached 100%, so it is retained only as a warning against benchmark overfitting.
+The original synthetic benchmark was too easy and reached 100%, so it is retained as a warning against benchmark overfitting.
 
-A first red-team holdout then exposed major failures. After hardening specifically against those attacks, that same suite reached 100%.
-
-To avoid fooling ourselves again, V8 creates a **second unseen holdout after hardening**. Current result on 500 synthetic cases:
+V8/V9 retain a frozen **second unseen 500-case holdout** created after the first hardening pass. Current deterministic extraction result:
 
 | Gold field | Exact accuracy |
 |---|---:|
@@ -49,44 +123,13 @@ To avoid fooling ourselves again, V8 creates a **second unseen holdout after har
 
 That is not acceptable for clinical deployment — and that is precisely why the benchmark exists.
 
-Compact reports:
+The next extraction architecture prioritises source-native structured data, schema-constrained document extraction, exact evidence spans, temporal reasoning, unit/terminology normalisation, contradiction detection and explicit `unknown/review` output rather than guessing.
 
-- `data/redteam_before_summary.json`
-- `data/redteam_after_summary.json`
-- `data/redteam_unseen_summary.json`
-
-`benchmark/generate.py` deterministically generates the full **500-case** gold benchmark. The compact benchmark results are checked in so reviewers can inspect the current failure frontier without downloading a large repetitive fixture.
-
-> These are synthetic software-engineering benchmarks, **not clinical validation**.
-
-## Real FHIR integration path
-
-CareOS V8 includes a real FHIR R4 transport adapter and a local HAPI FHIR JPA development server.
-
-```bash
-docker compose -f integration/docker-compose.fhir.yml up -d
-python scripts/seed_fhir.py
-FHIR_BASE_URL=http://localhost:8080/fhir uvicorn app.main:app --reload
-```
-
-Then:
-
-```bash
-curl http://localhost:8000/api/fhir/capability
-curl http://localhost:8000/api/fhir/patients/careos-farid/timeline
-```
-
-FHIR resources are normalized into CareOS while retaining upstream `resourceType` and `id` as provenance.
-
-**FHIR R4 support is not an ISiK certification claim.** The Germany-specific next step is validation against the relevant gematik ISiK profiles/reference validator for the concrete hospital workflow.
-
-See [`docs/FHIR_INTEGRATION.md`](docs/FHIR_INTEGRATION.md).
+See [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
 ## Guideline & evidence layer
 
-CareOS does **not** scrape arbitrary web pages and tell a doctor what treatment to choose.
-
-V8 uses a safer architecture:
+CareOS does **not** scrape arbitrary webpages and tell a clinician what treatment to choose.
 
 ```text
 official publisher source
@@ -95,36 +138,37 @@ change detector
         ↓
 clinical review queue
         ↓
-versioned guidance registry
+versioned evidence registry
         ↓
-local hospital policy / SOP overlay
+local hospital SOP overlay
         ↓
 patient-context reference retrieval
 ```
 
-Initial registry sources include German NVL/AWMF metadata plus international context such as KDIGO, NICE and WHO SMART Guidelines.
+Specialty bindings now include:
 
-A scheduled GitHub Action watches official source pages for changes. A change opens review work; it is **never auto-applied to patient care**.
+- Infectiology → RKI/KRINKO + AWMF + local SOP;
+- Oncology → Onkopedia + AWMF/S3 + local tumour-board SOP;
+- Neurology → DGN/AWMF + clearly labelled international context;
+- global machine-readable direction → WHO SMART Guidelines where applicable.
+
+A source change opens review work; it is **never silently applied to patient care**.
 
 See [`docs/GUIDELINE_ARCHITECTURE.md`](docs/GUIDELINE_ARCHITECTURE.md).
 
 ## Production security / compliance
 
-The default repo must fail the production-readiness gate.
+The default repo deliberately fails the production-readiness gate.
 
 ```bash
 curl http://localhost:8000/api/security/readiness
 ```
 
-The gate checks for production configuration such as OIDC/SSO, audience/issuer validation, audit sink, PHI-safe telemetry, region controls, applicable German cloud evidence, TLS and disabled autonomous clinical write-back.
+The gate checks for production configuration such as OIDC/SSO, issuer/audience validation, audit sink, PHI-safe telemetry, region controls, applicable German cloud evidence, TLS and disabled autonomous clinical write-back.
 
 This is a **configuration gate, not certification or legal advice**.
 
-See:
-
-- [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md)
-- [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
-- [`SECURITY.md`](SECURITY.md)
+See [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md), [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) and [`SECURITY.md`](SECURITY.md).
 
 ## Run locally
 
@@ -138,8 +182,22 @@ uvicorn app.main:app --reload
 Open:
 
 - clinician UI: `http://127.0.0.1:8000/`
+- specialty packs: `http://127.0.0.1:8000/specialty`
 - integration/stress dashboard: `http://127.0.0.1:8000/platform`
 - API docs: `http://127.0.0.1:8000/docs`
+
+Useful APIs:
+
+```text
+GET /api/specialties
+GET /api/specialties/infectiology
+GET /api/architecture/packs
+GET /api/global/ips-preview/farid?language=en
+GET /api/monetization/ethical-agent
+GET /api/guidelines/sources
+GET /api/security/readiness
+GET /api/stress/latest
+```
 
 ## Tests
 
@@ -148,7 +206,7 @@ pytest -q
 python -m benchmark.redteam_unseen
 ```
 
-Current V8 baseline: **17 automated tests**.
+Current V9 baseline: **23 automated tests passing locally before publication**. GitHub Actions reruns the suite on the public repository.
 
 ## Clinician pilot
 
@@ -164,7 +222,7 @@ This is a hypothesis to test — **not a product claim**.
 
 **Prototype only. Synthetic data only. Not for clinical use.**
 
-CareOS V8:
+CareOS V9:
 
 - performs no production KIS/PVS/EHR writes;
 - makes no autonomous treatment or diagnosis decisions;
