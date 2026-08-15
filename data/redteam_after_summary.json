@@ -1,0 +1,8 @@
+{
+  "dataset": {"count":500,"synthetic_only":true,"holdout_mutations":true,"seed":99173},
+  "exact_field_accuracy": {"allergies":1.0,"current_medications":1.0,"relevant_diagnoses":1.0,"last_renal_function":1.0,"open_followups":1.0,"discharge":1.0,"contradictions":1.0,"provenance":1.0},
+  "all_fields_exact": 1.0,
+  "critical_silent_contradiction_misses": 0,
+  "attack_failure_rate": {"allergy_heading_variant":0.0,"conflict_phrase_variant":0.0,"diagnosis_heading_variant":0.0,"discharge_shorthand":0.0,"followup_heading_variant":0.0,"med_heading_variant":0.0,"negation_bait":0.0,"renal_notation_variant":0.0,"renal_ocr_unit_damage":0.0,"stale_result_reingested_today":0.0},
+  "interpretation": "Red-team synthetic holdout. Known attacks were specifically hardened against; this is not general clinical robustness."
+}
