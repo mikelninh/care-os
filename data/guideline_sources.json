@@ -1,7 +1,69 @@
 [
-  {"id":"de-nvl","name":"Nationale VersorgungsLeitlinien","url":"https://www.leitlinien.de/","jurisdiction":"DE","check":"weekly"},
-  {"id":"de-awmf-latest","name":"AWMF aktuellste Leitlinien","url":"https://register.awmf.org/de/statistik/aktuellste-leitlinien","jurisdiction":"DE","check":"daily"},
-  {"id":"kdigo-ckd","name":"KDIGO CKD Evaluation and Management","url":"https://kdigo.org/guidelines/ckd-evaluation-and-management/","jurisdiction":"INTL","check":"weekly"},
-  {"id":"nice-ng203","name":"NICE CKD NG203","url":"https://www.nice.org.uk/guidance/ng203","jurisdiction":"UK","check":"weekly"},
-  {"id":"who-smart","name":"WHO SMART Guidelines","url":"https://www.who.int/teams/digital-health-and-innovation/smart-guidelines","jurisdiction":"INTL","check":"monthly"}
+  {
+    "id": "de-nvl",
+    "name": "Nationale VersorgungsLeitlinien",
+    "url": "https://www.leitlinien.de/",
+    "jurisdiction": "DE",
+    "check": "weekly"
+  },
+  {
+    "id": "de-awmf-latest",
+    "name": "AWMF aktuellste Leitlinien",
+    "url": "https://register.awmf.org/de/statistik/aktuellste-leitlinien",
+    "jurisdiction": "DE",
+    "check": "daily"
+  },
+  {
+    "id": "kdigo-ckd",
+    "name": "KDIGO CKD Evaluation and Management",
+    "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+    "jurisdiction": "INTL",
+    "check": "weekly"
+  },
+  {
+    "id": "nice-ng203",
+    "name": "NICE CKD NG203",
+    "url": "https://www.nice.org.uk/guidance/ng203",
+    "jurisdiction": "UK",
+    "check": "weekly"
+  },
+  {
+    "id": "who-smart",
+    "name": "WHO SMART Guidelines",
+    "url": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
+    "jurisdiction": "INTL",
+    "check": "monthly"
+  },
+  {
+    "id": "de-rki-krinko",
+    "name": "RKI / KRINKO recommendations",
+    "url": "https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
+    "jurisdiction": "DE",
+    "specialty": "infectiology",
+    "check": "weekly"
+  },
+  {
+    "id": "de-onkopedia",
+    "name": "Onkopedia guidelines",
+    "url": "https://www.onkopedia.com/de/onkopedia/guidelines",
+    "jurisdiction": "DE",
+    "specialty": "oncology",
+    "check": "weekly"
+  },
+  {
+    "id": "de-dgn",
+    "name": "DGN Neurology guidelines",
+    "url": "https://www.dgn.org/leitlinien",
+    "jurisdiction": "DE",
+    "specialty": "neurology",
+    "check": "weekly"
+  },
+  {
+    "id": "hl7-ips",
+    "name": "HL7 International Patient Summary",
+    "url": "https://www.hl7.org/fhir/uv/ips/en/index.html",
+    "jurisdiction": "INTL",
+    "specialty": "cross-specialty",
+    "check": "monthly"
+  }
 ]
