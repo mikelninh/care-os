@@ -1,0 +1,7 @@
+[
+  {"id":"de-nvl","name":"Nationale VersorgungsLeitlinien","url":"https://www.leitlinien.de/","jurisdiction":"DE","check":"weekly"},
+  {"id":"de-awmf-latest","name":"AWMF aktuellste Leitlinien","url":"https://register.awmf.org/de/statistik/aktuellste-leitlinien","jurisdiction":"DE","check":"daily"},
+  {"id":"kdigo-ckd","name":"KDIGO CKD Evaluation and Management","url":"https://kdigo.org/guidelines/ckd-evaluation-and-management/","jurisdiction":"INTL","check":"weekly"},
+  {"id":"nice-ng203","name":"NICE CKD NG203","url":"https://www.nice.org.uk/guidance/ng203","jurisdiction":"UK","check":"weekly"},
+  {"id":"who-smart","name":"WHO SMART Guidelines","url":"https://www.who.int/teams/digital-health-and-innovation/smart-guidelines","jurisdiction":"INTL","check":"monthly"}
+]
