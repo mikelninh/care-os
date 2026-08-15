@@ -1,0 +1,38 @@
+name: real FHIR integration
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "31 4 * * 3"
+jobs:
+  hapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Start real HAPI FHIR JPA server
+        run: docker run -d --name careos-hapi -p 8080:8080 hapiproject/hapi:latest
+      - name: Wait for CapabilityStatement
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/fhir/metadata >/tmp/capability.json; then exit 0; fi
+            sleep 5
+          done
+          docker logs careos-hapi
+          exit 1
+      - run: python scripts/seed_fhir.py
+      - name: Read patient through CareOS FHIR adapter
+        run: |
+          python - <<'PY'
+          from app.fhir_adapter import FhirClient, snapshot_to_timeline
+          c=FhirClient()
+          cap=c.capability()
+          assert cap.get('resourceType') == 'CapabilityStatement'
+          t=snapshot_to_timeline(c.patient_snapshot('careos-farid'))
+          assert t['patient']['name'] == 'Farid Rahman'
+          assert any(x['resource_type']=='Observation' for x in t['items'])
+          assert all(x['resource_id'] for x in t['items'])
+          print('FHIR integration OK:', len(t['items']), 'timeline items')
+          PY
