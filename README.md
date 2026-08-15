@@ -11,7 +11,7 @@ CareOS is a clinician-first healthcare workflow prototype exploring one question
 V8 keeps the calm clinician experience from V7 and adds the engineering evidence needed to move toward a real hospital pilot:
 
 - **real FHIR R4 adapter path** with a local HAPI FHIR server;
-- **500-case gold-label dataset** covering allergies, medication, diagnoses, renal function, follow-ups, discharge, contradictions and provenance;
+- **500-case gold-label benchmark generator** covering allergies, medication, diagnoses, renal function, follow-ups, discharge, contradictions and provenance;
 - **two red-team layers**, including a second unseen holdout created *after* the first hardening pass;
 - **production-readiness gates** that deliberately refuse to call the default demo “production ready”;
 - **guideline source registry + update watcher** with clinical review before any change can affect displayed guidance;
@@ -55,7 +55,7 @@ Compact reports:
 - `data/redteam_after_summary.json`
 - `data/redteam_unseen_summary.json`
 
-The repository includes **100 readable gold cases** in `data/stress_gold_sample_100.jsonl`; `benchmark/generate.py` deterministically generates the full **500-case** benchmark used for the reported run.
+`benchmark/generate.py` deterministically generates the full **500-case** gold benchmark. The compact benchmark results are checked in so reviewers can inspect the current failure frontier without downloading a large repetitive fixture.
 
 > These are synthetic software-engineering benchmarks, **not clinical validation**.
 
