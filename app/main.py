@@ -1,0 +1,137 @@
+from pathlib import Path
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from .demo_data import PATIENTS, TIMELINES, FOCUS, DOCUMENTATION_CASES, INBOX_ITEMS, PILOT_TASKS
+from .impact import score_pilot_task, aggregate_results
+from .safety import patient_match_decision
+from .fhir_adapter import FhirClient, FhirUnavailable, snapshot_to_timeline
+from .guidelines import list_sources, select_guidance
+from .security_readiness import readiness as security_readiness
+
+BASE = Path(__file__).parent
+STATIC = BASE / "static"
+app = FastAPI(title="CareOS V8", version="8.0.0", description="Clinician-first integration + stress-test prototype")
+app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+class PilotScoreRequest(BaseModel):
+    task_id: str
+    baseline_minutes: float = Field(gt=0, le=240)
+    actual_seconds: float = Field(ge=0, le=14400)
+    clicks: int = Field(default=0, ge=0)
+    searches: int = Field(default=0, ge=0)
+    calls: int = Field(default=0, ge=0)
+    corrections: int = Field(default=0, ge=0)
+    effort: int | None = Field(default=None, ge=1, le=5)
+    success: bool = True
+
+class PilotAggregateRequest(BaseModel):
+    results: list[dict]
+
+@app.get("/")
+def home():
+    return FileResponse(STATIC / "index.html")
+
+@app.get("/platform")
+def platform_lab():
+    return FileResponse(STATIC / "platform.html")
+
+@app.get("/api/health")
+def health():
+    return {
+        "status":"ok", "version":"8.0.0", "mode":"synthetic-pilot+integration-lab",
+        "claims":[
+            "synthetic data only", "no autonomous clinical decisions", "no production write-back",
+            "ambiguous patient matching blocks automatic attachment", "utility metrics require measured task completion"
+        ]
+    }
+
+@app.get("/api/patients")
+def patients(): return PATIENTS
+
+@app.get("/api/patients/{patient_id}/focus")
+def focus(patient_id: str):
+    if patient_id not in FOCUS: raise HTTPException(404, "Synthetic patient not found")
+    return FOCUS[patient_id]
+
+@app.get("/api/patients/{patient_id}/timeline")
+def timeline(patient_id: str, q: str = "", source: str = "all"):
+    if patient_id not in TIMELINES: raise HTTPException(404, "Synthetic patient not found")
+    items = TIMELINES[patient_id]
+    if source != "all": items = [x for x in items if x["source"].lower() == source.lower()]
+    if q.strip():
+        needle = q.strip().lower()
+        items = [x for x in items if needle in " ".join([x["title"], x["summary"], x["source"], x.get("source_ref","")]).lower()]
+    return {"patient_id":patient_id,"items":items,"count":len(items)}
+
+@app.get("/api/patients/{patient_id}/documentation")
+def documentation(patient_id: str):
+    if patient_id not in DOCUMENTATION_CASES: raise HTTPException(404, "No synthetic documentation case")
+    return DOCUMENTATION_CASES[patient_id]
+
+@app.get("/api/inbox")
+def inbox(): return INBOX_ITEMS
+
+@app.get("/api/inbox/{item_id}/match-policy")
+def match_policy(item_id: str):
+    item = next((x for x in INBOX_ITEMS if x["id"] == item_id), None)
+    if not item: raise HTTPException(404, "Synthetic inbox item not found")
+    candidates = item.get("candidates", [])
+    exact = item["status"] == "matched"
+    count = 1 if exact else max(2, len(candidates))
+    return patient_match_decision(item["match_confidence"], exact, count)
+
+@app.get("/api/pilot/tasks")
+def pilot_tasks(): return PILOT_TASKS
+
+@app.post("/api/pilot/score")
+def pilot_score(p: PilotScoreRequest):
+    return score_pilot_task(p.task_id, p.baseline_minutes, p.actual_seconds, clicks=p.clicks,
+                            searches=p.searches, calls=p.calls, corrections=p.corrections,
+                            effort=p.effort, success=p.success)
+
+@app.post("/api/pilot/aggregate")
+def pilot_aggregate(p: PilotAggregateRequest): return aggregate_results(p.results)
+
+@app.get("/api/fhir/capability")
+def fhir_capability():
+    try:
+        c = FhirClient().capability()
+        return {"resourceType": c.get("resourceType"), "fhirVersion": c.get("fhirVersion"), "software": c.get("software"), "status":"connected"}
+    except FhirUnavailable as exc:
+        raise HTTPException(503, f"FHIR source unavailable: {exc}")
+
+@app.get("/api/fhir/patients/{patient_id}/timeline")
+def fhir_patient_timeline(patient_id: str):
+    try:
+        return snapshot_to_timeline(FhirClient().patient_snapshot(patient_id))
+    except FhirUnavailable as exc:
+        raise HTTPException(503, f"FHIR source unavailable: {exc}")
+
+@app.get("/api/guidelines/sources")
+def guideline_sources():
+    return {"sources": list_sources(), "mode":"reference-context-only"}
+
+@app.get("/api/guidelines/select")
+def guideline_select(topic: str = "chronic kidney disease", country: str = "DE"):
+    return select_guidance(topic, country)
+
+@app.get("/api/security/readiness")
+def security_gate():
+    return security_readiness()
+
+@app.get("/api/stress/latest")
+def stress_latest():
+    import json
+    root = BASE.parent / "data"
+    names = ["stress_report.json", "redteam_before_hardening.json", "redteam_after_hardening.json", "redteam_unseen_after_hardening.json"]
+    out = {}
+    for name in names:
+        path = root / name
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data.pop("sample_failures", None)
+            out[name] = data
+    return out
