@@ -1,0 +1,38 @@
+name: Guideline source watch
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx
+      - run: python scripts/guideline_watch.py
+      - name: Commit source fingerprints
+        run: |
+          git config user.name "careos-guideline-bot"
+          git config user.email "careos-guideline-bot@users.noreply.github.com"
+          git add data/guideline_hashes.json data/guideline_changes.json
+          git diff --cached --quiet || git commit -m "chore: refresh guideline source fingerprints"
+          git push
+      - name: Open review issue when a source changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY' > /tmp/count
+          import json
+          from pathlib import Path
+          d=json.loads(Path('data/guideline_changes.json').read_text())
+          print(len(d.get('changes',[])))
+          PY
+          if [ "$(cat /tmp/count)" -gt 0 ]; then
+            gh issue create --title "Clinical review: guideline source changed" --body "The automated source watcher detected one or more changes. Review data/guideline_changes.json. Do not auto-apply changes to clinical guidance. Confirm publisher/version, assess impact, then update the versioned guidance registry through review."
+          fi
