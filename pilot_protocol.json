@@ -1,0 +1,25 @@
+{
+  "version": "8.0",
+  "north_star_hypothesis": "Return 30 minutes of administrative time per clinician per shift without increasing correction rate, safety risk, or cognitive effort.",
+  "claims_status": "hypothesis_not_proven",
+  "minimum_clinicians": 5,
+  "metrics": [
+    "baseline_minutes",
+    "actual_seconds",
+    "saved_minutes",
+    "interactions",
+    "searches",
+    "calls_needed",
+    "corrections",
+    "task_success",
+    "effort_1_to_5",
+    "would_use_again"
+  ],
+  "initial_targets": {
+    "task_success_percent": 90,
+    "median_effort_max": 2,
+    "would_use_again_percent": 80,
+    "silent_wrong_patient_matches": 0
+  },
+  "note": "Targets are internal pilot acceptance criteria, not achieved product claims. V8 also tracks stress-test critical misses and source-provenance correctness."
+}
