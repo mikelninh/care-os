@@ -1,0 +1,8 @@
+{
+  "dataset": {"count":500,"synthetic_only":true,"holdout_mutations":true,"seed":99173},
+  "exact_field_accuracy": {"allergies":0.51,"current_medications":0.38,"relevant_diagnoses":0.472,"last_renal_function":0.112,"open_followups":0.674,"discharge":0.542,"contradictions":0.686,"provenance":0.004},
+  "all_fields_exact": 0.0,
+  "critical_silent_contradiction_misses": 157,
+  "attack_failure_rate": {"allergy_heading_variant":1.0,"conflict_phrase_variant":1.0,"diagnosis_heading_variant":1.0,"discharge_shorthand":1.0,"followup_heading_variant":1.0,"med_heading_variant":1.0,"negation_bait":1.0,"renal_notation_variant":1.0,"renal_ocr_unit_damage":1.0,"stale_result_reingested_today":1.0},
+  "interpretation": "Red-team synthetic holdout. Failures are expected and are used to drive the next engineering iteration; not clinical validation."
+}
