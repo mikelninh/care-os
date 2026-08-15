@@ -1,0 +1,39 @@
+name: 500-case stress benchmark
+on:
+  push:
+    branches: [main]
+    paths:
+      - "benchmark/**"
+      - ".github/workflows/stress.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "43 3 * * 0"
+jobs:
+  unseen-holdout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Generate 500-case gold set
+        run: python -m benchmark.generate --count 500 --output /tmp/stress_gold_500.jsonl
+      - name: Run second unseen holdout
+        run: python -m benchmark.redteam_unseen
+      - name: Publish human-readable summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('data/redteam_unseen_after_hardening.json')
+          d=json.loads(p.read_text())
+          d.pop('sample_failures',None)
+          print(json.dumps(d,indent=2,ensure_ascii=False))
+          assert d['dataset']['count'] == 500
+          assert 'critical_silent_contradiction_misses' in d
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: careos-unseen-stress-report
+          path: data/redteam_unseen_after_hardening.json
