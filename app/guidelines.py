@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
+from datetime import date
 from typing import Any
 
 
@@ -78,6 +79,62 @@ SOURCES = [
         notes="International comparison source. Local German guidance/policy takes precedence for German deployment.",
     ),
     GuidelineSource(
+        id="de-rki-krinko",
+        title="KRINKO recommendations",
+        publisher="Robert Koch Institute / KRINKO",
+        jurisdiction="DE",
+        topic="infectiology infection prevention hospital hygiene",
+        status="active",
+        version="registry",
+        published=None,
+        last_reviewed="2026-08-15",
+        url="https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
+        authority_tier="national-specialty",
+        notes="Versioned infection-prevention context for the Infectiology Pack; local hospital SOP remains explicit.",
+    ),
+    GuidelineSource(
+        id="de-onkopedia",
+        title="Onkopedia guidelines",
+        publisher="DGHO and partner societies",
+        jurisdiction="DE",
+        topic="oncology hematology",
+        status="active",
+        version="registry",
+        published=None,
+        last_reviewed="2026-08-15",
+        url="https://www.onkopedia.com/de/onkopedia/guidelines",
+        authority_tier="national-specialty",
+        notes="Versioned oncology context; local tumour-board policy and intended clinical use remain separate.",
+    ),
+    GuidelineSource(
+        id="de-dgn",
+        title="DGN guidelines",
+        publisher="German Society of Neurology (DGN)",
+        jurisdiction="DE",
+        topic="neurology",
+        status="active",
+        version="registry",
+        published=None,
+        last_reviewed="2026-08-15",
+        url="https://www.dgn.org/leitlinien",
+        authority_tier="national-specialty",
+        notes="Neurology guidance registry; previous versions remain relevant for reproducibility.",
+    ),
+    GuidelineSource(
+        id="hl7-ips-201",
+        title="International Patient Summary Implementation Guide",
+        publisher="HL7 International",
+        jurisdiction="INTL",
+        topic="cross-border portable patient summary",
+        status="current-published",
+        version="2.0.1 STU 2",
+        published="2026-06-19",
+        last_reviewed="2026-08-15",
+        url="https://www.hl7.org/fhir/uv/ips/en/index.html",
+        authority_tier="international-standard",
+        notes="Portable summary interoperability baseline; CareOS preview is not a conformance claim.",
+    ),
+    GuidelineSource(
         id="who-smart-guidelines",
         title="WHO SMART Guidelines",
         publisher="World Health Organization",
@@ -112,6 +169,6 @@ def select_guidance(topic: str, country: str = "DE") -> dict[str, Any]:
             "Never silently replace local hospital policy with an external guideline.",
             "Every displayed guidance item must show publisher, version/status and source URL.",
             "New or changed guidance enters a review queue; it is never auto-applied to patient care.",
-            "CareOS V8 provides reference context only, not patient-specific treatment recommendations.",
+            "CareOS V9 provides reference context only, not patient-specific treatment recommendations.",
         ],
     }
