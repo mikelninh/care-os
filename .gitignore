@@ -9,5 +9,3 @@ venv/
 *.log
 coverage.xml
 htmlcov/
-data/guideline_hashes.json
-data/guideline_changes.json
