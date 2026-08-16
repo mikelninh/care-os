@@ -52,23 +52,40 @@ Record:
 - information they believe is missing;
 - information they would remove.
 
-## Observer sheet
+## Structured observer sheet
+
+Use `pilot/sjk_team_test_template.csv`. It deliberately uses participant codes rather than names and its aggregate report ignores free-text notes.
+
+Core fields:
 
 | Metric | Result |
 |---|---|
-| Participant code | |
+| Participant code | P01 etc. |
 | Role / seniority band | |
 | Device/browser | |
-| Total task time | |
-| Wrong clinical answers | |
-| Pending items missed | |
-| Source opens | |
-| Corrections | |
+| Total task time | seconds |
+| Microbiology correct? | yes / no |
+| Pending status correct? | yes / no |
+| Documented therapy correct? | yes / no |
+| Source found? | yes / no |
+| Handover time | seconds |
+| Wrong answers | count |
+| Pending items missed | count |
+| Source opens | count |
+| Corrections | count |
 | Needed coaching? | yes / no |
 | Effort | 1 / 2 / 3 / 4 / 5 |
-| Would use tomorrow? | yes / no / unsure |
+| Would use tomorrow? | yes / no |
 
-Do not collect participant names unless the team explicitly wants a named follow-up list.
+Do not collect participant names by default. Do not put patient information into the notes column.
+
+### Aggregate the test reproducibly
+
+```bash
+python scripts/summarize_sjk_pilot.py pilot/sjk_team_test_results.csv --output data/sjk_team_test_report.json
+```
+
+The report contains only structured aggregates such as median time, task correctness, missed-pending-item burden, source discovery, coaching, corrections, effort and would-use-tomorrow. It does **not** automatically declare the pilot a success; observed safety flags remain a human go/no-go decision.
 
 ## Six questions after the test
 
