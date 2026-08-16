@@ -14,7 +14,8 @@ def _bundle(resources):
 
 def test_fhir_adapter_reads_real_r4_shape_and_preserves_source_ids():
     patient={"resourceType":"Patient","id":"p1","name":[{"given":["Farid"],"family":"Rahman"}],"birthDate":"1979-11-02"}
-    responses={"/Patient/p1":patient,"/AllergyIntolerance":_bundle([{"resourceType":"AllergyIntolerance","id":"a1","code":{"text":"Penicillin"},"recordedDate":"2023-03-10"}]),"/Condition":_bundle([]),"/Observation":_bundle([]),"/MedicationStatement":_bundle([]),"/Task":_bundle([]),"/DocumentReference":_bundle([])}
+    allergy={"resourceType":"AllergyIntolerance","id":"a1","patient":{"reference":"Patient/p1"},"code":{"text":"Penicillin"},"recordedDate":"2023-03-10"}
+    responses={"/Patient/p1":patient,"/AllergyIntolerance":_bundle([allergy]),"/Condition":_bundle([]),"/Observation":_bundle([]),"/MedicationStatement":_bundle([]),"/Task":_bundle([]),"/DocumentReference":_bundle([])}
     def handler(request): return httpx.Response(200, json=responses[request.url.path.removeprefix("/fhir")])
     timeline=snapshot_to_timeline(FhirClient(transport=httpx.MockTransport(handler)).patient_snapshot("p1"))
     assert timeline["patient"]["name"] == "Farid Rahman"
