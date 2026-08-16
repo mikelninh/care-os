@@ -9,8 +9,8 @@ def test_model_schema_requires_quote_but_not_model_offsets():
         confidence=0.9,
     )
     assert item.evidence_quote == "Penicillin"
-    assert "evidence_start" not in item.model_fields
-    assert "evidence_end" not in item.model_fields
+    assert "evidence_start" not in ModelCandidate.model_fields
+    assert "evidence_end" not in ModelCandidate.model_fields
 
 
 def test_empty_response_is_valid_when_model_cannot_support_a_fact():
