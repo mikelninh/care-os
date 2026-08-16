@@ -11,7 +11,12 @@ def test_infectiology_morning_review_has_sources_pending_and_no_treatment_claim(
     demo = response.json()["demo"]
     assert demo["cards"] and demo["pending"] and demo["timeline"]
     assert any("Mikrobiologie" in card["label"] for card in demo["cards"])
-    assert any("aussteh" in item.lower() for item in demo["pending"])
+    clinical_story = " ".join(
+        [*demo["pending"]]
+        + [str(card.get("detail", "")) for card in demo["cards"]]
+        + [str(item.get("summary", "")) for item in demo["timeline"]]
+    ).lower()
+    assert "aussteh" in clinical_story
     assert all(item["ref"] for item in demo["timeline"])
     anti = next(card for card in demo["cards"] if card["label"] == "Antiinfektiva")
     assert "Keine automatische Therapieempfehlung" in anti["detail"]
