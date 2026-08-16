@@ -8,6 +8,7 @@ def clinician(**overrides):
         "roles": {"doctor"},
         "scopes": {"patient:read"},
         "treatment_patient_refs": {"p1"},
+        "break_glass_allowed": False,
     }
     data.update(overrides)
     return UserContext(**data)
@@ -25,10 +26,23 @@ def test_other_patient_is_denied_by_default():
     assert "treatment context" in d.reason
 
 
-def test_break_glass_requires_reason_and_elevated_audit():
-    denied = evaluate_access(clinician(), AccessRequest(patient_ref="p2", break_glass=True, break_glass_reason="urgent"))
+def test_break_glass_requires_authoritative_privilege_reason_and_elevated_audit():
+    self_declared = evaluate_access(
+        clinician(),
+        AccessRequest(patient_ref="p2", break_glass=True, break_glass_reason="Emergency review for unstable patient"),
+    )
+    assert self_declared.allowed is False
+    assert "privilege not granted" in self_declared.reason
+
+    denied = evaluate_access(
+        clinician(break_glass_allowed=True),
+        AccessRequest(patient_ref="p2", break_glass=True, break_glass_reason="urgent"),
+    )
     assert denied.allowed is False
-    allowed = evaluate_access(clinician(), AccessRequest(patient_ref="p2", break_glass=True, break_glass_reason="Emergency review for unstable patient"))
+    allowed = evaluate_access(
+        clinician(break_glass_allowed=True),
+        AccessRequest(patient_ref="p2", break_glass=True, break_glass_reason="Emergency review for unstable patient"),
+    )
     assert allowed.allowed is True
     assert allowed.break_glass is True
     assert allowed.audit_level == "high"
