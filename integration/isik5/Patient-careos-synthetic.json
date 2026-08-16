@@ -1,0 +1,35 @@
+{
+  "resourceType": "Patient",
+  "id": "careos-isik5-patient",
+  "meta": {
+    "profile": [
+      "https://gematik.de/fhir/isik/StructureDefinition/ISiKPatient"
+    ]
+  },
+  "identifier": [
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR"
+          }
+        ]
+      },
+      "system": "https://careos.example/sid/synthetic-patient",
+      "value": "CAREOS-ISIK5-001"
+    }
+  ],
+  "active": true,
+  "name": [
+    {
+      "use": "official",
+      "family": "Novak",
+      "given": [
+        "Mara"
+      ]
+    }
+  ],
+  "gender": "female",
+  "birthDate": "1986-04-12"
+}
