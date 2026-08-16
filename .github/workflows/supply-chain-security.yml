@@ -1,0 +1,55 @@
+name: supply-chain-security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "requirements.txt"
+      - ".github/workflows/supply-chain-security.yml"
+  pull_request:
+    paths:
+      - "requirements.txt"
+      - ".github/workflows/supply-chain-security.yml"
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-dependency-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install audit tooling
+        run: python -m pip install --upgrade pip pip-audit
+      - name: Generate vulnerability report and CycloneDX SBOM
+        shell: bash
+        run: |
+          set +e
+          mkdir -p artifacts
+          pip-audit -r requirements.txt -f json -o artifacts/pip-audit.json
+          AUDIT_STATUS=$?
+          pip-audit -r requirements.txt -f cyclonedx-json -o artifacts/python-sbom.cdx.json
+          SBOM_STATUS=$?
+          printf '{"audit_exit":%s,"sbom_exit":%s}\n' "$AUDIT_STATUS" "$SBOM_STATUS" > artifacts/status.json
+          if [ "$AUDIT_STATUS" -ne 0 ]; then
+            echo "Known dependency vulnerability detected. Review artifacts/pip-audit.json."
+            exit "$AUDIT_STATUS"
+          fi
+          if [ "$SBOM_STATUS" -ne 0 ]; then
+            echo "SBOM generation/audit failed."
+            exit "$SBOM_STATUS"
+          fi
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: careos-python-supply-chain-evidence
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
