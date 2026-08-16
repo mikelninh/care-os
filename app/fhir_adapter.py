@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
@@ -8,6 +9,9 @@ from urllib.parse import urlparse
 import httpx
 
 from .clinical_truth import ClinicalFact, SourceKind, SourceRef, TruthEnvelope
+from .deployment_policy import DataMode, assert_data_mode_allowed, assert_fhir_source_allowed
+
+FHIR_ID_PATTERN = re.compile(r"^[A-Za-z0-9\-.]{1,64}$")
 
 
 @dataclass
@@ -21,28 +25,87 @@ class FhirUnavailable(RuntimeError):
     pass
 
 
+def _env_true(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _validate_fhir_id(value: str) -> str:
+    if not FHIR_ID_PATTERN.fullmatch(value or ""):
+        raise FhirUnavailable("invalid FHIR id")
+    return value
+
+
+def _reference_targets_patient(reference: str | None, patient_id: str) -> bool:
+    if not reference:
+        return False
+    parsed = urlparse(reference)
+    path = parsed.path if parsed.scheme or parsed.netloc else reference.split("?", 1)[0].split("#", 1)[0]
+    normalized = path.strip("/")
+    return normalized == f"Patient/{patient_id}" or normalized.endswith(f"/Patient/{patient_id}")
+
+
+def _assert_resource_patient_scope(resource: dict[str, Any], patient_id: str) -> None:
+    resource_type = resource.get("resourceType")
+    reference_field = {
+        "AllergyIntolerance": "patient",
+        "Condition": "subject",
+        "Observation": "subject",
+        "MedicationStatement": "subject",
+        "Task": "for",
+        "DocumentReference": "subject",
+    }.get(resource_type)
+    if not reference_field:
+        raise FhirUnavailable(f"unexpected resource type in patient snapshot: {resource_type}")
+    reference = (resource.get(reference_field) or {}).get("reference")
+    if not _reference_targets_patient(reference, patient_id):
+        raise FhirUnavailable(f"FHIR {resource_type} patient reference mismatch")
+
+
 class FhirClient:
-    """FHIR R4 read adapter with fail-visible bounded pagination.
+    """FHIR R4 read adapter with fail-visible bounded pagination and patient binding.
 
     Standard REST/search transport only. ISiK-specific profiles, production auth and
     terminology validation remain separate gates and are not implied by this adapter.
+    The adapter itself enforces the current CareOS data-mode/source policy so callers
+    cannot silently bypass deployment restrictions.
     """
 
-    def __init__(self, config: FhirConfig | None = None, transport: httpx.BaseTransport | None = None):
+    def __init__(
+        self,
+        config: FhirConfig | None = None,
+        transport: httpx.BaseTransport | None = None,
+        *,
+        data_mode: DataMode | str | None = None,
+        external_deidentified_ack: bool | None = None,
+    ):
         self.config = config or FhirConfig()
         if self.config.max_pages < 1 or self.config.max_pages > 1000:
             raise ValueError("FHIR max_pages must be between 1 and 1000")
+        if self.config.timeout_seconds <= 0 or self.config.timeout_seconds > 60:
+            raise ValueError("FHIR timeout_seconds must be >0 and <=60")
+        mode = assert_data_mode_allowed(data_mode or os.getenv("CAREOS_DATA_MODE", "synthetic"))
+        acknowledgement = (
+            _env_true(os.getenv("CAREOS_EXTERNAL_DEIDENTIFIED_ACK"))
+            if external_deidentified_ack is None
+            else external_deidentified_ack
+        )
+        assert_fhir_source_allowed(mode, self.config.base_url, external_deidentified_ack=acknowledgement)
+        self.data_mode = mode
         self._client = httpx.Client(
             base_url=self.config.base_url.rstrip("/"),
             timeout=self.config.timeout_seconds,
             headers={"Accept": "application/fhir+json"},
             transport=transport,
+            follow_redirects=False,
         )
 
     def _decode_response(self, response: httpx.Response) -> dict[str, Any]:
         try:
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            if not isinstance(data, dict):
+                raise ValueError("FHIR response must be a JSON object")
+            return data
         except (httpx.HTTPError, ValueError) as exc:
             raise FhirUnavailable(str(exc)) from exc
 
@@ -58,6 +121,8 @@ class FhirClient:
         candidate = urlparse(url)
         if not candidate.scheme or not candidate.netloc:
             raise FhirUnavailable("FHIR next link must be an absolute same-origin URL")
+        if candidate.username or candidate.password:
+            raise FhirUnavailable("FHIR next link must not embed credentials")
         base_port = base.port or (443 if base.scheme == "https" else 80)
         candidate_port = candidate.port or (443 if candidate.scheme == "https" else 80)
         if (candidate.scheme, candidate.hostname, candidate_port) != (base.scheme, base.hostname, base_port):
@@ -85,15 +150,28 @@ class FhirClient:
     def _bundle_resources(bundle: dict[str, Any]) -> list[dict[str, Any]]:
         if bundle.get("resourceType") != "Bundle":
             raise FhirUnavailable("FHIR search response was not a Bundle")
-        return [e["resource"] for e in bundle.get("entry", []) if e.get("resource")]
+        resources: list[dict[str, Any]] = []
+        for entry in bundle.get("entry", []) or []:
+            resource = entry.get("resource") if isinstance(entry, dict) else None
+            if resource is not None:
+                if not isinstance(resource, dict):
+                    raise FhirUnavailable("FHIR Bundle contained a non-object resource")
+                resources.append(resource)
+        return resources
 
     def capability(self) -> dict[str, Any]:
         return self._get("/metadata")
 
     def patient(self, patient_id: str) -> dict[str, Any]:
-        return self._get(f"/Patient/{patient_id}")
+        safe_id = _validate_fhir_id(patient_id)
+        patient = self._get(f"/Patient/{safe_id}")
+        if patient.get("resourceType") != "Patient" or patient.get("id") != safe_id:
+            raise FhirUnavailable("FHIR Patient identity mismatch")
+        return patient
 
     def search(self, resource: str, **params: str) -> list[dict[str, Any]]:
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]{0,63}", resource or ""):
+            raise FhirUnavailable("invalid FHIR resource type")
         bundle = self._get(f"/{resource}", params=params)
         resources = self._bundle_resources(bundle)
         next_url = self._next_link(bundle)
@@ -115,13 +193,16 @@ class FhirClient:
         return resources
 
     def patient_snapshot(self, patient_id: str) -> dict[str, Any]:
-        patient = self.patient(patient_id)
-        allergies = self.search("AllergyIntolerance", patient=patient_id)
-        conditions = self.search("Condition", patient=patient_id)
-        observations = self.search("Observation", patient=patient_id, _sort="-date")
-        medications = self.search("MedicationStatement", patient=patient_id, status="active")
-        tasks = self.search("Task", patient=patient_id)
-        documents = self.search("DocumentReference", patient=patient_id)
+        safe_id = _validate_fhir_id(patient_id)
+        patient = self.patient(safe_id)
+        allergies = self.search("AllergyIntolerance", patient=safe_id)
+        conditions = self.search("Condition", patient=safe_id)
+        observations = self.search("Observation", patient=safe_id, _sort="-date")
+        medications = self.search("MedicationStatement", patient=safe_id, status="active")
+        tasks = self.search("Task", patient=safe_id)
+        documents = self.search("DocumentReference", patient=safe_id)
+        for resource in [*allergies, *conditions, *observations, *medications, *tasks, *documents]:
+            _assert_resource_patient_scope(resource, safe_id)
         return {
             "patient": patient,
             "allergies": allergies,
