@@ -1,19 +1,16 @@
 from app.extractors.model_schema import MODEL_EXTRACTION_RULES, ModelCandidate, ModelExtractionResponse
 
 
-def test_model_schema_retains_exact_evidence_contract():
+def test_model_schema_requires_quote_but_not_model_offsets():
     item = ModelCandidate(
         fact_type="allergy",
         value_original="Penicillin",
-        evidence_start=10,
-        evidence_end=20,
         evidence_quote="Penicillin",
         confidence=0.9,
     )
-    candidate = item.to_candidate()
-    assert candidate.evidence_start == 10
-    assert candidate.evidence_end == 20
-    assert candidate.evidence_quote == "Penicillin"
+    assert item.evidence_quote == "Penicillin"
+    assert "evidence_start" not in item.model_fields
+    assert "evidence_end" not in item.model_fields
 
 
 def test_empty_response_is_valid_when_model_cannot_support_a_fact():
@@ -21,8 +18,10 @@ def test_empty_response_is_valid_when_model_cannot_support_a_fact():
     assert response.candidates == []
 
 
-def test_model_rules_forbid_paraphrased_evidence_and_medical_guessing():
+def test_model_rules_forbid_paraphrase_offsets_time_guessing_and_clinical_guessing():
     rules = MODEL_EXTRACTION_RULES.lower()
     assert "do not paraphrase" in rules
+    assert "do not return or infer character offsets" in rules
+    assert "do not invent clinical effective time" in rules
     assert "do not infer" in rules
     assert "never resolve contradictory" in rules
