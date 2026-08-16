@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -18,7 +18,11 @@ from .global_packs import architecture_manifest
 from .monetization_agent import monetization_manifest
 from .portability import ips_preview
 from .readiness_gates import gate_manifest
-from .deployment_policy import assert_data_mode_allowed
+from .deployment_policy import (
+    DeploymentBlocked,
+    assert_data_mode_allowed,
+    assert_public_fhir_integration_route_allowed,
+)
 from .agent_readiness import agent_gate_manifest
 from .agent_tools import synthetic_sjk_registry
 
@@ -31,19 +35,26 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
 class PilotScoreRequest(BaseModel):
-    task_id: str
+    task_id: str = Field(min_length=1, max_length=100)
     baseline_minutes: float = Field(gt=0, le=240)
     actual_seconds: float = Field(ge=0, le=14400)
-    clicks: int = Field(default=0, ge=0)
-    searches: int = Field(default=0, ge=0)
-    calls: int = Field(default=0, ge=0)
-    corrections: int = Field(default=0, ge=0)
+    clicks: int = Field(default=0, ge=0, le=10000)
+    searches: int = Field(default=0, ge=0, le=10000)
+    calls: int = Field(default=0, ge=0, le=10000)
+    corrections: int = Field(default=0, ge=0, le=10000)
     effort: int | None = Field(default=None, ge=1, le=5)
     success: bool = True
 
 
 class PilotAggregateRequest(BaseModel):
-    results: list[dict]
+    results: list[dict] = Field(default_factory=list, max_length=500)
+
+
+def _assert_public_fhir_lab_route() -> None:
+    try:
+        assert_public_fhir_integration_route_allowed(DATA_MODE)
+    except DeploymentBlocked as exc:
+        raise HTTPException(403, str(exc)) from exc
 
 
 @app.get("/")
@@ -117,7 +128,7 @@ def data_mode():
 
 
 @app.get("/api/global/ips-preview/{patient_id}")
-def global_ips_preview(patient_id: str, language: str = "en"):
+def global_ips_preview(patient_id: str, language: str = Query(default="en", max_length=20)):
     result = ips_preview(patient_id, language)
     if not result:
         raise HTTPException(404, "Synthetic patient not found")
@@ -161,7 +172,11 @@ def focus(patient_id: str):
 
 
 @app.get("/api/patients/{patient_id}/timeline")
-def timeline(patient_id: str, q: str = "", source: str = "all"):
+def timeline(
+    patient_id: str,
+    q: str = Query(default="", max_length=200),
+    source: str = Query(default="all", max_length=100),
+):
     if patient_id not in TIMELINES:
         raise HTTPException(404, "Synthetic patient not found")
     items = TIMELINES[patient_id]
@@ -223,6 +238,7 @@ def pilot_aggregate(p: PilotAggregateRequest):
 
 @app.get("/api/fhir/capability")
 def fhir_capability():
+    _assert_public_fhir_lab_route()
     try:
         c = FhirClient().capability()
         return {"resourceType": c.get("resourceType"), "fhirVersion": c.get("fhirVersion"), "software": c.get("software"), "status": "connected"}
@@ -232,6 +248,7 @@ def fhir_capability():
 
 @app.get("/api/fhir/patients/{patient_id}/truth")
 def fhir_patient_truth(patient_id: str):
+    _assert_public_fhir_lab_route()
     try:
         truth = snapshot_to_truth(FhirClient().patient_snapshot(patient_id))
         return truth.model_dump(mode="json")
@@ -241,6 +258,7 @@ def fhir_patient_truth(patient_id: str):
 
 @app.get("/api/fhir/patients/{patient_id}/timeline")
 def fhir_patient_timeline(patient_id: str):
+    _assert_public_fhir_lab_route()
     try:
         return snapshot_to_timeline(FhirClient().patient_snapshot(patient_id))
     except FhirUnavailable as exc:
@@ -253,7 +271,10 @@ def guideline_sources():
 
 
 @app.get("/api/guidelines/select")
-def guideline_select(topic: str = "chronic kidney disease", country: str = "DE"):
+def guideline_select(
+    topic: str = Query(default="chronic kidney disease", max_length=200),
+    country: str = Query(default="DE", max_length=10),
+):
     return select_guidance(topic, country)
 
 
@@ -267,7 +288,7 @@ def stress_latest():
     import json
 
     root = BASE.parent / "data"
-    names = ["stress_report.json", "redteam_before_hardening.json", "redteam_after_hardening.json", "redteam_unseen_after_hardening.json"]
+    names = ["stress_report.json", "redteam_before_hardening.json", "redteam_after_hardening.json", "redteam_unseen_after_hardening.json", "platform_stress_report.json"]
     out = {}
     for name in names:
         path = root / name
