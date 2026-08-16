@@ -19,6 +19,8 @@ from .monetization_agent import monetization_manifest
 from .portability import ips_preview
 from .readiness_gates import gate_manifest
 from .deployment_policy import assert_data_mode_allowed
+from .agent_readiness import agent_gate_manifest
+from .agent_tools import synthetic_sjk_registry
 
 BASE = Path(__file__).parent
 STATIC = BASE / "static"
@@ -95,6 +97,20 @@ def readiness_gates():
     return gate_manifest()
 
 
+@app.get("/api/readiness/agents")
+def agent_readiness_gates():
+    return agent_gate_manifest()
+
+
+@app.get("/api/agents/synthetic-tools")
+def synthetic_agent_tools():
+    return {
+        "mode": "synthetic-only",
+        "live_identifiable_phi_allowed": False,
+        "tools": synthetic_sjk_registry().manifest(),
+    }
+
+
 @app.get("/api/readiness/data-mode")
 def data_mode():
     return {"data_mode": DATA_MODE.value, "live_patient_data_allowed": gate_manifest()["live_patient_data_allowed"]}
@@ -122,6 +138,7 @@ def health():
         "mode": "specialty-packs+reference-environments+integration-lab+evidence-backed-readiness-gates",
         "claims": [
             "live patient data mode refuses startup until G0-G5 pass",
+            "agent identifiable-PHI use remains separately gated by A0-A9",
             "reference environments are synthetic product-research configurations, not endorsements or integrations",
             "no autonomous clinical decisions",
             "no production write-back",
