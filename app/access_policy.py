@@ -16,6 +16,7 @@ class UserContext(BaseModel):
     roles: set[str] = Field(default_factory=set)
     scopes: set[str] = Field(default_factory=set)
     treatment_patient_refs: set[str] = Field(default_factory=set)
+    break_glass_allowed: bool = False
 
 
 class AccessRequest(BaseModel):
@@ -39,7 +40,9 @@ def evaluate_access(user: UserContext, request: AccessRequest, *, writeback_enab
     """Fail-closed policy contract for the future hospital identity integration.
 
     This function does not authenticate users. Production identity must verify OIDC/JWT
-    and then construct UserContext from trusted claims/authoritative mappings.
+    and then construct UserContext from trusted claims/authoritative mappings. Emergency
+    break-glass privilege must likewise come from an authoritative hospital policy layer;
+    a client request cannot grant that privilege to itself.
     """
 
     if not (user.roles & CLINICAL_ROLES):
@@ -56,6 +59,8 @@ def evaluate_access(user: UserContext, request: AccessRequest, *, writeback_enab
         return AccessDecision(allowed=True, reason="active treatment context")
 
     if request.break_glass:
+        if not user.break_glass_allowed:
+            return AccessDecision(allowed=False, reason="break-glass privilege not granted by authoritative policy", audit_level="high")
         reason = (request.break_glass_reason or "").strip()
         if len(reason) < 10:
             return AccessDecision(allowed=False, reason="break-glass requires a meaningful reason", audit_level="high")
