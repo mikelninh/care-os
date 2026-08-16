@@ -10,19 +10,21 @@ from ..document_pipeline import DocumentInput, ExtractedCandidate
 class ConservativeGermanExtractor:
     """Conservative development extractor for explicit German clinical statements.
 
-    Unsupported high-risk documents become review barriers instead of silently
-    producing an empty result or allowing older state to look current.
-    The frozen unseen holdout must not be used to add recognition rules here.
+    Every supported document kind fails visibly. Snapshot-like unresolved sources can
+    block older state; additive allergy history stays visible while the unresolved
+    allergy source is separately flagged for review.
     """
 
     name = "conservative-de"
-    version = "0.3.1"
+    version = "0.3.2"
 
-    HIGH_RISK_KINDS = {"allergy", "medication", "lab", "discharge"}
+    SUPPORTED_KINDS = {"allergy", "medication", "diagnosis", "lab", "followup", "discharge"}
     REVIEW_BLOCKS = {
-        "allergy": ("allergy",),
+        "allergy": (),
         "medication": ("current_medications", "new_medication_order"),
+        "diagnosis": ("relevant_diagnoses",),
         "lab": ("renal_function",),
+        "followup": ("open_followups",),
         "discharge": ("discharge",),
     }
 
@@ -38,7 +40,7 @@ class ConservativeGermanExtractor:
         }.get(kind)
 
         candidates = parser(document) if parser else []
-        if not candidates and kind in self.HIGH_RISK_KINDS:
+        if not candidates and kind in self.SUPPORTED_KINDS:
             return [self._review_required(document, f"unsupported explicit {kind} document form")]
         return candidates
 
@@ -109,11 +111,7 @@ class ConservativeGermanExtractor:
         )
 
     def _allergy(self, document: DocumentInput) -> list[ExtractedCandidate]:
-        match = re.search(
-            r"Allergie:\s*([^\.\n]+?)(?:\.\s*|\s+)Reaktion:\s*([^\.\n]+)\.",
-            document.text,
-            flags=re.IGNORECASE,
-        )
+        match = re.search(r"Allergie:\s*([^\.\n]+?)(?:\.\s*|\s+)Reaktion:\s*([^\.\n]+)\.", document.text, flags=re.IGNORECASE)
         if not match:
             return []
         substance = match.group(1).strip()
@@ -126,7 +124,6 @@ class ConservativeGermanExtractor:
         if current:
             medicines = [item.strip() for item in re.split(r"[,;]", current.group(1)) if item.strip()]
             out.append(self._candidate(document, match=current, fact_type="current_medications", logical_key="medication-list", value_original=medicines))
-
         new_order = re.search(r"Neu verordnet:\s*([^\.]+)\.\s*Bitte heute beginnen\.", document.text, flags=re.IGNORECASE)
         if new_order:
             medication = new_order.group(1).strip()
@@ -141,11 +138,7 @@ class ConservativeGermanExtractor:
         return [self._candidate(document, match=match, fact_type="relevant_diagnoses", logical_key="relevant-diagnoses", value_original=diagnoses)]
 
     def _lab(self, document: DocumentInput) -> list[ExtractedCandidate]:
-        match = re.search(
-            r"(?:Krea|Kreatinin):?\s*([0-9]+(?:[\.,][0-9]+)?)\s*mg/dl\s*(?:·|,|\n)\s*eGFR:?\s*([0-9]+)\s*ml/min/1,73m²\. ?",
-            document.text,
-            flags=re.IGNORECASE,
-        )
+        match = re.search(r"(?:Krea|Kreatinin):?\s*([0-9]+(?:[\.,][0-9]+)?)\s*mg/dl\s*(?:·|,|\n)\s*eGFR:?\s*([0-9]+)\s*ml/min/1,73m²\. ?", document.text, flags=re.IGNORECASE)
         if not match:
             return []
         creatinine = float(match.group(1).replace(",", "."))
