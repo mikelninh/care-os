@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.0",
-  "architecture_version": "2.0",
+  "schema_version": "1.1",
+  "architecture_version": "2.1",
   "baseline_date": "2026-08-16",
   "name": "CareOS Federated Clinical Context Layer",
   "reference_architecture_readiness": {
@@ -10,22 +10,26 @@
   },
   "production_claim": "not-production-ready",
   "live_patient_data_allowed": false,
+  "agent_live_identifiable_phi_allowed": false,
   "system_of_record": false,
   "routine_phi_in_control_plane": false,
   "default_data_locality": "provider-data-plane",
   "default_clinical_mode": "read-only",
   "autonomous_clinical_writeback": false,
+  "autonomous_agent_consequential_actions": false,
   "architecture_principles": [
     "source-system-authority",
     "provider-side-phi",
     "mandatory-provenance",
     "explicit-unknown-and-failure-state",
     "models-are-untrusted-proposers",
+    "agents-are-separate-narrow-delegated-principals",
     "read-write-capability-separation",
     "strong-patient-identity-before-auto-attach",
     "same-patient-context-no-second-search",
     "composition-not-core-forks",
     "least-privilege-treatment-context",
+    "deny-default-agent-egress",
     "fail-visible",
     "evidence-backed-gates"
   ],
@@ -38,6 +42,7 @@
         "policy-and-config-schemas",
         "terminology-and-guideline-metadata",
         "connector-capability-definitions",
+        "agent-tool-capability-definitions",
         "non-phi-operational-metadata"
       ]
     },
@@ -50,6 +55,7 @@
         "terminology-and-temporal-policy",
         "reconciliation-and-review",
         "authorization-policy",
+        "agent-gateway",
         "provider-audit",
         "clinician-ui"
       ]
@@ -59,8 +65,11 @@
     "connector": ["capabilities", "source-identity", "truth-envelope", "source-state", "version-and-time", "read-write-capability"],
     "clinical_fact": ["patient", "fact-type", "original-value", "source", "source-version", "evidence", "effective-time", "ingestion-time", "transformer-version", "trust-status", "review-state"],
     "access": ["user", "organisation", "role-scope", "patient", "encounter-or-treatment-context", "operation"],
+    "agent_delegation": ["agent-and-version", "human-delegator", "organisation", "patient", "encounter", "task", "tools", "operations", "data-categories", "egress", "budgets", "expiry"],
+    "agent_tool": ["stable-id-and-version", "effect", "target-system", "data-categories", "egress", "limits", "audit", "human-confirmation"],
     "failure": ["current", "stale", "unavailable", "unknown", "contradictory", "explicitly-negative"],
-    "audit": ["actor", "organisation", "patient-reference", "data-category", "action", "time", "origin", "break-glass-context"]
+    "audit": ["actor", "organisation", "patient-reference", "data-category", "action", "time", "origin", "break-glass-context"],
+    "agent_audit": ["human-delegator", "agent-and-version", "delegation", "execution", "patient-reference", "tool", "authorization-decision", "egress", "outcome"]
   },
   "deployment_patterns": [
     "provider-on-prem-or-private-infrastructure",
@@ -74,7 +83,9 @@
     "popp-treatment-context-where-applicable",
     "epa-and-kim-as-ecosystem-rails",
     "sgb-v-393-cloud-controls-where-applicable",
-    "ehds-interoperability-and-logging-forward-design"
+    "ehds-interoperability-and-logging-forward-design",
+    "nist-agent-identity-authorization-audit-direction",
+    "mcp-resource-audience-bound-authorization-direction"
   ],
   "documents": {
     "canonical_architecture": "docs/ARCHITECTURE_V2.md",
@@ -83,6 +94,9 @@
     "trust_and_data_flow": "docs/TRUST_AND_DATA_FLOW.md",
     "national_integration_map": "docs/NATIONAL_INTEGRATION_MAP.md",
     "technical_documentation_index": "docs/TECHNICAL_DOCUMENTATION_INDEX.md",
+    "agent_security_model": "docs/AGENT_SECURITY_MODEL.md",
+    "agent_production_program": "docs/AGENT_PRODUCTION_PROGRAM.md",
+    "agent_security_baseline": "docs/AGENT_SECURITY_BASELINE.md",
     "adrs": "docs/adr/README.md",
     "production_gates": "docs/GATES.md"
   },
@@ -92,6 +106,8 @@
     "no-national-rollout-claim",
     "no-mdr-classification-claim",
     "no-ehds-conformity-claim",
-    "no-live-clinical-safety-validation-claim"
+    "no-live-clinical-safety-validation-claim",
+    "no-live-agent-phi-claim",
+    "no-autonomous-clinical-agent-claim"
   ]
 }
