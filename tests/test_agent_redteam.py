@@ -30,5 +30,5 @@ def delegation():
 def test_compromised_worker_is_contained_by_gateway():
     report = run_containment_suite(delegation(), now=NOW)
     assert report["pass"] is True
-    assert report["contained"] == report["total"] == 3
+    assert report["contained"] == report["total"] == 6
     assert all(case["allowed"] is False for case in report["cases"])
