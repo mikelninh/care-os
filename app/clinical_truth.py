@@ -14,6 +14,20 @@ class FactStatus(str, Enum):
     REJECTED = "rejected"
 
 
+class AssertionStage(str, Enum):
+    """Maturity of the source assertion, independent from model confidence.
+
+    A preliminary microbiology result can be perfectly extracted (confidence=1.0)
+    while still being preliminary. CareOS must never collapse those two concepts.
+    """
+
+    UNKNOWN = "unknown"
+    PRELIMINARY = "preliminary"
+    FINAL = "final"
+    CORRECTED = "corrected"
+    CANCELLED = "cancelled"
+
+
 class SourceKind(str, Enum):
     FHIR = "fhir"
     STRUCTURED_VENDOR = "structured-vendor"
@@ -22,12 +36,7 @@ class SourceKind(str, Enum):
 
 
 class SourceRef(BaseModel):
-    """Immutable locator for the source that supports a clinical fact.
-
-    Structured resources are traceable by resource identity/version. Document-derived
-    facts additionally require an exact evidence span so a reviewer can inspect the
-    supporting text rather than trusting a generated summary.
-    """
+    """Immutable locator for the source that supports a clinical fact."""
 
     kind: SourceKind
     system: str = Field(min_length=1)
@@ -52,14 +61,15 @@ class SourceRef(BaseModel):
 class ClinicalFact(BaseModel):
     """Canonical, source-grounded fact used by CareOS downstream views.
 
-    The model deliberately separates clinical effective time from ingestion time and
-    keeps original wording/value beside any normalization. A fact without provenance
-    is invalid by construction.
+    Clinical time, source maturity, extraction confidence and review state are
+    deliberately separate dimensions. A fact without provenance is invalid by
+    construction.
     """
 
     fact_id: str = Field(min_length=1)
     patient_ref: str = Field(min_length=1)
     fact_type: str = Field(min_length=1)
+    logical_key: str | None = None
 
     value_original: Any
     value_normalized: Any | None = None
@@ -77,6 +87,7 @@ class ClinicalFact(BaseModel):
     transformer_version: str = Field(default="1", min_length=1)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     status: FactStatus = FactStatus.CONFIRMED
+    assertion_stage: AssertionStage = AssertionStage.UNKNOWN
 
     contradiction_group: str | None = None
     supersedes_fact_id: str | None = None
@@ -90,6 +101,8 @@ class ClinicalFact(BaseModel):
             raise ValueError("normalized units require the original unit")
         if self.status in {FactStatus.AMBIGUOUS, FactStatus.UNKNOWN} and not self.review_reason:
             raise ValueError("ambiguous/unknown facts require an explicit review_reason")
+        if self.supersedes_fact_id == self.fact_id:
+            raise ValueError("a fact cannot supersede itself")
         return self
 
     @property
@@ -99,14 +112,22 @@ class ClinicalFact(BaseModel):
         return bool(self.source.resource_type and self.source.resource_id)
 
     @property
+    def reconciliation_key(self) -> str:
+        if self.logical_key:
+            return self.logical_key
+        if self.code and self.code_system:
+            return f"{self.fact_type}|{self.code_system}|{self.code}"
+        return self.fact_type
+
+    @property
     def safe_default_surface(self) -> bool:
-        """Only confirmed, fully traceable facts enter the quiet/default clinical view.
+        """Only traceable, confirmed, non-cancelled facts enter quiet/default views."""
 
-        Ambiguous or unknown facts are not discarded; they belong in a review/attention
-        path so uncertainty is visible instead of converted into confident prose.
-        """
-
-        return self.status == FactStatus.CONFIRMED and self.provenance_complete
+        return (
+            self.status == FactStatus.CONFIRMED
+            and self.provenance_complete
+            and self.assertion_stage != AssertionStage.CANCELLED
+        )
 
 
 class TruthEnvelope(BaseModel):
@@ -121,6 +142,13 @@ class TruthEnvelope(BaseModel):
         wrong_patient = [f.fact_id for f in self.facts if f.patient_ref != self.patient_ref]
         if wrong_patient:
             raise ValueError(f"cross-patient facts rejected: {wrong_patient}")
+        known = set(ids)
+        broken_supersedes = [
+            f.fact_id for f in self.facts
+            if f.supersedes_fact_id and f.supersedes_fact_id not in known
+        ]
+        if broken_supersedes:
+            raise ValueError(f"supersedes references missing facts: {broken_supersedes}")
         return self
 
     def provenance_coverage(self) -> float:
