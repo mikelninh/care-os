@@ -15,11 +15,7 @@ class FactStatus(str, Enum):
 
 
 class AssertionStage(str, Enum):
-    """Maturity of the source assertion, independent from model confidence.
-
-    A preliminary microbiology result can be perfectly extracted (confidence=1.0)
-    while still being preliminary. CareOS must never collapse those two concepts.
-    """
+    """Maturity of the source assertion, independent from model confidence."""
 
     UNKNOWN = "unknown"
     PRELIMINARY = "preliminary"
@@ -62,8 +58,9 @@ class ClinicalFact(BaseModel):
     """Canonical, source-grounded fact used by CareOS downstream views.
 
     Clinical time, source maturity, extraction confidence and review state are
-    deliberately separate dimensions. A fact without provenance is invalid by
-    construction.
+    deliberately separate dimensions. `blocks_fact_types` is used only for explicit
+    review barriers: e.g. an unparsed newer lab document can prevent an older renal
+    value from being misrepresented as the current state.
     """
 
     fact_id: str = Field(min_length=1)
@@ -91,6 +88,7 @@ class ClinicalFact(BaseModel):
 
     contradiction_group: str | None = None
     supersedes_fact_id: str | None = None
+    blocks_fact_types: tuple[str, ...] = ()
     review_reason: str | None = None
 
     @model_validator(mode="after")
@@ -103,6 +101,8 @@ class ClinicalFact(BaseModel):
             raise ValueError("ambiguous/unknown facts require an explicit review_reason")
         if self.supersedes_fact_id == self.fact_id:
             raise ValueError("a fact cannot supersede itself")
+        if self.blocks_fact_types and self.status == FactStatus.CONFIRMED:
+            raise ValueError("review barriers must not be confirmed facts")
         return self
 
     @property
@@ -121,8 +121,6 @@ class ClinicalFact(BaseModel):
 
     @property
     def safe_default_surface(self) -> bool:
-        """Only traceable, confirmed, non-cancelled facts enter quiet/default views."""
-
         return (
             self.status == FactStatus.CONFIRMED
             and self.provenance_complete
@@ -142,8 +140,7 @@ class TruthEnvelope(BaseModel):
         wrong_patient = [f.fact_id for f in self.facts if f.patient_ref != self.patient_ref]
         if wrong_patient:
             raise ValueError(f"cross-patient facts rejected: {wrong_patient}")
-        # supersedes_fact_id may legitimately point to a fact from another source
-        # envelope. Cross-source lineage is validated by the reconciliation layer.
+        # supersedes_fact_id may point across source envelopes; reconciliation validates it.
         return self
 
     def provenance_coverage(self) -> float:
