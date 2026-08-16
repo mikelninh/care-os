@@ -15,7 +15,10 @@ from app.agent_execution_store import InMemoryDelegationStore
 from app.agent_policy import AgentDelegation, AgentOperation
 from app.agent_readiness import agent_gate_manifest
 from app.agent_redteam import run_containment_suite
+from app.clinical_truth import AssertionStage, ClinicalFact, SourceKind, SourceRef, TruthEnvelope
+from app.impact import aggregate_results, score_pilot_task
 from app.readiness_gates import gate_manifest
+from app.reconciliation import reconcile_truth
 from app.specialties import SPECIALTY_PACKS
 
 NOW = datetime.now(timezone.utc)
@@ -100,11 +103,70 @@ def model_projection_evidence() -> dict:
     }
 
 
+def impact_integrity_evidence() -> dict:
+    failed = score_pilot_task("failed-fast", 10, 10, success=False)
+    forged = score_pilot_task("valid", 10, 60, success=True)
+    forged["saved_minutes"] = 999_999
+    aggregate = aggregate_results([failed, forged])
+    return {
+        "failed_gross_saved_minutes": failed["gross_saved_minutes"],
+        "failed_credited_saved_minutes": failed["saved_minutes"],
+        "forged_client_saved_minutes": 999_999,
+        "server_recomputed_total_saved_minutes": aggregate["total_saved_minutes"],
+        "failed_tasks_credited_minutes": aggregate["failed_tasks_credited_minutes"],
+    }
+
+
+def cancellation_evidence() -> dict:
+    source_old = SourceRef(kind=SourceKind.DOCUMENT, system="synthetic-lis", document_id="micro-old", evidence_span="E. coli")
+    source_cancel = SourceRef(kind=SourceKind.DOCUMENT, system="synthetic-lis", document_id="micro-cancel", evidence_span="cancelled")
+    old = ClinicalFact(
+        fact_id="micro-old",
+        patient_ref="p1",
+        fact_type="microbiology",
+        logical_key="culture-1",
+        value_original="E. coli",
+        effective_time=NOW - timedelta(hours=2),
+        assertion_stage=AssertionStage.FINAL,
+        source=source_old,
+    )
+    cancellation = ClinicalFact(
+        fact_id="micro-cancel",
+        patient_ref="p1",
+        fact_type="microbiology",
+        logical_key="culture-1",
+        value_original="cancelled",
+        effective_time=NOW - timedelta(hours=1),
+        assertion_stage=AssertionStage.CANCELLED,
+        supersedes_fact_id="micro-old",
+        source=source_cancel,
+    )
+    result = reconcile_truth([TruthEnvelope(patient_ref="p1", facts=[old, cancellation])])
+    return {
+        "current": [f.fact_id for f in result.current],
+        "superseded": [f.fact_id for f in result.superseded],
+        "cancelled": [f.fact_id for f in result.cancelled],
+        "safe": "micro-old" not in {f.fact_id for f in result.current},
+    }
+
+
+def browser_binding_evidence() -> dict:
+    js = (ROOT / "app" / "static" / "app.js").read_text(encoding="utf-8")
+    return {
+        "focus_response_guard": "if(requestId!==focusRequestId||patientId!==active)return" in js,
+        "timeline_response_guard": "if(requestId!==timelineRequestId||patientId!==active)return" in js,
+        "patient_path_encoded": "/api/patients/${encodeURIComponent(patientId)}/timeline" in js,
+    }
+
+
 def main() -> int:
     replay = replay_contention()
     specialties = specialty_evidence()
     hostile = hostile_agent_evidence()
     projection = model_projection_evidence()
+    impact = impact_integrity_evidence()
+    cancellation = cancellation_evidence()
+    browser = browser_binding_evidence()
     core = gate_manifest()
     agents = agent_gate_manifest()
 
@@ -130,6 +192,15 @@ def main() -> int:
             and projection["all_source_linked"],
             projection,
         ),
+        check(
+            "impact-integrity",
+            impact["failed_credited_saved_minutes"] == 0
+            and impact["failed_tasks_credited_minutes"] == 0
+            and impact["server_recomputed_total_saved_minutes"] == 9.0,
+            impact,
+        ),
+        check("cancelled-clinical-assertion", cancellation["safe"], cancellation),
+        check("browser-patient-response-binding", all(browser.values()), browser),
         check(
             "live-data-locks",
             core.get("live_patient_data_allowed") is False
@@ -161,6 +232,11 @@ def main() -> int:
         },
         {
             "severity": "HIGH",
+            "id": "context-launch-resolver",
+            "gap": "The short-lived patient-context binding contract exists, but no real provider context-token resolver, revocation/replay store or encounter-level hospital launcher has been integrated.",
+        },
+        {
+            "severity": "HIGH",
             "id": "audit-multiprocess",
             "gap": "Local tamper-evident audit-chain file is evidence scaffolding, not a concurrent multi-process immutable production audit sink.",
         },
@@ -168,6 +244,16 @@ def main() -> int:
             "severity": "HIGH",
             "id": "model-free-text-phi",
             "gap": "Fixed model projection removes direct identifier fields but scalar clinical values may still contain identifiers/free text; live model use therefore remains blocked pending provider-side PHI/DLP policy.",
+        },
+        {
+            "severity": "HIGH",
+            "id": "document-malware-ocr-boundary",
+            "gap": "Document text/candidate counts are bounded, but a production PDF/scan ingestion service still needs malware scanning, file-type validation, parser sandboxing and OCR-specific adversarial tests.",
+        },
+        {
+            "severity": "HIGH",
+            "id": "production-load-backpressure",
+            "gap": "Internal concurrency/budget tests do not replace target-environment load tests, source-system back-pressure, circuit breakers, queue limits, recovery drills or production SLO evidence.",
         },
         {
             "severity": "HIGH",
@@ -187,7 +273,7 @@ def main() -> int:
     ]
 
     report = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "generated_at": NOW.isoformat(),
         "scope": "whole-platform synthetic/deidentified adversarial stress evidence",
         "production_claim": "not-production-ready",
