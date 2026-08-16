@@ -14,6 +14,7 @@ Architecture decisions are durable constraints. If a future implementation needs
 | [ADR-008](ADR-008-composition-not-forks.md) | Scale by composition, not hospital/specialty core forks |
 | [ADR-009](ADR-009-national-rails-first.md) | Consume national/EU rails before inventing private equivalents |
 | [ADR-010](ADR-010-open-connector-contract.md) | Vendor-specific integrations stay behind an open stable connector contract |
+| [ADR-011](ADR-011-agents-delegated-principals.md) | Agents are separately identified, narrowly delegated principals, never human-session proxies |
 
 ## ADR template
 
