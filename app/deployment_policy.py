@@ -44,13 +44,25 @@ def _is_loopback_url(url: str) -> bool:
     return parsed.hostname in {"localhost", "127.0.0.1", "::1"}
 
 
-def assert_fhir_source_allowed(mode: DataMode, base_url: str, *, external_deidentified_ack: bool = False) -> None:
-    """Prevent the integration-lab routes from bypassing the patient-data gate.
+def _assert_clean_service_url(base_url: str) -> None:
+    parsed = urlparse(base_url)
+    if parsed.username or parsed.password:
+        raise DeploymentBlocked("clinical source URL must not embed credentials")
+    if parsed.query or parsed.fragment:
+        raise DeploymentBlocked("clinical source base URL must not contain query or fragment")
 
-    Synthetic mode is intentionally local-only. A de-identified evaluation may use an
-    external source only with an explicit deployment acknowledgement. Live external
-    clinical sources require the live-readonly mode, which itself remains gate-locked.
+
+def assert_fhir_source_allowed(mode: DataMode, base_url: str, *, external_deidentified_ack: bool = False) -> None:
+    """Prevent FHIR adapters from bypassing the patient-data deployment gate.
+
+    This check belongs in the adapter construction path, not only in documentation or
+    the public API. Synthetic mode is local-only. De-identified evaluation may use an
+    external source only after explicit acknowledgement. Live sources remain governed
+    by live-readonly mode and must additionally flow through authenticated clinical
+    orchestration rather than the public integration-lab endpoints.
     """
+
+    _assert_clean_service_url(base_url)
 
     if mode == DataMode.SYNTHETIC:
         if not _is_loopback_url(base_url):
@@ -72,3 +84,18 @@ def assert_fhir_source_allowed(mode: DataMode, base_url: str, *, external_deiden
         return
 
     raise DeploymentBlocked("FHIR source is not allowed in transactional mode")
+
+
+def assert_public_fhir_integration_route_allowed(mode: DataMode) -> None:
+    """Keep lab/demo FHIR routes from becoming an accidental live-PHI API.
+
+    A future live-readonly deployment must use authenticated identity, treatment-context
+    authorization, source-state checks and required audit through ClinicalReadCoordinator.
+    The current public integration routes are deliberately never that production path.
+    """
+
+    if mode in {DataMode.SYNTHETIC, DataMode.DEIDENTIFIED_EVALUATION}:
+        return
+    raise DeploymentBlocked(
+        "public FHIR integration routes are disabled for live patient data; use authenticated clinical orchestration"
+    )
