@@ -70,8 +70,6 @@ def resolve_patient_identity(incoming: PatientIdentityRecord, candidates: list[P
     if len(exact) == 1:
         candidate, shared = exact[0]
         candidate_strong = _verified_strong(candidate)
-        # If both records carry verified identifiers from the same identifier system
-        # but disagree on value/issuer, require review/conflict rather than trusting one.
         for inc in incoming_strong:
             for cand in candidate_strong:
                 if inc[0] == cand[0] and inc != cand:
@@ -80,13 +78,12 @@ def resolve_patient_identity(incoming: PatientIdentityRecord, candidates: list[P
             decision=IdentityDecision.EXACT,
             candidate_ref=candidate.local_ref,
             reason="unique shared verified strong identifier",
-            matched_identifiers=sorted(shared),
+            matched_identifiers=sorted(shared, key=lambda item: (item[0], item[1], item[2] or "")),
         )
 
     if len(exact) > 1:
         return IdentityResolution(decision=IdentityDecision.CONFLICT, reason="verified strong identifier maps to multiple candidates")
 
-    # Supporting/demographic similarity may help a human, but does not create truth.
     demographic_candidates = [
         c for c in candidates
         if incoming.display_name and incoming.birth_date
