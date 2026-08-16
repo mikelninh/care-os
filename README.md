@@ -2,9 +2,13 @@
 
 > **Patient history without the hunt. Document once, reuse safely.**
 
+## About
+
 CareOS is a clinician-first workflow layer for fragmented healthcare systems.
 
 It is designed to sit **beside** existing KIS/PVS/EHR systems, not replace them: bring together the few patient facts that matter now, keep every fact traceable to its source, surface what is missing or contradictory, and prepare documentation / handover for human review.
+
+**Current focus:** Infectiology first, with reusable specialty packs for Oncology and Neurology, plus country, language, patient/family and care-coordination layers.
 
 ## Try it
 
