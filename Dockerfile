@@ -11,8 +11,9 @@ RUN groupadd --system --gid 10001 careos \
     && useradd --system --uid 10001 --gid careos --create-home --home-dir /home/careos careos
 
 COPY requirements.txt ./requirements.txt
+COPY requirements.lock ./requirements.lock
 RUN python -m pip install --upgrade pip \
-    && python -m pip install --requirement requirements.txt
+    && python -m pip install --requirement requirements.lock
 
 COPY --chown=careos:careos app ./app
 COPY --chown=careos:careos architecture ./architecture
