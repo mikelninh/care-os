@@ -5,7 +5,7 @@ import pytest
 from app.agent_execution_store import InMemoryDelegationStore, DelegationState
 from app.agent_identity import RevocationSet, WorkloadIdentity
 from app.agent_policy import AgentDelegation, AgentOperation, AgentRequest
-from app.agent_runtime import AgentGateway
+from app.agent_runtime import AgentExecutionState, AgentGateway
 from app.agent_tool_proxy import AgentToolProxy
 from app.agent_tools import synthetic_sjk_registry
 
@@ -82,7 +82,7 @@ def test_workload_identity_is_bound_to_agent_org_version_and_audience():
 
 
 def test_tool_proxy_has_no_bypass_for_unregistered_or_cross_patient_request():
-    gateway = AgentGateway(delegation=_delegation(), registry=synthetic_sjk_registry())
+    gateway = AgentGateway(delegation=_delegation(), registry=synthetic_sjk_registry(), execution=AgentExecutionState(started_at=NOW))
     proxy = AgentToolProxy(gateway, {"read-clinical-context": lambda req: {"ok": True}})
     assert proxy.call(_request(), now=NOW).payload == {"ok": True}
     bad = _request().model_copy(update={"patient_ref": "patient-2"})
