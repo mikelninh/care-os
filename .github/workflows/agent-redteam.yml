@@ -1,0 +1,38 @@
+name: agent-redteam
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/agent_*.py'
+      - 'tests/test_agent*.py'
+      - 'scripts/agent_redteam_report.py'
+      - '.github/workflows/agent-redteam.yml'
+  pull_request:
+    paths:
+      - 'app/agent_*.py'
+      - 'tests/test_agent*.py'
+      - 'scripts/agent_redteam_report.py'
+      - '.github/workflows/agent-redteam.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  containment:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12.13'
+      - name: Install locked dependencies
+        run: pip install --requirement requirements.lock
+      - name: Run agent-specific tests
+        run: pytest -q tests/test_agent_policy.py tests/test_agent_worker.py tests/test_agent_phase1.py tests/test_agent_redteam.py tests/test_agent_phases4_7.py tests/test_synthetic_agent.py
+      - name: Generate hostile-worker containment evidence
+        run: python scripts/agent_redteam_report.py
+      - uses: actions/upload-artifact@v7
+        with:
+          name: careos-agent-redteam-evidence
+          path: artifacts/agent-redteam-report.json
