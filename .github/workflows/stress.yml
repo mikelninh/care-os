@@ -33,7 +33,7 @@ jobs:
           assert d['dataset']['count'] == 500
           assert 'critical_silent_contradiction_misses' in d
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: careos-unseen-stress-report
           path: data/redteam_unseen_after_hardening.json
