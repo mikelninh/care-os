@@ -21,10 +21,12 @@ class ExtractedCandidate(BaseModel):
 
     Candidates may come from a deterministic parser or model. They do not become
     clinical facts until the cited character span is proven to match the source text.
+    Normalization is optional but can never replace the original source value.
     """
 
     fact_type: str = Field(min_length=1)
     value_original: Any
+    value_normalized: Any | None = None
     evidence_start: int = Field(ge=0)
     evidence_end: int = Field(gt=0)
     evidence_quote: str = Field(min_length=1)
@@ -32,6 +34,7 @@ class ExtractedCandidate(BaseModel):
     code: str | None = None
     code_system: str | None = None
     unit_original: str | None = None
+    unit_normalized: str | None = None
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     status: FactStatus = FactStatus.CONFIRMED
     review_reason: str | None = None
@@ -41,6 +44,10 @@ class ExtractedCandidate(BaseModel):
     def validate_offsets(self) -> "ExtractedCandidate":
         if self.evidence_end <= self.evidence_start:
             raise ValueError("evidence_end must be greater than evidence_start")
+        if self.value_normalized is not None and self.value_original is None:
+            raise ValueError("normalized value requires original value")
+        if self.unit_normalized and not self.unit_original:
+            raise ValueError("normalized unit requires original unit")
         if self.status in {FactStatus.AMBIGUOUS, FactStatus.UNKNOWN} and not self.review_reason:
             raise ValueError("ambiguous/unknown candidate requires review_reason")
         return self
@@ -76,9 +83,11 @@ def candidate_to_fact(
         patient_ref=document.patient_ref,
         fact_type=candidate.fact_type,
         value_original=candidate.value_original,
+        value_normalized=candidate.value_normalized,
         code=candidate.code,
         code_system=candidate.code_system,
         unit_original=candidate.unit_original,
+        unit_normalized=candidate.unit_normalized,
         effective_time=candidate.effective_time,
         recorded_time=document.recorded_time,
         source=SourceRef(
