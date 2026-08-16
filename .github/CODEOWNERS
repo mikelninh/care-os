@@ -1,0 +1,36 @@
+# Default repository owner
+* @mikelninh
+
+# Safety-critical architecture and release policy
+/docs/ARCHITECTURE_V2.md @mikelninh
+/docs/SAFETY_CASE.md @mikelninh
+/docs/GATES.md @mikelninh
+/docs/adr/ @mikelninh
+/architecture/ @mikelninh
+/app/readiness_gates.py @mikelninh
+/app/deployment_policy.py @mikelninh
+
+# Clinical truth / identity
+/app/clinical_truth.py @mikelninh
+/app/patient_identity.py @mikelninh
+/app/document_pipeline.py @mikelninh
+/app/reconciliation.py @mikelninh
+/app/contradictions.py @mikelninh
+/app/extractors/ @mikelninh
+/benchmark/ @mikelninh
+
+# Security / access / audit
+/app/auth_oidc.py @mikelninh
+/app/access_policy.py @mikelninh
+/app/context_launch.py @mikelninh
+/app/clinical_session.py @mikelninh
+/app/audit.py @mikelninh
+/app/audit_chain.py @mikelninh
+/SECURITY.md @mikelninh
+
+# Integration / production runtime
+/app/connectors/ @mikelninh
+/app/fhir_adapter.py @mikelninh
+/integration/ @mikelninh
+/Dockerfile @mikelninh
+/.github/workflows/ @mikelninh
