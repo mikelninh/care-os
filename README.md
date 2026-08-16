@@ -2,86 +2,308 @@
 
 > **Patient history without the hunt. Document once, reuse safely.**
 
-## About
+[![tests](https://github.com/mikelninh/care-os/actions/workflows/test.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/test.yml)
+[![supply-chain](https://github.com/mikelninh/care-os/actions/workflows/supply-chain-security.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/supply-chain-security.yml)
 
-CareOS is a clinician-first workflow layer for fragmented healthcare systems.
+## What CareOS is
 
-It is designed to sit **beside** existing KIS/PVS/EHR systems, not replace them: bring together the few patient facts that matter now, keep every fact traceable to its source, surface what is missing or contradictory, and prepare documentation / handover for human review.
+CareOS is a **clinician-first, federated clinical context layer** for fragmented healthcare systems.
 
-**Current focus:** Infectiology first, with reusable specialty packs for Oncology and Neurology, plus country, language, patient/family and care-coordination layers.
+It sits **beside** existing KIS/PVS/EHR/LIS/RIS/ePA systems rather than replacing them. The goal is to make the few patient facts that matter now immediately usable while keeping source, freshness, uncertainty, contradiction and open work visible.
+
+CareOS is not designed to become a new national patient database. Routine identifiable patient data stays in the provider data plane or a dedicated provider-controlled tenant; the shared control plane distributes software, packs, policy/configuration and non-PHI operational metadata.
+
+**Current product wedge:** Infectiology first.  
+**Architecture direction:** one core + specialty + country + language + audience layers.
+
+---
+
+## Reference Architecture readiness
+
+# **10 / 10 — proposal / reference-architecture package**
+
+This score means the architecture is now complete enough to put in front of a **Chefarzt, hospital CIO/CISO/Datenschutz team, government architect, gematik/public-sector stakeholder or funding partner for serious review**.
+
+It does **not** mean CareOS is production-approved, certified, clinically validated, or cleared for identifiable live patient data.
+
+The reference package now includes:
+
+- [**Reference Architecture V2**](docs/ARCHITECTURE_V2.md) — canonical technical architecture;
+- [**German government reference architecture**](docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md) — federated national proposal;
+- [**Government one-pager (DE)**](docs/GOVERNMENT_ONE_PAGER_DE.md);
+- [**Deployment patterns**](docs/DEPLOYMENT_PATTERNS.md) — on-prem/private, dedicated provider tenant, federated managed service;
+- [**Trust boundaries & data flow**](docs/TRUST_AND_DATA_FLOW.md);
+- [**Germany / EU integration map**](docs/NATIONAL_INTEGRATION_MAP.md);
+- [**Technical documentation index**](docs/TECHNICAL_DOCUMENTATION_INDEX.md);
+- [**Assurance crosswalk**](docs/ASSURANCE_CROSSWALK.md);
+- [**Responsibility model**](docs/RESPONSIBILITY_MODEL.md);
+- [**Public-sector procurement / anti-lock-in requirements**](docs/PROCUREMENT_REQUIREMENTS.md);
+- [**Architecture Decision Records**](docs/adr/README.md);
+- [**Reference-architecture scorecard**](docs/REFERENCE_ARCHITECTURE_SCORECARD.md);
+- machine-readable [`architecture/reference-architecture.json`](architecture/reference-architecture.json) with CI invariants.
+
+### The central architecture decision
+
+```text
+                            CAREOS CONTROL PLANE
+
+          releases · pack versions · policy/config bundles
+       terminology metadata · guidelines · non-PHI operations
+                                 │
+                       no routine identifiable PHI
+                                 │
+═════════════════════════════════╪════════════════════════════════════
+                                 │
+                    PROVIDER / HOSPITAL DATA PLANE
+                                 │
+ KIS/EHR ─┐                      │
+ LIS/Micro├───> Connector Gateway / Integration Boundary
+ RIS/PACS ┤                      │
+ PVS      ┤                      ▼
+ ePA/TI   ┤              Identity + Encounter Layer
+ KIM      ┤                      │
+ Docs     ┘                      ▼
+                         Clinical Truth Layer
+                                 │
+           ┌─────────────────────┼─────────────────────┐
+           ▼                     ▼                     ▼
+     provenance/version     temporal/freshness    terminology/units
+           │                     │                     │
+           └─────────────────────┼─────────────────────┘
+                                 ▼
+                       Reconciliation Engine
+                contradiction · supersession · review
+                                 │
+                                 ▼
+                       Policy Enforcement Point
+                                 │
+         ┌───────────────────────┼───────────────────────┐
+         ▼                       ▼                       ▼
+      Clinician             Patient/family         Coordination
+```
+
+**Keep systems of record. Standardize the trustworthy context layer above them.**
+
+---
 
 ## Try it
 
-**Clinician demo:** https://mikelninh.github.io/careos/  
-**Chefarzt / pilot view:** https://mikelninh.github.io/careos/chef.html
+### SJK Infectiology synthetic reference test
 
-> Public demos use **synthetic data only** and are not for clinical use.
+**Clinician / team test:** https://mikelninh.github.io/careos/sjk/  
+**Chefarzt / leadership view:** https://mikelninh.github.io/careos/sjk/chef.html
+
+### General CareOS demo
+
+**Clinician demo:** https://mikelninh.github.io/careos/
+
+> All public demos use **synthetic data only** and are not for clinical use. The SJK reference environment is a product-research prototype, not an official hospital system or endorsement.
 
 ![CareOS clinician focus](docs/screenshots/clinical-focus.svg)
 
-## Production-readiness status
+---
 
-CareOS does **not** call itself production-ready because a demo works.
+## Production readiness is deliberately separate
 
-It graduates through evidence-backed gates:
+CareOS graduates through **evidence-backed gates, not version numbers**.
 
-| Gate | Status |
-|---|---|
-| Scope & safety boundary | **EXTERNAL REVIEW** |
-| Clinical truth | **BLOCKED** |
-| German interoperability | **PARTIAL** |
-| Privacy & security | **PARTIAL** |
-| Production reliability | **PARTIAL** |
-| Regulatory & quality | **EXTERNAL REVIEW** |
-| Invisible workflow integration | **PARTIAL** |
-| Hospital deployment kit | **PARTIAL** |
-| Repeatable multi-hospital deployment | **PARTIAL** |
-| National / EU scale | **BLOCKED** |
+| Gate | Status | Main blocker |
+|---|---|---|
+| G0 Scope & safety boundary | **EXTERNAL REVIEW** | independent clinical-safety + MDR/MDSW assessment |
+| G1 Clinical truth | **BLOCKED** | safe but unusably conservative document recall/review burden |
+| G2 German interoperability | **PARTIAL** | real KIS/LIS/vendor sandbox + terminology/sync evidence |
+| G3 Privacy & security | **PARTIAL** | real provider IdP/KMS/audit/DSFA/pentest evidence |
+| G4 Production reliability | **PARTIAL** | target-environment recovery/failure/SLO evidence |
+| G5 Regulatory & quality | **EXTERNAL REVIEW** | formal classification/applicability + appropriate QMS lifecycle |
+| G6 Invisible workflow integration | **PARTIAL** | real KIS patient-context launch / no-second-search proof |
+| G7 Hospital deployment kit | **PARTIAL** | hospital-specific completion + responsible approvals |
+| G8 Repeatable deployment | **PARTIAL** | Hospital A + different Hospital B/vendor without core fork |
+| G9 National / EU scale | **BLOCKED** | actual national/EU integration + multi-site evidence |
 
-**No gate is marked PASS yet. Identifiable live patient data remains locked.**
+**No production gate is marked PASS yet. Identifiable live patient data remains locked.**
 
 The lock is enforced in code: `CAREOS_DATA_MODE=live-readonly` refuses startup while core gates G0–G5 are incomplete; transactional/write-back mode is unsupported by the current release policy.
 
-See [`docs/GATES.md`](docs/GATES.md), [`docs/SAFETY_CASE.md`](docs/SAFETY_CASE.md) and [`docs/ARCHITECTURE_V1.md`](docs/ARCHITECTURE_V1.md).
+See [GATES](docs/GATES.md), [Safety Case](docs/SAFETY_CASE.md), [Architecture V2](docs/ARCHITECTURE_V2.md) and [Hospital Assurance Pack](docs/HOSPITAL_ASSURANCE_PACK.md).
+
+---
 
 ## Why CareOS
 
-A clinician should not have to reconstruct one patient across KIS, lab, microbiology, nursing notes, PDFs, fax and phone calls.
+A clinician should not have to reconstruct one patient across KIS, laboratory, microbiology, nursing notes, PDFs, fax and phone calls.
 
-CareOS asks four questions:
+CareOS asks:
 
-1. **What matters right now?**
+1. **What matters now?**
 2. **Where did it come from?**
-3. **What is still missing, contradictory or pending?**
-4. **Can this documentation be prepared once and reused safely?**
+3. **How current is it?**
+4. **What is still pending, contradictory, unavailable or unknown?**
+5. **What work can be prepared once and safely reused?**
 
-The north-star hypothesis is measurable:
+North-star hypothesis:
 
-> **Can CareOS return meaningful administrative time to clinicians without increasing correction rate, safety risk or cognitive effort?**
+> **Can CareOS return meaningful time to clinicians without making patient information less trustworthy, less current, harder to audit, or more cognitively expensive?**
 
-That is a hypothesis to test — not a product claim.
+That is a hypothesis to measure — not a savings claim.
+
+---
+
+## Clinical truth architecture
+
+Source systems and AI/extractors do **not** write directly into the clinician UI.
+
+```text
+FHIR / KIS / LIS / documents
+             ↓
+       source / connector
+             ↓
+      untrusted candidates
+             ↓
+ exact source-evidence verification
+             ↓
+    ClinicalFact / TruthEnvelope
+             ↓
+ identity · provenance · time · units · terminology · source state
+             ↓
+ reconciliation / contradiction / review / freshness
+             ↓
+        policy enforcement
+             ↓
+          clinician view
+```
+
+A surfaced clinical fact is expected to retain its original value/wording, source, source/resource ID, version/timestamps where available, clinical effective time separately from ingestion time, model/parser version, trust/review state and exact evidence for document-derived facts.
+
+### AI is not the truth authority
+
+Models may propose structure, but they may not:
+
+- silently create trusted clinical facts;
+- invent source offsets or clinical dates;
+- resolve contradictory sources by confidence alone;
+- merge patient identities;
+- turn missing data into a negative finding;
+- autonomously choose treatment or write back into production systems.
+
+See [`app/clinical_truth.py`](app/clinical_truth.py), [`app/document_pipeline.py`](app/document_pipeline.py), [`app/extractors/model_schema.py`](app/extractors/model_schema.py) and [ADR-004](docs/adr/ADR-004-models-untrusted.md).
+
+---
+
+## We actively try to break the truth layer
+
+The original unseen adversarial benchmark exposed severe brittleness: **1.2% all-fields exact** and **126 silent contradiction misses** across 500 synthetic cases.
+
+Instead of tuning more regexes against that holdout, CareOS changed architecture.
+
+Frozen **Holdout #3** after the evidence/reconciliation/review-barrier redesign:
+
+| Metric | Result |
+|---|---:|
+| Precision | **100%** |
+| Provenance coverage | **100%** |
+| Unsupported claims | **0** |
+| Wrong-source claims | **0** |
+| Critical silent field misses | **0** |
+| Critical silent contradiction misses | **0** |
+| Recall | **26.32%** |
+| Review case rate | **100%** |
+
+This is **not a pass**. The failure mode improved from unsupported certainty toward explicit abstention, but a system requiring review on every case has not solved the workflow. G1 therefore remains **BLOCKED**.
+
+Holdout #3 is frozen historical evidence and is not tuning data.
+
+See [Benchmark](docs/BENCHMARK.md).
+
+---
+
+## German interoperability strategy
+
+CareOS is designed to consume German/EU infrastructure rather than invent a parallel national stack.
+
+Target paths include:
+
+- **ISiK / FHIR** for hospital interoperability where applicable;
+- **ISiP** for nursing/care contexts where applicable;
+- **provider / TI identities** and treatment-context signals;
+- **PoPP** where appropriate as a cryptographically grounded treatment-context signal;
+- **ePA / TI / KIM** as ecosystem rails, not products to replace;
+- **EHDS** interoperability/logging requirements where CareOS/components ultimately fall in scope.
+
+Current evidence includes real FHIR transport, bounded Bundle pagination and pinned gematik ISiK5 structural/profile validation in CI.
+
+**ISiK profile validation is explicitly not treated as proof of terminology validity or gematik confirmation.**
+
+See [National/EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) and [FHIR Integration](docs/FHIR_INTEGRATION.md).
+
+---
+
+## Security, privacy and sovereignty architecture
+
+The reference architecture defaults to **provider-side PHI**.
+
+Current foundations include:
+
+- asymmetric OIDC/JWT verification contract;
+- role/scope/treatment-context authorization;
+- short-lived identity/organisation/patient-bound context launch;
+- deterministic patient identity safeguards;
+- break-glass semantics;
+- secure-read orchestration that can fail closed;
+- explicit `current / stale / unavailable / unknown` source state;
+- global / connector-specific kill switches;
+- keyed audit pseudonyms and tamper-evident local audit chain;
+- provider-side data-flow architecture;
+- DSFA/DPIA and AVV/DPA support material;
+- deployment/rollback + incident-response dossiers;
+- scheduled Python dependency auditing;
+- CycloneDX SBOM artifact generation;
+- Dependabot for Python and GitHub Actions.
+
+Still missing before live PHI: real hospital IdP/context integration, protected central production audit, KMS/secrets/encryption deployment, target-hospital approvals/contracts, applicable C5/customer-control evidence, independent penetration testing and remaining G0–G5 evidence.
+
+See [Trust & Data Flow](docs/TRUST_AND_DATA_FLOW.md), [Security Policy](SECURITY.md), [Threat Model](docs/THREAT_MODEL.md), [Assurance Crosswalk](docs/ASSURANCE_CROSSWALK.md) and [Responsibility Model](docs/RESPONSIBILITY_MODEL.md).
+
+---
+
+## Three deployment patterns
+
+The same safety contracts support:
+
+1. **Provider on-prem / private infrastructure**;
+2. **Dedicated provider cloud tenant**;
+3. **Federated managed service** — shared control plane + provider-isolated data planes.
+
+An obsolete hospital workstation does not justify weakening browser/TLS/security requirements. The production target is a supported managed browser surface, Citrix/VDI/RDS, or managed device while legacy KIS infrastructure can remain underneath.
+
+See [Deployment Patterns](docs/DEPLOYMENT_PATTERNS.md).
+
+---
 
 ## Infectiology first
 
-The first executable specialty pack is built around infectious-disease workflow.
-
 ![CareOS Infectiology Pack](docs/screenshots/infectiology-pack.svg)
 
-The default view prioritises:
+The first specialty pack prioritises:
 
 - specimen, collection time and organism;
 - preliminary vs final microbiology;
 - susceptibility / resistance;
-- current anti-infective therapy **as documented**, not automatically recommended;
+- anti-infective therapy **as documented**, not automatically recommended;
 - isolation / infection-prevention status;
-- relevant devices and insertion dates;
+- relevant devices;
 - fever / inflammatory-marker trends;
-- pending cultures, screens and follow-ups;
+- pending cultures/screens/follow-ups;
 - provenance for every surfaced fact.
 
-Oncology and Neurology use the same specialty-pack contract rather than becoming separate products.
+Key product rule:
 
-See [`docs/SPECIALTY_PACKS.md`](docs/SPECIALTY_PACKS.md).
+> **Pending ≠ negative. Unavailable ≠ absent.**
+
+Oncology and Neurology are intended to use the same core truth layer rather than become separate products.
+
+See [Specialty Packs](docs/SPECIALTY_PACKS.md).
+
+---
 
 ## One core, many contexts
 
@@ -89,142 +311,73 @@ See [`docs/SPECIALTY_PACKS.md`](docs/SPECIALTY_PACKS.md).
 CareOS Core
    + Specialty Pack
    + Country Pack
-   + Language Pack
-   + Audience View
+   + Language Presentation
+   + Audience Policy/View
 ```
 
 Examples:
 
 - `Core + Infectiology + Germany + German + Clinician`
 - `Core + Oncology + Germany + English + Clinician`
-- `Core + Neurology + Vietnam + Vietnamese + Patient/Family` *(planned)*
+- `Core + Neurology + Vietnam + Vietnamese + Patient/Family` *(future)*
 
-Clinical facts stay structured where possible; presentation language is a separate layer. High-risk translations retain the original source text.
+Clinical facts remain structured where possible. Translation is a presentation layer; high-risk content retains original source wording.
 
-CareOS also treats the **International Patient Summary (IPS)** as a portable baseline, with country packs adding national identity, terminology, consent and infrastructure rules.
+See [Global Architecture](docs/GLOBAL_ARCHITECTURE.md) and [ADR-008](docs/adr/ADR-008-composition-not-forks.md).
 
-See [`docs/GLOBAL_ARCHITECTURE.md`](docs/GLOBAL_ARCHITECTURE.md).
+---
 
-## Different users, different permissions
+## SJK reference pilot path
 
-The same truth layer does **not** mean everyone gets the same screen or access.
-
-- **Clinician** — clinical context necessary for care.
-- **Patient & Family** — plain-language timeline, medications, appointments, documents and permissioned sharing *(planned)*.
-- **Payer / Care Coordination** — purpose-limited minimum dataset only; never a mirror of the clinician record.
-
-See [`docs/PAYER_VIEW.md`](docs/PAYER_VIEW.md) and [`docs/V10_PATIENT_FAMILY.md`](docs/V10_PATIENT_FAMILY.md).
-
-## Clinical truth architecture
-
-Source systems and extractors do not write directly into the clinician UI.
+The first external validation path is intentionally small and staged:
 
 ```text
-FHIR / KIS / LIS / documents
-             ↓
-      untrusted/source adapter
-             ↓
-    ClinicalFact / TruthEnvelope
-             ↓
- provenance · time · status · source
-             ↓
- contradiction / review / freshness
-             ↓
-          clinician view
+0. 5–10 clinicians · synthetic workflow test
+        ↓
+1. map the actual workflow + sponsor decision
+        ↓
+2. IT / Datenschutz / security discovery
+        ↓
+3. synthetic/de-identified KIS/LIS sandbox
+        ↓
+4. independent assurance review
+        ↓
+5. shadow workflow study
+        ↓
+6. limited live read-only pilot — only if G0–G5 PASS
+        ↓
+7. second hospital / different vendor
 ```
 
-Document/model extraction is explicitly untrusted. A proposed document-derived fact must cite exact character offsets and a verbatim source quote; unsupported/paraphrased evidence is rejected before the fact can enter the truth layer. Ambiguous or unknown facts are routed to review rather than silently presented as confirmed.
+The synthetic team study records time, wrong answers, missed pending items, source discovery, corrections, coaching, effort and whether clinicians would use the workflow again. It does not automatically declare a pilot successful.
 
-See [`app/clinical_truth.py`](app/clinical_truth.py), [`app/document_pipeline.py`](app/document_pipeline.py) and [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
+See [SJK End-to-End Plan](docs/SJK_END_TO_END_PLAN.md), [Team Test Protocol](docs/SJK_TEAM_TEST_PROTOCOL.md) and [Pilot Measurement Protocol](docs/PILOT_MEASUREMENT_PROTOCOL.md).
 
-## Integration strategy
+---
 
-The adoption path is intentionally incremental:
+## Government / public-sector proposition
 
-```text
-1. Synthetic browser pilot
-        ↓
-2. Hospital network / no-PHI integration proof
-        ↓
-3. Hospital-internal read-only live-data pilot — only after G0–G5 PASS
-        ↓
-4. Repeat across another vendor/hospital
-        ↓
-5. Transactional/write-back programme only if separately justified
-```
+The government-level thesis is deliberately **not** “buy one national CareOS database.”
 
-CareOS includes a real FHIR R4 transport adapter. FHIR data are normalized through the canonical truth layer while retaining resource IDs, resource versions where supplied, and effective/recorded time separately.
+It is:
 
-FHIR search uses bounded same-origin Bundle pagination: pagination loops, cross-origin continuation and max-page truncation fail closed rather than silently returning partial patient truth.
+> **Keep systems of record and national infrastructure. Standardize an interoperable, provenance-preserving clinical context layer above heterogeneous systems.**
 
-CareOS also runs a pinned gematik reference-validator workflow against a synthetic ISiK5 Patient fixture. The validator/plugin versions and SHA-256 digests are pinned in CI.
+Potentially reusable/open contracts:
 
-**This is ISiK validation evidence, not a gematik certification/confirmation claim.** A real KIS/LIS/vendor read-only sandbox remains a G2 blocker.
+- Clinical Fact Contract;
+- Provenance Contract;
+- Connector Capability Contract;
+- Identity/Context Contract;
+- Freshness/Failure Contract;
+- Audit Contract;
+- Specialty-Pack Contract.
 
-See [`docs/FHIR_INTEGRATION.md`](docs/FHIR_INTEGRATION.md) and [`docs/CONNECTOR_SDK.md`](docs/CONNECTOR_SDK.md).
+The public-sector procurement requirements are deliberately implementation-neutral: a government programme could require these properties from CareOS **or competing implementations** and reduce new lock-in.
 
-## Security and privacy architecture
+Start with [Government Reference Architecture](docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md) and [Government One-Pager](docs/GOVERNMENT_ONE_PAGER_DE.md).
 
-The public demo is deliberately **synthetic only**.
-
-Current hardening includes:
-
-- asymmetric OIDC/JWT verification contract with issuer, audience, expiry and signature checks;
-- role/scope/treatment-context authorization;
-- short-lived identity/organisation/patient-bound context launch;
-- elevated break-glass semantics;
-- secure read orchestration that withholds patient truth on authorization failure, source failure/staleness, patient mismatch or required audit failure;
-- global / connector-specific runtime kill switches;
-- provider-controlled data-plane architecture for identifiable clinical data;
-- DSFA/DPIA support, AVV requirements, incident and deployment/rollback dossiers.
-
-Still missing before live PHI: real hospital IdP/context integration, immutable production audit, KMS/secrets/encryption deployment, hospital-specific privacy agreements/approval, applicable German cloud evidence, independent penetration test and the remaining G0–G5 evidence.
-
-See [`docs/HOSPITAL_ASSURANCE_PACK.md`](docs/HOSPITAL_ASSURANCE_PACK.md), [`docs/DATA_FLOW_AND_PRIVACY.md`](docs/DATA_FLOW_AND_PRIVACY.md), [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md), [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) and [`SECURITY.md`](SECURITY.md).
-
-## We actively try to break it
-
-CareOS keeps a frozen **500-case unseen adversarial benchmark** covering allergy, medication, diagnoses, renal function, follow-ups, discharge, contradictions and provenance.
-
-The legacy deterministic document extractor still fails badly on unseen phrasing, including critical silent contradiction misses. Those failures remain public and are why **G1 is BLOCKED**.
-
-We are not fixing that by tuning more regexes against the frozen holdout. The replacement architecture is structured-first, source-span verified, versioned, uncertainty-aware and evaluated on untouched holdouts.
-
-See [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
-
-## Guideline & evidence layer
-
-CareOS does not scrape arbitrary webpages and tell clinicians what treatment to choose.
-
-```text
-official publisher
-       ↓
-change detector
-       ↓
-clinical review
-       ↓
-versioned evidence registry
-       ↓
-local hospital SOP overlay
-       ↓
-patient-context reference
-```
-
-Source updates never silently change patient-specific behaviour.
-
-See [`docs/GUIDELINE_ARCHITECTURE.md`](docs/GUIDELINE_ARCHITECTURE.md).
-
-## Hospital pilot
-
-The first ask remains intentionally small:
-
-> **5–10 clinicians, synthetic cases, ~20 minutes, no patient data, no integration.**
-
-If that demonstrates a real workflow benefit, the next step is not “upload patient data.” It is to complete the assurance/integration gates with hospital IT, Datenschutz, Informationssicherheit and clinical leadership.
-
-The eventual live pilot is measured on time-to-fact, searches/calls/faxes avoided, corrections, provenance, unsupported claims, wrong-patient events, contradiction misses, stale-data handling, review burden and cognitive effort—not on AI usage.
-
-See [`docs/PILOT_MEASUREMENT_PROTOCOL.md`](docs/PILOT_MEASUREMENT_PROTOCOL.md).
+---
 
 ## Run locally
 
@@ -251,9 +404,20 @@ pytest -q
 python -m benchmark.redteam_unseen
 ```
 
+Additional CI includes:
+
+- real HAPI FHIR integration;
+- ISiK5 validation;
+- safety failure injection;
+- G1 development / frozen holdout evidence;
+- guideline change watch;
+- dependency vulnerability audit + CycloneDX SBOM.
+
+---
+
 ## Safety status
 
-**Prototype only. Synthetic data only. Not for clinical use.**
+**Synthetic/public prototype only. Not for clinical use.**
 
 CareOS currently:
 
@@ -261,8 +425,8 @@ CareOS currently:
 - makes no autonomous diagnosis or treatment decisions;
 - does not silently merge ambiguous patient identities;
 - makes provenance part of the clinical-fact contract;
-- distinguishes stale/unavailable from clinically absent;
-- requires human review for uncertain/prepared outputs;
+- distinguishes stale/unavailable/unknown from clinically absent;
+- requires review for uncertain/prepared outputs;
 - exposes benchmark failures instead of hiding them;
 - refuses live-data startup while core assurance gates are incomplete.
 
