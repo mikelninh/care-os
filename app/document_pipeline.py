@@ -14,38 +14,41 @@ from .clinical_truth import (
     TruthEnvelope,
 )
 
+MAX_DOCUMENT_TEXT_CHARS = 5_000_000
+MAX_DOCUMENT_CANDIDATES = 1_000
+
 
 class DocumentInput(BaseModel):
-    patient_ref: str = Field(min_length=1)
-    document_id: str = Field(min_length=1)
-    source_system: str = Field(min_length=1)
-    text: str = Field(min_length=1)
-    document_kind: str | None = None
+    patient_ref: str = Field(min_length=1, max_length=256)
+    document_id: str = Field(min_length=1, max_length=256)
+    source_system: str = Field(min_length=1, max_length=128)
+    text: str = Field(min_length=1, max_length=MAX_DOCUMENT_TEXT_CHARS)
+    document_kind: str | None = Field(default=None, max_length=128)
     recorded_time: datetime | None = None
 
 
 class ExtractedCandidate(BaseModel):
     """Untrusted extractor output; exact source evidence is mandatory for promotion."""
 
-    fact_type: str = Field(min_length=1)
-    logical_key: str | None = None
+    fact_type: str = Field(min_length=1, max_length=256)
+    logical_key: str | None = Field(default=None, max_length=512)
     value_original: Any
     value_normalized: Any | None = None
     evidence_start: int = Field(ge=0)
     evidence_end: int = Field(gt=0)
-    evidence_quote: str = Field(min_length=1)
+    evidence_quote: str = Field(min_length=1, max_length=100_000)
     effective_time: datetime | None = None
-    code: str | None = None
-    code_system: str | None = None
-    unit_original: str | None = None
-    unit_normalized: str | None = None
+    code: str | None = Field(default=None, max_length=256)
+    code_system: str | None = Field(default=None, max_length=1_000)
+    unit_original: str | None = Field(default=None, max_length=256)
+    unit_normalized: str | None = Field(default=None, max_length=256)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     status: FactStatus = FactStatus.CONFIRMED
     assertion_stage: AssertionStage = AssertionStage.UNKNOWN
-    review_reason: str | None = None
-    contradiction_group: str | None = None
-    supersedes_fact_id: str | None = None
-    blocks_fact_types: tuple[str, ...] = ()
+    review_reason: str | None = Field(default=None, max_length=2_000)
+    contradiction_group: str | None = Field(default=None, max_length=512)
+    supersedes_fact_id: str | None = Field(default=None, max_length=512)
+    blocks_fact_types: tuple[str, ...] = Field(default=(), max_length=100)
 
     @model_validator(mode="after")
     def validate_offsets(self) -> "ExtractedCandidate":
@@ -118,6 +121,8 @@ def ingest_document_candidates(
     transformer: str,
     transformer_version: str,
 ) -> TruthEnvelope:
+    if len(candidates) > MAX_DOCUMENT_CANDIDATES:
+        raise ValueError("document candidate count exceeds configured limit")
     facts = [
         candidate_to_fact(
             document,
