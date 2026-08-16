@@ -8,10 +8,10 @@ from .agent_policy import AgentDelegation, AgentOperation, AgentRequest
 class AgentToolProposal(BaseModel):
     """Untrusted model/worker proposal.
 
-    The worker is deliberately unable to choose organisation, patient or encounter.
-    Those authoritative fields are injected from the verified delegation by CareOS.
-    Unknown fields are rejected so a model cannot smuggle policy overrides into the
-    request envelope.
+    The reasoning worker is deliberately unable to choose organisation, patient,
+    encounter, break-glass state, recursion depth or network destination. Those are
+    policy/runtime properties injected by CareOS. Unknown fields are rejected so a
+    model cannot smuggle policy overrides into the request envelope.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -21,9 +21,6 @@ class AgentToolProposal(BaseModel):
     data_categories: set[str] = Field(default_factory=set)
     requested_records: int = Field(default=1, ge=0)
     requested_pages: int = Field(default=1, ge=0)
-    egress_host: str | None = None
-    break_glass: bool = False
-    subagent_depth: int = Field(default=0, ge=0)
 
 
 class AgentDraft(BaseModel):
@@ -49,7 +46,7 @@ def bind_tool_proposal(delegation: AgentDelegation, proposal: AgentToolProposal)
         data_categories=proposal.data_categories,
         requested_records=proposal.requested_records,
         requested_pages=proposal.requested_pages,
-        egress_host=proposal.egress_host,
-        break_glass=proposal.break_glass,
-        subagent_depth=proposal.subagent_depth,
+        egress_host=None,
+        break_glass=False,
+        subagent_depth=0,
     )
