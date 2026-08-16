@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.1",
-  "architecture_version": "2.1",
+  "schema_version": "1.2",
+  "architecture_version": "2.2",
   "baseline_date": "2026-08-16",
   "name": "CareOS Federated Clinical Context Layer",
   "reference_architecture_readiness": {
@@ -24,6 +24,8 @@
     "explicit-unknown-and-failure-state",
     "models-are-untrusted-proposers",
     "agents-are-separate-narrow-delegated-principals",
+    "agent-worker-cannot-choose-authoritative-patient-context",
+    "single-use-agent-delegation",
     "read-write-capability-separation",
     "strong-patient-identity-before-auto-attach",
     "same-patient-context-no-second-search",
@@ -55,7 +57,10 @@
         "terminology-and-temporal-policy",
         "reconciliation-and-review",
         "authorization-policy",
+        "agent-delegation-authority",
+        "agent-workload-identity",
         "agent-gateway",
+        "agent-tool-proxy",
         "provider-audit",
         "clinician-ui"
       ]
@@ -65,11 +70,20 @@
     "connector": ["capabilities", "source-identity", "truth-envelope", "source-state", "version-and-time", "read-write-capability"],
     "clinical_fact": ["patient", "fact-type", "original-value", "source", "source-version", "evidence", "effective-time", "ingestion-time", "transformer-version", "trust-status", "review-state"],
     "access": ["user", "organisation", "role-scope", "patient", "encounter-or-treatment-context", "operation"],
-    "agent_delegation": ["agent-and-version", "human-delegator", "organisation", "patient", "encounter", "task", "tools", "operations", "data-categories", "egress", "budgets", "expiry"],
+    "agent_workload_identity": ["subject", "organisation", "agent", "version", "audience", "credential-id", "short-validity", "revocation"],
+    "agent_delegation": ["unique-jti", "human-delegator", "organisation", "patient", "encounter", "task", "tools", "operations", "data-categories", "budgets", "expiry", "single-use"],
     "agent_tool": ["stable-id-and-version", "effect", "target-system", "data-categories", "egress", "limits", "audit", "human-confirmation"],
+    "agent_worker": ["untrusted-proposals-only", "no-authoritative-patient-context", "no-break-glass", "no-egress-selection", "review-only-source-linked-draft"],
     "failure": ["current", "stale", "unavailable", "unknown", "contradictory", "explicitly-negative"],
     "audit": ["actor", "organisation", "patient-reference", "data-category", "action", "time", "origin", "break-glass-context"],
     "agent_audit": ["human-delegator", "agent-and-version", "delegation", "execution", "patient-reference", "tool", "authorization-decision", "egress", "outcome"]
+  },
+  "agent_operating_modes": {
+    "synthetic": "implemented",
+    "deidentified-sandbox": "implemented-contract",
+    "shadow-live": "implemented-but-locked",
+    "read-only-live": "implemented-but-locked",
+    "consequential": "unsupported"
   },
   "deployment_patterns": [
     "provider-on-prem-or-private-infrastructure",
@@ -96,7 +110,10 @@
     "technical_documentation_index": "docs/TECHNICAL_DOCUMENTATION_INDEX.md",
     "agent_security_model": "docs/AGENT_SECURITY_MODEL.md",
     "agent_production_program": "docs/AGENT_PRODUCTION_PROGRAM.md",
+    "agent_phases_1_7": "docs/AGENT_PHASES_1_7.md",
+    "agent_sjk_study": "docs/SJK_AGENT_STUDY_PROTOCOL.md",
     "agent_security_baseline": "docs/AGENT_SECURITY_BASELINE.md",
+    "agent_network_policy_reference": "deploy/agent-sandbox-networkpolicy.yaml",
     "adrs": "docs/adr/README.md",
     "production_gates": "docs/GATES.md"
   },
@@ -108,6 +125,7 @@
     "no-ehds-conformity-claim",
     "no-live-clinical-safety-validation-claim",
     "no-live-agent-phi-claim",
-    "no-autonomous-clinical-agent-claim"
+    "no-autonomous-clinical-agent-claim",
+    "no-real-sjk-agent-integration-claim"
   ]
 }
