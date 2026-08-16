@@ -13,6 +13,7 @@ class DocumentInput(BaseModel):
     document_id: str = Field(min_length=1)
     source_system: str = Field(min_length=1)
     text: str = Field(min_length=1)
+    document_kind: str | None = None
     recorded_time: datetime | None = None
 
 
