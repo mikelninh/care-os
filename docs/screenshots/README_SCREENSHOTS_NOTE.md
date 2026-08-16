@@ -1,0 +1,1 @@
+Current README screenshots are generated from the latest shareable CareOS clinician demo. Public screenshots use synthetic patient data only.
