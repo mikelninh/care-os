@@ -13,6 +13,7 @@ from .fhir_adapter import FhirClient, FhirUnavailable, snapshot_to_timeline, sna
 from .guidelines import list_sources, select_guidance
 from .security_readiness import readiness as security_readiness
 from .specialties import list_specialty_packs, specialty_demo
+from .reference_environments import list_reference_environments, reference_environment
 from .global_packs import architecture_manifest
 from .monetization_agent import monetization_manifest
 from .portability import ips_preview
@@ -71,6 +72,19 @@ def specialty_pack(pack_id: str):
     return pack
 
 
+@app.get("/api/reference-environments")
+def reference_environments():
+    return {"environments": list_reference_environments(), "mode": "synthetic-product-research"}
+
+
+@app.get("/api/reference-environments/{env_id}")
+def reference_environment_detail(env_id: str):
+    env = reference_environment(env_id)
+    if not env:
+        raise HTTPException(404, "Reference environment not found")
+    return env
+
+
 @app.get("/api/architecture/packs")
 def packs_manifest():
     return architecture_manifest()
@@ -105,9 +119,10 @@ def health():
         "status": "ok",
         "version": "9.1.0",
         "data_mode": DATA_MODE.value,
-        "mode": "specialty-packs+integration-lab+evidence-backed-readiness-gates",
+        "mode": "specialty-packs+reference-environments+integration-lab+evidence-backed-readiness-gates",
         "claims": [
             "live patient data mode refuses startup until G0-G5 pass",
+            "reference environments are synthetic product-research configurations, not endorsements or integrations",
             "no autonomous clinical decisions",
             "no production write-back",
             "ambiguous patient matching blocks automatic attachment",
