@@ -32,6 +32,8 @@ class ConnectorReadResult(BaseModel):
 
 
 class ClinicalConnector(Protocol):
+    connector_id: str
+
     def capabilities(self) -> ConnectorCapabilities: ...
 
     def read_patient_truth(self, patient_ref: str) -> ConnectorReadResult: ...
