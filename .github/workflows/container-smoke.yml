@@ -1,0 +1,77 @@
+name: container-smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "requirements.txt"
+      - "app/**"
+      - "architecture/**"
+      - ".github/workflows/container-smoke.yml"
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "requirements.txt"
+      - "app/**"
+      - "architecture/**"
+      - ".github/workflows/container-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build --pull --tag careos:ci .
+      - name: Verify image does not run as root
+        shell: bash
+        run: |
+          UID_IN_IMAGE="$(docker run --rm --entrypoint sh careos:ci -c 'id -u')"
+          test "$UID_IN_IMAGE" != "0"
+      - name: Start synthetic mode
+        run: docker run --detach --rm --name careos-ci --publish 18000:8000 careos:ci
+      - name: Wait for health
+        shell: bash
+        run: |
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18000/api/health > health.json; then
+              cat health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs careos-ci
+          exit 1
+      - name: Assert synthetic/no-write runtime claims
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          d = json.load(open('health.json', encoding='utf-8'))
+          assert d['status'] == 'ok'
+          assert d['data_mode'] == 'synthetic'
+          claims = set(d['claims'])
+          assert 'no production write-back' in claims
+          assert 'no autonomous clinical decisions' in claims
+          PY
+      - name: Stop synthetic container
+        if: always()
+        run: docker stop careos-ci || true
+      - name: Assert live-readonly mode is still locked
+        shell: bash
+        run: |
+          set +e
+          docker run --rm --env CAREOS_DATA_MODE=live-readonly careos:ci > live-lock.log 2>&1
+          STATUS=$?
+          cat live-lock.log
+          if [ "$STATUS" -eq 0 ]; then
+            echo "ERROR: live-readonly container started while core gates are incomplete"
+            exit 1
+          fi
