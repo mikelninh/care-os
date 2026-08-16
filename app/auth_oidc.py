@@ -29,7 +29,8 @@ class OIDCConfig(BaseModel):
     def require_https(cls, value: str) -> str:
         if not value.startswith("https://"):
             raise ValueError("production OIDC issuer/JWKS URI must use https")
-        return value.rstrip("/") if value.endswith("/") else value
+        # OIDC issuer identifiers are exact strings. Do not normalize slashes/case.
+        return value
 
 
 @dataclass(frozen=True)
