@@ -63,9 +63,13 @@ def make_audit_event(
     resource_type: str,
     resource_id: str,
     outcome: str = "success",
+    organisation: str | None = None,
+    audit_level: str = "normal",
+    break_glass: bool = False,
+    reason_code: str | None = None,
     pseudonym_key: str | bytes | None = None,
 ) -> dict[str, Any]:
-    return {
+    event: dict[str, Any] = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "actor_ref": pseudonymous_ref(actor_id, secret=pseudonym_key),
         "patient_ref": pseudonymous_ref(patient_id, secret=pseudonym_key),
@@ -73,7 +77,15 @@ def make_audit_event(
         "resource_type": resource_type,
         "resource_id": resource_id,
         "outcome": outcome,
+        "audit_level": audit_level,
+        "break_glass": bool(break_glass),
     }
+    if organisation:
+        event["organisation"] = organisation
+    if reason_code:
+        event["reason_code"] = reason_code
+    validate_event(event)
+    return event
 
 
 def _forbidden_path(value: Any, path: str = "$") -> str | None:
