@@ -1,0 +1,43 @@
+name: G1 truth pipeline development benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app/clinical_truth.py'
+      - 'app/document_pipeline.py'
+      - 'app/extractors/**'
+      - 'benchmark/g1_dev.py'
+      - 'benchmark/generate.py'
+      - 'tests/test_g1_dev_benchmark.py'
+  schedule:
+    - cron: '31 4 * * 4'
+
+jobs:
+  g1-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Run isolated development corpus
+        run: python -m benchmark.g1_dev
+      - name: Verify benchmark separation and provenance contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('data/g1_dev_report.json').read_text())
+          assert report['dataset']['development_only'] is True
+          assert report['dataset']['frozen_unseen_holdout_used_for_tuning'] is False
+          assert report['minimum_provenance_coverage'] == 1.0
+          print(json.dumps({k:v for k,v in report.items() if k!='sample_failures'}, indent=2, ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g1-development-report
+          path: data/g1_dev_report.json
+          retention-days: 30
