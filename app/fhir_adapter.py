@@ -6,6 +6,8 @@ from typing import Any
 
 import httpx
 
+from .clinical_truth import ClinicalFact, SourceKind, SourceRef, TruthEnvelope
+
 
 @dataclass
 class FhirConfig:
@@ -20,8 +22,9 @@ class FhirUnavailable(RuntimeError):
 class FhirClient:
     """Small FHIR R4 adapter used by CareOS.
 
-    It intentionally uses standard REST/search resources only. ISiK-specific profiles
-    and validation sit above this transport layer and are not claimed here.
+    It intentionally uses standard REST/search resources only. ISiK-specific profiles,
+    authorization and terminology validation sit above/beside this transport layer and
+    are not claimed here.
     """
 
     def __init__(self, config: FhirConfig | None = None, transport: httpx.BaseTransport | None = None):
@@ -87,30 +90,191 @@ def _concept_text(cc: dict[str, Any] | None) -> str:
     return next((c.get("display") for c in codings if c.get("display")), "Unbenannt")
 
 
-def snapshot_to_timeline(snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Normalize FHIR resources to the clinician timeline while retaining source identity."""
-    items: list[dict[str, Any]] = []
+def _coding(cc: dict[str, Any] | None) -> tuple[str | None, str | None]:
+    codings = (cc or {}).get("coding") or []
+    if not codings:
+        return None, None
+    c = codings[0]
+    return c.get("code"), c.get("system")
+
+
+def _source(resource: dict[str, Any]) -> SourceRef:
+    return SourceRef(
+        kind=SourceKind.FHIR,
+        system="FHIR",
+        resource_type=resource.get("resourceType"),
+        resource_id=resource.get("id"),
+        resource_version=(resource.get("meta") or {}).get("versionId"),
+    )
+
+
+def _fact_id(resource: dict[str, Any], suffix: str = "") -> str:
+    base = f"{resource.get('resourceType','Resource')}:{resource.get('id','missing')}"
+    return f"{base}:{suffix}" if suffix else base
+
+
+def snapshot_to_truth(snapshot: dict[str, Any]) -> TruthEnvelope:
+    """Convert source-native FHIR resources into the canonical CareOS fact contract.
+
+    This is intentionally conservative: no LLM inference and no silent merging. The
+    original source identity/version and clinical effective time are preserved before
+    anything reaches a clinician-facing view.
+    """
+
+    patient_id = snapshot["patient"].get("id")
+    if not patient_id:
+        raise ValueError("FHIR Patient requires id before CareOS truth ingestion")
+
+    facts: list[ClinicalFact] = []
+
     for r in snapshot.get("allergies", []):
-        items.append({"resource_type": "AllergyIntolerance", "resource_id": r.get("id"), "source": "FHIR", "title": "Allergie / Unverträglichkeit", "summary": _concept_text(r.get("code")), "date": r.get("recordedDate") or "", "severity": "attention"})
+        code, system = _coding(r.get("code"))
+        facts.append(ClinicalFact(
+            fact_id=_fact_id(r),
+            patient_ref=patient_id,
+            fact_type="allergy",
+            value_original=_concept_text(r.get("code")),
+            code=code,
+            code_system=system,
+            effective_time=r.get("recordedDate"),
+            recorded_time=r.get("recordedDate"),
+            source=_source(r),
+            transformer="fhir-source-native",
+            transformer_version="1",
+        ))
+
     for r in snapshot.get("conditions", []):
-        items.append({"resource_type": "Condition", "resource_id": r.get("id"), "source": "FHIR", "title": "Diagnose", "summary": _concept_text(r.get("code")), "date": r.get("recordedDate") or r.get("onsetDateTime") or "", "severity": "info"})
+        code, system = _coding(r.get("code"))
+        facts.append(ClinicalFact(
+            fact_id=_fact_id(r),
+            patient_ref=patient_id,
+            fact_type="diagnosis",
+            value_original=_concept_text(r.get("code")),
+            code=code,
+            code_system=system,
+            effective_time=r.get("onsetDateTime") or r.get("recordedDate"),
+            recorded_time=r.get("recordedDate"),
+            source=_source(r),
+            transformer="fhir-source-native",
+            transformer_version="1",
+        ))
+
     for r in snapshot.get("observations", []):
-        value = r.get("valueQuantity") or {}
-        summary = _concept_text(r.get("code"))
-        if value.get("value") is not None:
-            summary += f": {value['value']} {value.get('unit','') or value.get('code','')}".rstrip()
-        items.append({"resource_type": "Observation", "resource_id": r.get("id"), "source": "FHIR", "title": "Messwert", "summary": summary, "date": r.get("effectiveDateTime") or r.get("issued") or "", "severity": "info"})
+        concept = _concept_text(r.get("code"))
+        code, system = _coding(r.get("code"))
+        quantity = r.get("valueQuantity") or {}
+        value = quantity.get("value")
+        if value is None:
+            value = _concept_text(r.get("valueCodeableConcept")) if r.get("valueCodeableConcept") else r.get("valueString", "Unbenannt")
+        facts.append(ClinicalFact(
+            fact_id=_fact_id(r),
+            patient_ref=patient_id,
+            fact_type=f"observation:{concept}",
+            value_original=value,
+            code=code,
+            code_system=system,
+            unit_original=quantity.get("unit") or quantity.get("code"),
+            effective_time=r.get("effectiveDateTime") or r.get("issued"),
+            recorded_time=r.get("issued"),
+            source=_source(r),
+            transformer="fhir-source-native",
+            transformer_version="1",
+        ))
+
     for r in snapshot.get("medications", []):
         med = _concept_text(r.get("medicationCodeableConcept"))
-        items.append({"resource_type": "MedicationStatement", "resource_id": r.get("id"), "source": "FHIR", "title": "Aktuelle Medikation", "summary": med, "date": r.get("dateAsserted") or "", "severity": "info"})
+        code, system = _coding(r.get("medicationCodeableConcept"))
+        facts.append(ClinicalFact(
+            fact_id=_fact_id(r),
+            patient_ref=patient_id,
+            fact_type="medication.current",
+            value_original=med,
+            code=code,
+            code_system=system,
+            effective_time=r.get("effectiveDateTime") or r.get("dateAsserted"),
+            recorded_time=r.get("dateAsserted"),
+            source=_source(r),
+            transformer="fhir-source-native",
+            transformer_version="1",
+        ))
+
     for r in snapshot.get("tasks", []):
-        items.append({"resource_type": "Task", "resource_id": r.get("id"), "source": "FHIR", "title": "Offene Aufgabe", "summary": r.get("description") or _concept_text(r.get("code")), "date": (r.get("authoredOn") or ""), "severity": "attention" if r.get("status") not in {"completed", "cancelled"} else "info"})
+        facts.append(ClinicalFact(
+            fact_id=_fact_id(r),
+            patient_ref=patient_id,
+            fact_type="task.open" if r.get("status") not in {"completed", "cancelled"} else "task.closed",
+            value_original=r.get("description") or _concept_text(r.get("code")),
+            effective_time=r.get("authoredOn"),
+            recorded_time=r.get("authoredOn"),
+            source=_source(r),
+            transformer="fhir-source-native",
+            transformer_version="1",
+        ))
+
     for r in snapshot.get("documents", []):
-        items.append({"resource_type": "DocumentReference", "resource_id": r.get("id"), "source": "FHIR", "title": "Dokument", "summary": _concept_text(r.get("type")), "date": r.get("date") or (r.get("context") or {}).get("period", {}).get("start") or "", "severity": "info"})
+        code, system = _coding(r.get("type"))
+        facts.append(ClinicalFact(
+            fact_id=_fact_id(r),
+            patient_ref=patient_id,
+            fact_type="document.reference",
+            value_original=_concept_text(r.get("type")),
+            code=code,
+            code_system=system,
+            effective_time=r.get("date") or (r.get("context") or {}).get("period", {}).get("start"),
+            recorded_time=r.get("date"),
+            source=_source(r),
+            transformer="fhir-source-native",
+            transformer_version="1",
+        ))
+
+    return TruthEnvelope(patient_ref=patient_id, facts=facts)
+
+
+def _summary(fact: ClinicalFact) -> str:
+    value = str(fact.value_original)
+    if fact.fact_type.startswith("observation:"):
+        concept = fact.fact_type.split(":", 1)[1]
+        unit = f" {fact.unit_original}" if fact.unit_original else ""
+        return f"{concept}: {value}{unit}"
+    return value
+
+
+def snapshot_to_timeline(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Render a compatibility timeline *from* the truth layer, not directly from FHIR."""
+
+    truth = snapshot_to_truth(snapshot)
+    title_map = {
+        "allergy": "Allergie / Unverträglichkeit",
+        "diagnosis": "Diagnose",
+        "medication.current": "Aktuelle Medikation",
+        "task.open": "Offene Aufgabe",
+        "task.closed": "Aufgabe",
+        "document.reference": "Dokument",
+    }
+    items: list[dict[str, Any]] = []
+    for fact in truth.facts:
+        source = fact.source
+        title = "Messwert" if fact.fact_type.startswith("observation:") else title_map.get(fact.fact_type, "Klinischer Fakt")
+        severity = "attention" if fact.fact_type in {"allergy", "task.open"} else "info"
+        items.append({
+            "fact_id": fact.fact_id,
+            "resource_type": source.resource_type,
+            "resource_id": source.resource_id,
+            "resource_version": source.resource_version,
+            "source": source.system,
+            "title": title,
+            "summary": _summary(fact),
+            "date": fact.effective_time.isoformat() if fact.effective_time else "",
+            "severity": severity,
+            "fact_status": fact.status.value,
+            "provenance_complete": fact.provenance_complete,
+        })
     items.sort(key=lambda x: x.get("date") or "", reverse=True)
     return {
         "patient": {"id": snapshot["patient"].get("id"), "name": _display_name(snapshot["patient"]), "birthDate": snapshot["patient"].get("birthDate")},
         "items": items,
         "count": len(items),
-        "provenance_policy": "Every timeline item keeps its FHIR resource type + id; no silent source removal.",
+        "provenance_coverage": truth.provenance_coverage(),
+        "review_queue_count": len(truth.review_queue()),
+        "provenance_policy": "Every surfaced fact passes through ClinicalFact and retains source resource identity/version; document extraction additionally requires exact evidence spans.",
     }
