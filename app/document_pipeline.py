@@ -5,7 +5,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from .clinical_truth import ClinicalFact, FactStatus, SourceKind, SourceRef, TruthEnvelope
+from .clinical_truth import (
+    AssertionStage,
+    ClinicalFact,
+    FactStatus,
+    SourceKind,
+    SourceRef,
+    TruthEnvelope,
+)
 
 
 class DocumentInput(BaseModel):
@@ -20,12 +27,13 @@ class DocumentInput(BaseModel):
 class ExtractedCandidate(BaseModel):
     """Untrusted extractor output.
 
-    Candidates may come from a deterministic parser or model. They do not become
-    clinical facts until the cited character span is proven to match the source text.
-    Normalization is optional but can never replace the original source value.
+    Extractors/models may propose facts but never write clinical truth directly.
+    Evidence offsets are mechanically verified before promotion. Source maturity
+    (preliminary/final/corrected) is separate from extraction confidence.
     """
 
     fact_type: str = Field(min_length=1)
+    logical_key: str | None = None
     value_original: Any
     value_normalized: Any | None = None
     evidence_start: int = Field(ge=0)
@@ -38,8 +46,10 @@ class ExtractedCandidate(BaseModel):
     unit_normalized: str | None = None
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     status: FactStatus = FactStatus.CONFIRMED
+    assertion_stage: AssertionStage = AssertionStage.UNKNOWN
     review_reason: str | None = None
     contradiction_group: str | None = None
+    supersedes_fact_id: str | None = None
 
     @model_validator(mode="after")
     def validate_offsets(self) -> "ExtractedCandidate":
@@ -66,12 +76,7 @@ def candidate_to_fact(
     transformer_version: str,
     ordinal: int = 0,
 ) -> ClinicalFact:
-    """Promote an untrusted candidate only when its evidence is byte-for-text exact.
-
-    The extractor is not trusted to invent or paraphrase evidence. Offsets and quote
-    must match the original document exactly. This prevents unsupported generated
-    claims from entering the canonical fact layer with fake provenance.
-    """
+    """Promote an untrusted candidate only when source evidence is exact."""
 
     if candidate.evidence_end > len(document.text):
         raise UnsupportedEvidence("evidence span exceeds document length")
@@ -83,6 +88,7 @@ def candidate_to_fact(
         fact_id=f"doc:{document.document_id}:{candidate.fact_type}:{ordinal}",
         patient_ref=document.patient_ref,
         fact_type=candidate.fact_type,
+        logical_key=candidate.logical_key,
         value_original=candidate.value_original,
         value_normalized=candidate.value_normalized,
         code=candidate.code,
@@ -101,7 +107,9 @@ def candidate_to_fact(
         transformer_version=transformer_version,
         confidence=candidate.confidence,
         status=candidate.status,
+        assertion_stage=candidate.assertion_stage,
         contradiction_group=candidate.contradiction_group,
+        supersedes_fact_id=candidate.supersedes_fact_id,
         review_reason=candidate.review_reason,
     )
 
