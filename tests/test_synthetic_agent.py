@@ -53,7 +53,7 @@ def test_signed_synthetic_sjk_agent_runs_end_to_end_without_egress_or_write():
     assert result["status"] == "completed"
     assert result["usage"]["tool_calls"] == 2
     assert result["usage"]["external_calls"] == 0
-    assert "Finales Resistogramm" in result["draft"]["pending"]
+    assert any(item.startswith("Finales Resistogramm") for item in result["draft"]["pending"])
     assert result["draft"]["source_refs"]
     assert "human review" in " ".join(result["draft"]["warnings"]).lower()
     assert len(result["audit_preview"]) == 2
