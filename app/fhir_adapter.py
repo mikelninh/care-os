@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
@@ -13,6 +14,7 @@ from .clinical_truth import ClinicalFact, SourceKind, SourceRef, TruthEnvelope
 class FhirConfig:
     base_url: str = os.getenv("FHIR_BASE_URL", "http://localhost:8080/fhir")
     timeout_seconds: float = float(os.getenv("FHIR_TIMEOUT_SECONDS", "8"))
+    max_pages: int = int(os.getenv("FHIR_MAX_PAGES", "50"))
 
 
 class FhirUnavailable(RuntimeError):
@@ -20,15 +22,16 @@ class FhirUnavailable(RuntimeError):
 
 
 class FhirClient:
-    """Small FHIR R4 adapter used by CareOS.
+    """FHIR R4 read adapter with fail-visible bounded pagination.
 
-    It intentionally uses standard REST/search resources only. ISiK-specific profiles,
-    authorization and terminology validation sit above/beside this transport layer and
-    are not claimed here.
+    Standard REST/search transport only. ISiK-specific profiles, production auth and
+    terminology validation remain separate gates and are not implied by this adapter.
     """
 
     def __init__(self, config: FhirConfig | None = None, transport: httpx.BaseTransport | None = None):
         self.config = config or FhirConfig()
+        if self.config.max_pages < 1 or self.config.max_pages > 1000:
+            raise ValueError("FHIR max_pages must be between 1 and 1000")
         self._client = httpx.Client(
             base_url=self.config.base_url.rstrip("/"),
             timeout=self.config.timeout_seconds,
@@ -36,13 +39,53 @@ class FhirClient:
             transport=transport,
         )
 
-    def _get(self, path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
+    def _decode_response(self, response: httpx.Response) -> dict[str, Any]:
         try:
-            r = self._client.get(path, params=params)
-            r.raise_for_status()
-            return r.json()
+            response.raise_for_status()
+            return response.json()
         except (httpx.HTTPError, ValueError) as exc:
             raise FhirUnavailable(str(exc)) from exc
+
+    def _get(self, path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
+        try:
+            return self._decode_response(self._client.get(path, params=params))
+        except httpx.HTTPError as exc:
+            raise FhirUnavailable(str(exc)) from exc
+
+    def _validate_next_url(self, url: str) -> str:
+        """Reject cross-origin pagination links instead of turning a FHIR server into SSRF."""
+        base = urlparse(self.config.base_url)
+        candidate = urlparse(url)
+        if not candidate.scheme or not candidate.netloc:
+            raise FhirUnavailable("FHIR next link must be an absolute same-origin URL")
+        base_port = base.port or (443 if base.scheme == "https" else 80)
+        candidate_port = candidate.port or (443 if candidate.scheme == "https" else 80)
+        if (candidate.scheme, candidate.hostname, candidate_port) != (base.scheme, base.hostname, base_port):
+            raise FhirUnavailable("FHIR next link changed origin")
+        base_path = base.path.rstrip("/")
+        if base_path and not (candidate.path == base_path or candidate.path.startswith(base_path + "/")):
+            raise FhirUnavailable("FHIR next link escaped configured base path")
+        return url
+
+    def _get_absolute(self, url: str) -> dict[str, Any]:
+        safe_url = self._validate_next_url(url)
+        try:
+            return self._decode_response(self._client.get(safe_url))
+        except httpx.HTTPError as exc:
+            raise FhirUnavailable(str(exc)) from exc
+
+    @staticmethod
+    def _next_link(bundle: dict[str, Any]) -> str | None:
+        for link in bundle.get("link") or []:
+            if link.get("relation") == "next" and link.get("url"):
+                return str(link["url"])
+        return None
+
+    @staticmethod
+    def _bundle_resources(bundle: dict[str, Any]) -> list[dict[str, Any]]:
+        if bundle.get("resourceType") != "Bundle":
+            raise FhirUnavailable("FHIR search response was not a Bundle")
+        return [e["resource"] for e in bundle.get("entry", []) if e.get("resource")]
 
     def capability(self) -> dict[str, Any]:
         return self._get("/metadata")
@@ -52,7 +95,24 @@ class FhirClient:
 
     def search(self, resource: str, **params: str) -> list[dict[str, Any]]:
         bundle = self._get(f"/{resource}", params=params)
-        return [e["resource"] for e in bundle.get("entry", []) if e.get("resource")]
+        resources = self._bundle_resources(bundle)
+        next_url = self._next_link(bundle)
+        seen: set[str] = set()
+        pages = 1
+
+        while next_url:
+            if pages >= self.config.max_pages:
+                raise FhirUnavailable("FHIR pagination exceeded configured max_pages; partial results rejected")
+            safe_url = self._validate_next_url(next_url)
+            if safe_url in seen:
+                raise FhirUnavailable("FHIR pagination loop detected; partial results rejected")
+            seen.add(safe_url)
+            bundle = self._get_absolute(safe_url)
+            resources.extend(self._bundle_resources(bundle))
+            next_url = self._next_link(bundle)
+            pages += 1
+
+        return resources
 
     def patient_snapshot(self, patient_id: str) -> dict[str, Any]:
         patient = self.patient(patient_id)
@@ -114,118 +174,36 @@ def _fact_id(resource: dict[str, Any], suffix: str = "") -> str:
 
 
 def snapshot_to_truth(snapshot: dict[str, Any]) -> TruthEnvelope:
-    """Convert source-native FHIR resources into the canonical CareOS fact contract.
-
-    This is intentionally conservative: no LLM inference and no silent merging. The
-    original source identity/version and clinical effective time are preserved before
-    anything reaches a clinician-facing view.
-    """
-
+    """Convert source-native FHIR resources into the canonical CareOS fact contract."""
     patient_id = snapshot["patient"].get("id")
     if not patient_id:
         raise ValueError("FHIR Patient requires id before CareOS truth ingestion")
-
     facts: list[ClinicalFact] = []
 
     for r in snapshot.get("allergies", []):
         code, system = _coding(r.get("code"))
-        facts.append(ClinicalFact(
-            fact_id=_fact_id(r),
-            patient_ref=patient_id,
-            fact_type="allergy",
-            value_original=_concept_text(r.get("code")),
-            code=code,
-            code_system=system,
-            effective_time=r.get("recordedDate"),
-            recorded_time=r.get("recordedDate"),
-            source=_source(r),
-            transformer="fhir-source-native",
-            transformer_version="1",
-        ))
+        facts.append(ClinicalFact(fact_id=_fact_id(r), patient_ref=patient_id, fact_type="allergy", value_original=_concept_text(r.get("code")), code=code, code_system=system, effective_time=r.get("recordedDate"), recorded_time=r.get("recordedDate"), source=_source(r), transformer="fhir-source-native", transformer_version="1"))
 
     for r in snapshot.get("conditions", []):
         code, system = _coding(r.get("code"))
-        facts.append(ClinicalFact(
-            fact_id=_fact_id(r),
-            patient_ref=patient_id,
-            fact_type="diagnosis",
-            value_original=_concept_text(r.get("code")),
-            code=code,
-            code_system=system,
-            effective_time=r.get("onsetDateTime") or r.get("recordedDate"),
-            recorded_time=r.get("recordedDate"),
-            source=_source(r),
-            transformer="fhir-source-native",
-            transformer_version="1",
-        ))
+        facts.append(ClinicalFact(fact_id=_fact_id(r), patient_ref=patient_id, fact_type="diagnosis", value_original=_concept_text(r.get("code")), code=code, code_system=system, effective_time=r.get("onsetDateTime") or r.get("recordedDate"), recorded_time=r.get("recordedDate"), source=_source(r), transformer="fhir-source-native", transformer_version="1"))
 
     for r in snapshot.get("observations", []):
-        concept = _concept_text(r.get("code"))
-        code, system = _coding(r.get("code"))
-        quantity = r.get("valueQuantity") or {}
-        value = quantity.get("value")
+        concept = _concept_text(r.get("code")); code, system = _coding(r.get("code")); quantity = r.get("valueQuantity") or {}; value = quantity.get("value")
         if value is None:
             value = _concept_text(r.get("valueCodeableConcept")) if r.get("valueCodeableConcept") else r.get("valueString", "Unbenannt")
-        facts.append(ClinicalFact(
-            fact_id=_fact_id(r),
-            patient_ref=patient_id,
-            fact_type=f"observation:{concept}",
-            value_original=value,
-            code=code,
-            code_system=system,
-            unit_original=quantity.get("unit") or quantity.get("code"),
-            effective_time=r.get("effectiveDateTime") or r.get("issued"),
-            recorded_time=r.get("issued"),
-            source=_source(r),
-            transformer="fhir-source-native",
-            transformer_version="1",
-        ))
+        facts.append(ClinicalFact(fact_id=_fact_id(r), patient_ref=patient_id, fact_type=f"observation:{concept}", value_original=value, code=code, code_system=system, unit_original=quantity.get("unit") or quantity.get("code"), effective_time=r.get("effectiveDateTime") or r.get("issued"), recorded_time=r.get("issued"), source=_source(r), transformer="fhir-source-native", transformer_version="1"))
 
     for r in snapshot.get("medications", []):
-        med = _concept_text(r.get("medicationCodeableConcept"))
-        code, system = _coding(r.get("medicationCodeableConcept"))
-        facts.append(ClinicalFact(
-            fact_id=_fact_id(r),
-            patient_ref=patient_id,
-            fact_type="medication.current",
-            value_original=med,
-            code=code,
-            code_system=system,
-            effective_time=r.get("effectiveDateTime") or r.get("dateAsserted"),
-            recorded_time=r.get("dateAsserted"),
-            source=_source(r),
-            transformer="fhir-source-native",
-            transformer_version="1",
-        ))
+        med = _concept_text(r.get("medicationCodeableConcept")); code, system = _coding(r.get("medicationCodeableConcept"))
+        facts.append(ClinicalFact(fact_id=_fact_id(r), patient_ref=patient_id, fact_type="medication.current", value_original=med, code=code, code_system=system, effective_time=r.get("effectiveDateTime") or r.get("dateAsserted"), recorded_time=r.get("dateAsserted"), source=_source(r), transformer="fhir-source-native", transformer_version="1"))
 
     for r in snapshot.get("tasks", []):
-        facts.append(ClinicalFact(
-            fact_id=_fact_id(r),
-            patient_ref=patient_id,
-            fact_type="task.open" if r.get("status") not in {"completed", "cancelled"} else "task.closed",
-            value_original=r.get("description") or _concept_text(r.get("code")),
-            effective_time=r.get("authoredOn"),
-            recorded_time=r.get("authoredOn"),
-            source=_source(r),
-            transformer="fhir-source-native",
-            transformer_version="1",
-        ))
+        facts.append(ClinicalFact(fact_id=_fact_id(r), patient_ref=patient_id, fact_type="task.open" if r.get("status") not in {"completed", "cancelled"} else "task.closed", value_original=r.get("description") or _concept_text(r.get("code")), effective_time=r.get("authoredOn"), recorded_time=r.get("authoredOn"), source=_source(r), transformer="fhir-source-native", transformer_version="1"))
 
     for r in snapshot.get("documents", []):
         code, system = _coding(r.get("type"))
-        facts.append(ClinicalFact(
-            fact_id=_fact_id(r),
-            patient_ref=patient_id,
-            fact_type="document.reference",
-            value_original=_concept_text(r.get("type")),
-            code=code,
-            code_system=system,
-            effective_time=r.get("date") or (r.get("context") or {}).get("period", {}).get("start"),
-            recorded_time=r.get("date"),
-            source=_source(r),
-            transformer="fhir-source-native",
-            transformer_version="1",
-        ))
+        facts.append(ClinicalFact(fact_id=_fact_id(r), patient_ref=patient_id, fact_type="document.reference", value_original=_concept_text(r.get("type")), code=code, code_system=system, effective_time=r.get("date") or (r.get("context") or {}).get("period", {}).get("start"), recorded_time=r.get("date"), source=_source(r), transformer="fhir-source-native", transformer_version="1"))
 
     return TruthEnvelope(patient_ref=patient_id, facts=facts)
 
@@ -233,48 +211,17 @@ def snapshot_to_truth(snapshot: dict[str, Any]) -> TruthEnvelope:
 def _summary(fact: ClinicalFact) -> str:
     value = str(fact.value_original)
     if fact.fact_type.startswith("observation:"):
-        concept = fact.fact_type.split(":", 1)[1]
-        unit = f" {fact.unit_original}" if fact.unit_original else ""
+        concept = fact.fact_type.split(":", 1)[1]; unit = f" {fact.unit_original}" if fact.unit_original else ""
         return f"{concept}: {value}{unit}"
     return value
 
 
 def snapshot_to_timeline(snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Render a compatibility timeline *from* the truth layer, not directly from FHIR."""
-
     truth = snapshot_to_truth(snapshot)
-    title_map = {
-        "allergy": "Allergie / Unverträglichkeit",
-        "diagnosis": "Diagnose",
-        "medication.current": "Aktuelle Medikation",
-        "task.open": "Offene Aufgabe",
-        "task.closed": "Aufgabe",
-        "document.reference": "Dokument",
-    }
+    title_map = {"allergy": "Allergie / Unverträglichkeit", "diagnosis": "Diagnose", "medication.current": "Aktuelle Medikation", "task.open": "Offene Aufgabe", "task.closed": "Aufgabe", "document.reference": "Dokument"}
     items: list[dict[str, Any]] = []
     for fact in truth.facts:
-        source = fact.source
-        title = "Messwert" if fact.fact_type.startswith("observation:") else title_map.get(fact.fact_type, "Klinischer Fakt")
-        severity = "attention" if fact.fact_type in {"allergy", "task.open"} else "info"
-        items.append({
-            "fact_id": fact.fact_id,
-            "resource_type": source.resource_type,
-            "resource_id": source.resource_id,
-            "resource_version": source.resource_version,
-            "source": source.system,
-            "title": title,
-            "summary": _summary(fact),
-            "date": fact.effective_time.isoformat() if fact.effective_time else "",
-            "severity": severity,
-            "fact_status": fact.status.value,
-            "provenance_complete": fact.provenance_complete,
-        })
+        source = fact.source; title = "Messwert" if fact.fact_type.startswith("observation:") else title_map.get(fact.fact_type, "Klinischer Fakt"); severity = "attention" if fact.fact_type in {"allergy", "task.open"} else "info"
+        items.append({"fact_id": fact.fact_id, "resource_type": source.resource_type, "resource_id": source.resource_id, "resource_version": source.resource_version, "source": source.system, "title": title, "summary": _summary(fact), "date": fact.effective_time.isoformat() if fact.effective_time else "", "severity": severity, "fact_status": fact.status.value, "provenance_complete": fact.provenance_complete})
     items.sort(key=lambda x: x.get("date") or "", reverse=True)
-    return {
-        "patient": {"id": snapshot["patient"].get("id"), "name": _display_name(snapshot["patient"]), "birthDate": snapshot["patient"].get("birthDate")},
-        "items": items,
-        "count": len(items),
-        "provenance_coverage": truth.provenance_coverage(),
-        "review_queue_count": len(truth.review_queue()),
-        "provenance_policy": "Every surfaced fact passes through ClinicalFact and retains source resource identity/version; document extraction additionally requires exact evidence spans.",
-    }
+    return {"patient": {"id": snapshot["patient"].get("id"), "name": _display_name(snapshot["patient"]), "birthDate": snapshot["patient"].get("birthDate")}, "items": items, "count": len(items), "provenance_coverage": truth.provenance_coverage(), "review_queue_count": len(truth.review_queue()), "provenance_policy": "Every surfaced fact passes through ClinicalFact and retains source resource identity/version; document extraction additionally requires exact evidence spans."}
