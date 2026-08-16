@@ -6,6 +6,26 @@ from .clinical_truth import ClinicalFact, TruthEnvelope
 from .reconciliation import ReconciliationResult, reconcile_truth
 
 
+FACT_TO_FIELD = {
+    "allergy": "allergies",
+    "current_medications": "current_medications",
+    "new_medication_order": "current_medications",
+    "relevant_diagnoses": "relevant_diagnoses",
+    "renal_function": "last_renal_function",
+    "open_followups": "open_followups",
+    "discharge": "discharge",
+}
+
+DOCUMENT_KIND_TO_FIELD = {
+    "allergy": "allergies",
+    "medication": "current_medications",
+    "diagnosis": "relevant_diagnoses",
+    "lab": "last_renal_function",
+    "followup": "open_followups",
+    "discharge": "discharge",
+}
+
+
 @dataclass
 class CaseProjection:
     patient_ref: str
@@ -32,25 +52,32 @@ def _source_id(fact: ClinicalFact) -> str | None:
     return fact.source.document_id or fact.source.resource_id
 
 
-def project_case(envelopes: list[TruthEnvelope]) -> tuple[CaseProjection, ReconciliationResult]:
-    """Render a benchmark/UI-friendly patient context from reconciled truth.
+def _review_fields(fact: ClinicalFact) -> set[str]:
+    fields = {FACT_TO_FIELD[x] for x in fact.blocks_fact_types if x in FACT_TO_FIELD}
+    if fact.fact_type == "review_required" and isinstance(fact.value_original, dict):
+        kind = str(fact.value_original.get("document_kind") or "").lower()
+        if kind in DOCUMENT_KIND_TO_FIELD:
+            fields.add(DOCUMENT_KIND_TO_FIELD[kind])
+    elif fact.fact_type in FACT_TO_FIELD:
+        fields.add(FACT_TO_FIELD[fact.fact_type])
+    return fields
 
-    Projection is downstream of reconciliation. If a clinical concept is unresolved,
-    the projection records it as unknown/review instead of selecting a convenient
-    source. This function contains no clinical inference.
+
+def project_case(envelopes: list[TruthEnvelope]) -> tuple[CaseProjection, ReconciliationResult]:
+    """Render UI/benchmark context only after truth reconciliation.
+
+    Explicit abstention maps to the same public field names used by evaluation and UI,
+    so a visible `unknown/review` state can never be miscounted as a silent omission.
     """
 
     reconciled = reconcile_truth(envelopes)
     out = CaseProjection(patient_ref=reconciled.patient_ref)
 
-    review_types = {fact.fact_type for fact in reconciled.review}
     for fact in reconciled.review:
         source_id = _source_id(fact)
         if source_id:
             out.review_required.append(source_id)
-    for fact_type in sorted(review_types):
-        if fact_type != "review_required":
-            out.unknown_fields.append(fact_type)
+        out.unknown_fields.extend(_review_fields(fact))
 
     for issue in reconciled.issues:
         out.reconciliation_issues.append({
@@ -64,8 +91,6 @@ def project_case(envelopes: list[TruthEnvelope]) -> tuple[CaseProjection, Reconc
         if fact.fact_type == "allergy":
             if isinstance(fact.value_original, dict):
                 out.allergies.append(fact.value_original)
-                # Historical benchmark has one allergy; retain first source for
-                # compatibility while the truth layer itself supports many.
                 out.provenance["allergy"] = out.provenance["allergy"] or source_id
         elif fact.fact_type == "current_medications":
             out.current_medications = sorted(fact.value_original)
