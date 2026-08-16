@@ -1,0 +1,44 @@
+name: G1 frozen holdout 3
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'benchmark/holdout3.py'
+      - 'tests/test_holdout3.py'
+      - '.github/workflows/g1-holdout3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-once:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - name: Verify holdout protocol tests
+        run: pytest -q tests/test_holdout3.py tests/test_reconciliation.py tests/test_verified_extraction.py
+      - name: Evaluate frozen holdout
+        run: python -m benchmark.holdout3
+      - name: Publish public metrics to job summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/g1_holdout3_report.json').read_text())
+          r.pop('sample_failures', None)
+          print('## G1 frozen holdout #3', file=open(Path(__import__('os').environ['GITHUB_STEP_SUMMARY']), 'a'))
+          print('```json', file=open(Path(__import__('os').environ['GITHUB_STEP_SUMMARY']), 'a'))
+          print(json.dumps(r, indent=2, ensure_ascii=False), file=open(Path(__import__('os').environ['GITHUB_STEP_SUMMARY']), 'a'))
+          print('```', file=open(Path(__import__('os').environ['GITHUB_STEP_SUMMARY']), 'a'))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g1-holdout3-evidence
+          path: data/g1_holdout3_report.json
+          if-no-files-found: error
