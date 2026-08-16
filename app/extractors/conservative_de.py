@@ -18,7 +18,7 @@ class ConservativeGermanExtractor:
     """
 
     name = "conservative-de"
-    version = "0.1.0"
+    version = "0.2.0"
 
     HIGH_RISK_KINDS = {"allergy", "medication", "lab", "discharge"}
 
@@ -74,7 +74,11 @@ class ConservativeGermanExtractor:
         )
 
     def _allergy(self, document: DocumentInput) -> list[ExtractedCandidate]:
-        match = re.search(r"Allergie:\s*([^\.]+)\.\s*Reaktion:\s*([^\.]+)\.", document.text, flags=re.IGNORECASE)
+        match = re.search(
+            r"Allergie:\s*([^\.\n]+?)(?:\.\s*|\s+)Reaktion:\s*([^\.\n]+)\.",
+            document.text,
+            flags=re.IGNORECASE,
+        )
         if not match:
             return []
         value = {"substance": match.group(1).strip(), "reaction": match.group(2).strip()}
@@ -84,7 +88,7 @@ class ConservativeGermanExtractor:
         out: list[ExtractedCandidate] = []
         current = re.search(r"Aktuelle Medikation:\s*([^\.]+)\.", document.text, flags=re.IGNORECASE)
         if current:
-            medicines = [item.strip() for item in current.group(1).split(",") if item.strip()]
+            medicines = [item.strip() for item in re.split(r"[,;]", current.group(1)) if item.strip()]
             out.append(self._candidate(document, match=current, fact_type="current_medications", value_original=medicines))
 
         new_order = re.search(r"Neu verordnet:\s*([^\.]+)\.\s*Bitte heute beginnen\.", document.text, flags=re.IGNORECASE)
@@ -101,7 +105,7 @@ class ConservativeGermanExtractor:
 
     def _lab(self, document: DocumentInput) -> list[ExtractedCandidate]:
         match = re.search(
-            r"(?:Krea|Kreatinin)\s*([0-9]+(?:[\.,][0-9]+)?)\s*mg/dl\s*(?:·|,)\s*eGFR\s*([0-9]+)\s*ml/min/1,73m²\. ?",
+            r"(?:Krea|Kreatinin):?\s*([0-9]+(?:[\.,][0-9]+)?)\s*mg/dl\s*(?:·|,|\n)\s*eGFR:?\s*([0-9]+)\s*ml/min/1,73m²\. ?",
             document.text,
             flags=re.IGNORECASE,
         )
@@ -127,10 +131,10 @@ class ConservativeGermanExtractor:
         return [self._candidate(document, match=match, fact_type="open_followups", value_original=items)]
 
     def _discharge(self, document: DocumentInput) -> list[ExtractedCandidate]:
-        planned = re.search(r"Entlassung geplant für\s*(\d{4}-\d{2}-\d{2})\.\s*Entlassbrief noch nicht freigegeben\.", document.text, flags=re.IGNORECASE)
+        planned = re.search(r"Entlassung geplant für:?\s*(\d{4}-\d{2}-\d{2})\.\s*Entlassbrief noch nicht freigegeben\.", document.text, flags=re.IGNORECASE)
         if planned:
             return [self._candidate(document, match=planned, fact_type="discharge", value_original={"status": "planned", "date": planned.group(1)})]
-        completed = re.search(r"Entlassen am\s*(\d{4}-\d{2}-\d{2})\.\s*Entlassbrief final freigegeben\.", document.text, flags=re.IGNORECASE)
+        completed = re.search(r"Entlassen am:?\s*(\d{4}-\d{2}-\d{2})\.\s*Entlassbrief final freigegeben\.", document.text, flags=re.IGNORECASE)
         if completed:
             return [self._candidate(document, match=completed, fact_type="discharge", value_original={"status": "completed", "date": completed.group(1)})]
         return []
