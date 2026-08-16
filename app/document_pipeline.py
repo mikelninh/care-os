@@ -25,12 +25,7 @@ class DocumentInput(BaseModel):
 
 
 class ExtractedCandidate(BaseModel):
-    """Untrusted extractor output.
-
-    Extractors/models may propose facts but never write clinical truth directly.
-    Evidence offsets are mechanically verified before promotion. Source maturity
-    (preliminary/final/corrected) is separate from extraction confidence.
-    """
+    """Untrusted extractor output; exact source evidence is mandatory for promotion."""
 
     fact_type: str = Field(min_length=1)
     logical_key: str | None = None
@@ -50,6 +45,7 @@ class ExtractedCandidate(BaseModel):
     review_reason: str | None = None
     contradiction_group: str | None = None
     supersedes_fact_id: str | None = None
+    blocks_fact_types: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def validate_offsets(self) -> "ExtractedCandidate":
@@ -61,6 +57,8 @@ class ExtractedCandidate(BaseModel):
             raise ValueError("normalized unit requires original unit")
         if self.status in {FactStatus.AMBIGUOUS, FactStatus.UNKNOWN} and not self.review_reason:
             raise ValueError("ambiguous/unknown candidate requires review_reason")
+        if self.blocks_fact_types and self.status == FactStatus.CONFIRMED:
+            raise ValueError("review barriers must be ambiguous/unknown")
         return self
 
 
@@ -76,8 +74,6 @@ def candidate_to_fact(
     transformer_version: str,
     ordinal: int = 0,
 ) -> ClinicalFact:
-    """Promote an untrusted candidate only when source evidence is exact."""
-
     if candidate.evidence_end > len(document.text):
         raise UnsupportedEvidence("evidence span exceeds document length")
     actual = document.text[candidate.evidence_start:candidate.evidence_end]
@@ -110,6 +106,7 @@ def candidate_to_fact(
         assertion_stage=candidate.assertion_stage,
         contradiction_group=candidate.contradiction_group,
         supersedes_fact_id=candidate.supersedes_fact_id,
+        blocks_fact_types=candidate.blocks_fact_types,
         review_reason=candidate.review_reason,
     )
 
