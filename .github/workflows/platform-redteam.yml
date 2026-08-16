@@ -1,0 +1,58 @@
+name: platform-redteam
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - 'scripts/platform_stress_report.py'
+      - 'benchmark/**'
+      - 'deploy/**'
+      - '.github/workflows/platform-redteam.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - 'scripts/platform_stress_report.py'
+      - 'benchmark/**'
+      - 'deploy/**'
+      - '.github/workflows/platform-redteam.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  whole-platform:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12.13'
+      - name: Install locked dependencies
+        run: pip install --requirement requirements.lock
+      - name: Run full regression and adversarial suite
+        run: pytest -q
+      - name: Generate whole-platform stress evidence
+        run: python scripts/platform_stress_report.py
+      - name: Verify live modes remain locked
+        run: |
+          python - <<'PY'
+          from app.agent_readiness import agent_gate_manifest
+          from app.readiness_gates import gate_manifest
+          core = gate_manifest()
+          agents = agent_gate_manifest()
+          assert core['live_patient_data_allowed'] is False
+          assert agents['agent_live_identifiable_phi_allowed'] is False
+          assert agents['autonomous_consequential_actions_allowed'] is False
+          print('live-data and consequential-agent locks verified')
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: careos-platform-redteam-evidence
+          path: data/platform_stress_report.json
