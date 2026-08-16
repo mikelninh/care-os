@@ -1,0 +1,76 @@
+name: ISiK5 validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'integration/isik5/**'
+      - '.github/workflows/isik5-validation.yml'
+      - 'docs/REGULATORY_BASELINE_DE.md'
+
+jobs:
+  validate-isik5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download pinned gematik validator and ISiK5 plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tools/referencevalidator/plugins
+          curl -fL --retry 3 \
+            -o .tools/referencevalidator/referencevalidator-cli-2.16.6.jar \
+            https://github.com/gematik/app-referencevalidator/releases/download/2.16.6/referencevalidator-cli-2.16.6.jar
+          curl -fL --retry 3 \
+            -o .tools/referencevalidator/plugins/isik5-1.0.4.zip \
+            https://github.com/gematik/app-referencevalidator-plugins/releases/download/isik5-1.0.4/isik5-1.0.4.zip
+
+      - name: Verify official release digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'a21b57517459eaf3029e59cb2bde5e7d837743dc52a0851a9bf35c613c0916ba  .tools/referencevalidator/referencevalidator-cli-2.16.6.jar' | sha256sum -c -
+          echo '7262067db6fb2632bec9a53bda090c7b719d72db9b9568eb64c24413691f56d3  .tools/referencevalidator/plugins/isik5-1.0.4.zip' | sha256sum -c -
+
+      - name: Validate CareOS synthetic Patient against ISiK5
+        working-directory: .tools/referencevalidator
+        shell: bash
+        env:
+          LANG: C.UTF-8
+          LC_ALL: C.UTF-8
+        run: |
+          set -euo pipefail
+          java -jar referencevalidator-cli-2.16.6.jar isik5 ../../integration/isik5/Patient-careos-synthetic.json 2>&1 | tee ../../isik5-validation.txt
+
+      - name: Record pinned validator evidence
+        shell: bash
+        run: |
+          cat > isik5-evidence.json <<'EOF'
+          {
+            "validator": "gematik/app-referencevalidator",
+            "validator_version": "2.16.6",
+            "validator_sha256": "a21b57517459eaf3029e59cb2bde5e7d837743dc52a0851a9bf35c613c0916ba",
+            "plugin": "gematik/app-referencevalidator-plugins:isik5",
+            "plugin_version": "1.0.4",
+            "plugin_sha256": "7262067db6fb2632bec9a53bda090c7b719d72db9b9568eb64c24413691f56d3",
+            "fixture": "integration/isik5/Patient-careos-synthetic.json",
+            "claim": "CI validation evidence only; not a gematik confirmation/certification claim."
+          }
+          EOF
+
+      - name: Upload validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: isik5-validation-evidence
+          path: |
+            isik5-validation.txt
+            isik5-evidence.json
