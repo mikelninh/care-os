@@ -47,9 +47,11 @@ def test_connector_failure_is_unavailable_not_empty_patient_truth():
     assert result.safe_to_render is False
 
 
-def test_capabilities_are_explicit_about_missing_production_features():
+def test_capabilities_match_proven_connector_features_and_missing_work():
     caps = FHIRConnector(client=GoodFHIRClient()).capabilities()
     assert caps.read_only is True
-    assert caps.supports_paging is False
+    assert caps.supports_paging is True
     assert caps.supports_incremental_refresh is False
-    assert "ISiK" in " ".join(caps.notes)
+    notes = " ".join(caps.notes)
+    assert "ISiK" in notes
+    assert "version reconciliation" in notes
