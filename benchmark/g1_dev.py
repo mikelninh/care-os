@@ -87,6 +87,13 @@ def extract_case(case: dict[str, Any]) -> dict[str, Any]:
         "provenance_coverage": reconciled.provenance_coverage,
         "rejected_candidates": rejected,
         "raw_fact_count": len(all_facts),
+        "new_medication_orders": sorted(
+            str(f.value_original) for f in reconciled.current
+            if f.fact_type == "new_medication_order"
+        ),
+        "review_blocks_fact_types": sorted({
+            blocked for f in reconciled.review for blocked in f.blocks_fact_types
+        }),
     })
     return pred
 
