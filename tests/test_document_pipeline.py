@@ -1,9 +1,12 @@
 import pytest
+from pydantic import ValidationError
 
 from app.clinical_truth import FactStatus
 from app.document_pipeline import (
     DocumentInput,
     ExtractedCandidate,
+    MAX_DOCUMENT_CANDIDATES,
+    MAX_DOCUMENT_TEXT_CHARS,
     UnsupportedEvidence,
     candidate_to_fact,
     ingest_document_candidates,
@@ -114,3 +117,20 @@ def test_multiple_candidates_keep_distinct_fact_ids_and_same_patient():
     truth = ingest_document_candidates(doc, candidates, transformer="schema-extractor", transformer_version="0.1")
     assert len({f.fact_id for f in truth.facts}) == 2
     assert {f.patient_ref for f in truth.facts} == {"p1"}
+
+
+def test_document_text_is_bounded_before_extraction():
+    with pytest.raises(ValidationError):
+        DocumentInput(patient_ref="p1", document_id="huge", source_system="scan", text="x" * (MAX_DOCUMENT_TEXT_CHARS + 1))
+
+
+def test_candidate_flood_is_rejected_before_truth_construction():
+    doc = DocumentInput(patient_ref="p1", document_id="flood", source_system="scan", text="x")
+    candidate = ExtractedCandidate(fact_type="note", value_original="x", evidence_start=0, evidence_end=1, evidence_quote="x")
+    with pytest.raises(ValueError, match="candidate count"):
+        ingest_document_candidates(
+            doc,
+            [candidate] * (MAX_DOCUMENT_CANDIDATES + 1),
+            transformer="hostile-extractor",
+            transformer_version="1",
+        )
