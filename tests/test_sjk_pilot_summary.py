@@ -18,16 +18,26 @@ def test_summary_aggregates_without_returning_free_text(tmp_path):
     rows = [
         "P01,assistenz,Chrome,90,yes,yes,yes,yes,20,0,0,2,0,no,2,yes,ignore this",
         "P02,facharzt,Safari,110,yes,yes,yes,yes,25,0,0,1,1,no,2,yes,also ignored",
-        "P03,assistenz,Edge,100,yes,yes,yes,yes,22,0,0,2,0,no,3,yes,ignored",
-        "P04,oberarzt,Chrome,130,yes,yes,yes,yes,30,0,0,2,0,no,2,yes,ignored",
-        "P05,facharzt,Edge,105,yes,yes,yes,yes,24,0,0,1,0,no,2,yes,ignored",
+        "P03,assistenz,Edge,100,yes,yes,yes,yes,22,0,0,2,0,no,3,yes,participant note alpha",
+        "P04,oberarzt,Chrome,130,yes,yes,yes,yes,30,0,0,2,0,no,2,yes,participant note beta",
+        "P05,facharzt,Edge,105,yes,yes,yes,yes,24,0,0,1,0,no,2,yes,participant note gamma",
     ]
     report = summarize(_write(tmp_path, rows))
     assert report["evidence_status"] == "ready_for_human_review"
     assert report["metrics"]["participants"] == 5
     assert report["metrics"]["pending_status_correct_pct"] == 100.0
     assert report["metrics"]["would_use_tomorrow_pct"] == 100.0
-    assert "notes" not in str(report).lower()
+
+    serialized = str(report).lower()
+    for leaked_text in (
+        "ignore this",
+        "also ignored",
+        "participant note alpha",
+        "participant note beta",
+        "participant note gamma",
+    ):
+        assert leaked_text not in serialized
+    assert "notes_no_patient_data" not in report
 
 
 def test_summary_surfaces_safety_flags_instead_of_auto_go(tmp_path):
