@@ -142,13 +142,8 @@ class TruthEnvelope(BaseModel):
         wrong_patient = [f.fact_id for f in self.facts if f.patient_ref != self.patient_ref]
         if wrong_patient:
             raise ValueError(f"cross-patient facts rejected: {wrong_patient}")
-        known = set(ids)
-        broken_supersedes = [
-            f.fact_id for f in self.facts
-            if f.supersedes_fact_id and f.supersedes_fact_id not in known
-        ]
-        if broken_supersedes:
-            raise ValueError(f"supersedes references missing facts: {broken_supersedes}")
+        # supersedes_fact_id may legitimately point to a fact from another source
+        # envelope. Cross-source lineage is validated by the reconciliation layer.
         return self
 
     def provenance_coverage(self) -> float:
