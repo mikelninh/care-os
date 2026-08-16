@@ -14,10 +14,11 @@ from .specialties import list_specialty_packs, specialty_demo
 from .global_packs import architecture_manifest
 from .monetization_agent import monetization_manifest
 from .portability import ips_preview
+from .readiness_gates import gate_manifest
 
 BASE = Path(__file__).parent
 STATIC = BASE / "static"
-app = FastAPI(title="CareOS V9", version="9.0.0", description="Clinician-first specialty-pack + integration + stress-test prototype")
+app = FastAPI(title="CareOS", version="9.1.0", description="Clinician-first, source-grounded healthcare workflow prototype")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 class PilotScoreRequest(BaseModel):
@@ -61,6 +62,10 @@ def specialty_pack(pack_id: str):
 def packs_manifest():
     return architecture_manifest()
 
+@app.get("/api/readiness/gates")
+def readiness_gates():
+    return gate_manifest()
+
 @app.get("/api/global/ips-preview/{patient_id}")
 def global_ips_preview(patient_id: str, language: str = "en"):
     result = ips_preview(patient_id, language)
@@ -75,10 +80,11 @@ def ethical_monetization_agent():
 @app.get("/api/health")
 def health():
     return {
-        "status":"ok", "version":"9.0.0", "mode":"synthetic-pilot+specialty-packs+integration-lab",
+        "status":"ok", "version":"9.1.0", "mode":"synthetic-pilot+specialty-packs+integration-lab+readiness-gates",
         "claims":[
             "synthetic data only", "no autonomous clinical decisions", "no production write-back",
-            "ambiguous patient matching blocks automatic attachment", "utility metrics require measured task completion"
+            "ambiguous patient matching blocks automatic attachment", "utility metrics require measured task completion",
+            "live patient data remains locked until evidence-backed readiness gates pass"
         ]
     }
 
