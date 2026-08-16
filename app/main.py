@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from .demo_data import PATIENTS, TIMELINES, FOCUS, DOCUMENTATION_CASES, INBOX_ITEMS, PILOT_TASKS
 from .impact import score_pilot_task, aggregate_results
 from .safety import patient_match_decision
-from .fhir_adapter import FhirClient, FhirUnavailable, snapshot_to_timeline
+from .fhir_adapter import FhirClient, FhirUnavailable, snapshot_to_timeline, snapshot_to_truth
 from .guidelines import list_sources, select_guidance
 from .security_readiness import readiness as security_readiness
 from .specialties import list_specialty_packs, specialty_demo
@@ -140,6 +140,14 @@ def fhir_capability():
     try:
         c = FhirClient().capability()
         return {"resourceType": c.get("resourceType"), "fhirVersion": c.get("fhirVersion"), "software": c.get("software"), "status":"connected"}
+    except FhirUnavailable as exc:
+        raise HTTPException(503, f"FHIR source unavailable: {exc}")
+
+@app.get("/api/fhir/patients/{patient_id}/truth")
+def fhir_patient_truth(patient_id: str):
+    try:
+        truth = snapshot_to_truth(FhirClient().patient_snapshot(patient_id))
+        return truth.model_dump(mode="json")
     except FhirUnavailable as exc:
         raise HTTPException(503, f"FHIR source unavailable: {exc}")
 
