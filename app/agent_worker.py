@@ -34,6 +34,16 @@ class AgentDraft(BaseModel):
     contains_recommendation: bool = False
 
 
+def validate_low_consequence_draft(draft: AgentDraft) -> AgentDraft:
+    if not draft.review_required:
+        raise ValueError("agent draft must remain human-review-required")
+    if draft.contains_recommendation:
+        raise ValueError("first CareOS agent use case does not permit treatment recommendations")
+    if not draft.source_fact_ids:
+        raise ValueError("agent draft must cite admitted source facts")
+    return draft
+
+
 def bind_tool_proposal(delegation: AgentDelegation, proposal: AgentToolProposal) -> AgentRequest:
     """Bind untrusted proposal to authoritative delegated context."""
 
