@@ -62,7 +62,12 @@ SPECIALTY_PACKS = {
                 {"tone":"warning","label":"Offen","value":"CT Response + Tumorboard","source":"Plan · morgen","detail":"zwei abhängige Schritte"},
             ],
             "pending":["CT Response-Bewertung","Tumorboard-Freigabe","Toxizitätsverlauf dokumentieren"],
-            "timeline":[],
+            "timeline":[
+                {"time":"Heute 08:10","source":"KIS/Verlauf","title":"Toxizitäten dokumentiert","summary":"Diarrhö Grad 2, Hauttoxizität Grad 1; klinische Bewertung bleibt beim Behandlungsteam.","ref":"KIS · Verlauf ONC-552"},
+                {"time":"Gestern 14:30","source":"Onko-Therapieplan","title":"Therapiezyklus dokumentiert","summary":"Zyklus 2, Tag 8 im aktuellen Therapieplan.","ref":"Onko-Plan · OP-2202"},
+                {"time":"13.08. 16:00","source":"Tumorboard","title":"Stadium bestätigt","summary":"NSCLC, Stadium IV im synthetischen Tumorboard-Fall dokumentiert.","ref":"Tumorboard · TB-203"},
+                {"time":"12.08. 11:18","source":"Pathologie","title":"Molekularbefund","summary":"EGFR Exon 19 del; PD-L1 20 %. Originalbefund bleibt maßgeblich.","ref":"Pathologie · P-8891"},
+            ],
             "handover":"NSCLC Stadium IV; Molekularbefund verfügbar. Zyklus 2 Tag 8. Toxizitäten dokumentiert. CT und Tumorboard offen."
         }
     },
@@ -84,7 +89,12 @@ SPECIALTY_PACKS = {
                 {"tone":"warning","label":"Offen","value":"Physio-Reassessment + Orthostase","source":"Plan · heute","detail":"Follow-up"},
             ],
             "pending":["Physio-Reassessment","Orthostase prüfen","Medikationsabgleich"],
-            "timeline":[],
+            "timeline":[
+                {"time":"Heute 07:40","source":"KIS/Pflege + Visite","title":"Gangunsicherheit verstärkt","summary":"Deutlich stärker als der dokumentierte Aufnahme-Baseline; Ursache nicht automatisch interpretiert.","ref":"KIS · Verlauf N-441"},
+                {"time":"Gestern 18:22","source":"Radiologie","title":"MRT-Befund","summary":"Kein akuter Infarkt im synthetischen Radiologie-Befund.","ref":"RIS · MR-881"},
+                {"time":"14.08. 15:05","source":"KIS/Aufnahme","title":"Neurologischer Ausgangsstatus","summary":"Mobil mit Rollator, Sprache klar.","ref":"KIS · Aufnahme N4-230"},
+                {"time":"Heute 08:05","source":"Plan","title":"Reassessment offen","summary":"Physio-Reassessment, Orthostase und Medikationsabgleich ausstehend.","ref":"KIS · Plan N4-992"},
+            ],
             "handover":"Baseline mobil mit Rollator, heute deutlich gangunsicherer. MRT ohne akuten Infarkt. Reassessment und Orthostase offen."
         }
     }
