@@ -61,7 +61,7 @@ def assert_fhir_source_allowed(mode: DataMode, base_url: str, *, external_deiden
         if _is_loopback_url(base_url):
             return
         if not external_deidentified_ack:
-            raise DeploymentBlocked("external de-identified FHIR source requires explicit CAREOS_EXTERNAL_DEIDENTIFIED_ACK=true")
+            raise DeploymentBlocked("external de-identified FHIR source requires explicit acknowledgement via CAREOS_EXTERNAL_DEIDENTIFIED_ACK=true")
         if not base_url.startswith("https://"):
             raise DeploymentBlocked("external de-identified FHIR source must use HTTPS")
         return
