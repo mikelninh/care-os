@@ -127,11 +127,41 @@ def _apply_review_barriers(result: ReconciliationResult, barriers: list[Clinical
             ))
 
 
+def _apply_unbound_cancellations(result: ReconciliationResult, cancellations: list[ClinicalFact]) -> None:
+    """A cancellation without a precise target must not leave older same-key state quiet.
+
+    If the source explicitly names a superseded fact, normal supersession handles it.
+    When it does not, CareOS cannot know which earlier assertion was withdrawn, so any
+    older/equal currently surfaced assertion for that reconciliation key is withheld for
+    review. A later valid assertion can restore current state.
+    """
+
+    for cancellation in cancellations:
+        cancellation_time = _time(cancellation)
+        impacted = [
+            current for current in list(result.current)
+            if current.reconciliation_key == cancellation.reconciliation_key
+            and _time(current) <= cancellation_time
+        ]
+        if not impacted:
+            continue
+        for current in impacted:
+            result.current.remove(current)
+            if current not in result.review:
+                result.review.append(current)
+        result.issues.append(ReconciliationIssue(
+            code="critical-unbound-cancellation",
+            fact_ids=(cancellation.fact_id, *(fact.fact_id for fact in impacted)),
+            reason="a newer cancellation could not be bound to one prior assertion; older same-concept state is withheld",
+        ))
+
+
 def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
     """Reconcile source assertions without inventing clinical truth.
 
     Confidence is never used to choose between conflicting clinical assertions.
-    Unresolved newer high-risk sources can actively block older parsed state.
+    Unresolved newer high-risk sources and unbound cancellations can actively block
+    older parsed state from appearing current.
     """
 
     patient, facts = _validate_patient(envelopes)
@@ -141,6 +171,7 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
     eligible: list[ClinicalFact] = []
     explicitly_superseded: set[str] = set()
     barriers: list[ClinicalFact] = []
+    unbound_cancellations: list[ClinicalFact] = []
 
     for fact in facts:
         if fact.status != FactStatus.CONFIRMED or not fact.provenance_complete:
@@ -148,9 +179,9 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
             if fact.blocks_fact_types:
                 barriers.append(fact)
             continue
-        if fact.assertion_stage == AssertionStage.CANCELLED:
-            result.cancelled.append(fact)
-            continue
+
+        # Apply explicit source-level correction/cancellation links before deciding
+        # whether the new assertion itself is eligible for the current surface.
         if fact.supersedes_fact_id:
             target = by_id.get(fact.supersedes_fact_id)
             if target is None:
@@ -170,6 +201,13 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
                 ))
                 continue
             explicitly_superseded.add(target.fact_id)
+
+        if fact.assertion_stage == AssertionStage.CANCELLED:
+            result.cancelled.append(fact)
+            if not fact.supersedes_fact_id:
+                unbound_cancellations.append(fact)
+            continue
+
         eligible.append(fact)
 
     remaining = []
@@ -222,4 +260,5 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
         ))
 
     _apply_review_barriers(result, barriers)
+    _apply_unbound_cancellations(result, unbound_cancellations)
     return result
