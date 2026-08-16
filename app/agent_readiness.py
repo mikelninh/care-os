@@ -20,12 +20,12 @@ def agent_gate_manifest() -> dict:
         },
         {
             "id": "A3", "name": "Injection/hijacking resilience", "status": "PARTIAL",
-            "evidence": ["compromised-worker harness", "malicious exfiltration/cohort/write attempts contained by deterministic policy", "dedicated agent-redteam CI artifact"],
-            "blockers": ["real model/provider red team", "larger malicious document/tool corpus", "independent red team"],
+            "evidence": ["compromised-worker harness", "six malicious exfiltration/cohort/write/admin/category-expansion attempts contained by deterministic policy", "dedicated agent-redteam CI artifact"],
+            "blockers": ["real model/provider red team", "larger malicious document/tool/MCP corpus", "independent red team"],
         },
         {
             "id": "A4", "name": "Egress / PHI controls", "status": "BLOCKED",
-            "evidence": ["deny-by-default egress in delegation/tool/gateway contracts", "synthetic and deidentified modes default to no external egress"],
+            "evidence": ["deny-by-default egress in delegation/tool/gateway contracts", "synthetic and deidentified modes default to no external egress", "fixed minimum-data model projection strips direct identifier fields and requires source-linked delegated categories", "reference deny-all agent network policy"],
             "blockers": ["provider network egress proxy/allowlist/DLP", "approved model/subprocessor data flow", "network enforcement outside application process"],
         },
         {
