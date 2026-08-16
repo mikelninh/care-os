@@ -2,9 +2,10 @@
 
 CareOS graduates by **evidence-backed gates, not version number**.
 
-Machine-readable source: `GET /api/readiness/gates` in `app/readiness_gates.py`.
+Machine-readable normal gates: `GET /api/readiness/gates` in `app/readiness_gates.py`.
+Agent-specific machine-readable gates: `app/agent_readiness.py`.
 
-> **Reference Architecture readiness is 10/10 for proposal completeness/reviewability. Production readiness is a different question. No production gate is PASS yet.**
+> **Reference Architecture readiness is 10/10 for proposal completeness/reviewability. Production readiness is a different question. No normal or agent production gate is PASS yet.**
 
 | Gate | Status | What still blocks PASS |
 |---|---|---|
@@ -21,7 +22,7 @@ Machine-readable source: `GET /api/readiness/gates` in `app/readiness_gates.py`.
 
 ## Reference architecture evidence
 
-The proposal package now includes:
+The proposal package includes:
 
 - `docs/ARCHITECTURE_V2.md` — canonical technical reference architecture;
 - `docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md` — German public-sector architecture;
@@ -34,7 +35,9 @@ The proposal package now includes:
 - `docs/RESPONSIBILITY_MODEL.md`;
 - `docs/PROCUREMENT_REQUIREMENTS.md`;
 - `docs/AGENT_SECURITY_MODEL.md`;
-- Architecture Decision Records under `docs/adr/` including ADR-011 for delegated agents;
+- `docs/AGENT_PRODUCTION_PROGRAM.md`;
+- `docs/AGENT_SECURITY_BASELINE.md`;
+- Architecture Decision Records under `docs/adr/`, including ADR-011 for delegated agents;
 - machine-readable `architecture/reference-architecture.json` with CI invariants.
 
 The architecture score is intentionally **not used to unlock live data**.
@@ -45,14 +48,14 @@ Implemented safeguards include:
 
 - mandatory `ClinicalFact` / `TruthEnvelope` contract;
 - source identity/version/time semantics where supplied;
-- document/model outputs are untrusted until source evidence is mechanically verified;
+- document/model outputs untrusted until source evidence is mechanically verified;
 - exact source quote independently located by CareOS;
-- model-proposed effective clinical time is not trusted;
-- assertion maturity is separate from extraction confidence;
-- confidence never silently chooses a winner between conflicting clinical assertions;
-- deterministic case reconciliation is downstream of extractors;
+- model-proposed effective clinical time not trusted;
+- assertion maturity separate from extraction confidence;
+- confidence never silently chooses a winner between conflicting assertions;
+- deterministic case reconciliation downstream of extractors;
 - a newer unresolved high-risk source can block older parsed state from appearing current;
-- cross-patient truth is rejected;
+- cross-patient truth rejected;
 - ambiguous/unknown facts route to review.
 
 ### Frozen Holdout #3
@@ -72,7 +75,7 @@ Across 500 synthetic unseen-format cases:
 - critical silent contradiction misses **0**;
 - review case rate **100%**.
 
-This remains **BLOCKED**: the safety behavior improved, but the recall/review burden is unusable. Holdout #3 is historical evidence and is not tuning data.
+G1 remains **BLOCKED**: safer, but the recall/review burden is unusable. Holdout #3 is historical evidence and is not tuning data.
 
 ## G2 — German interoperability
 
@@ -90,7 +93,7 @@ A real hospital/vendor path is still required.
 
 ## G3 — Security & privacy
 
-Internal evidence now includes:
+Internal evidence includes:
 
 - asymmetric OIDC/JWT verification foundation;
 - role/scope/treatment-context authorization;
@@ -101,18 +104,17 @@ Internal evidence now includes:
 - tamper-evident local audit chain;
 - provider-side PHI / control-plane separation;
 - threat/data-flow/responsibility/DSFA/AVV assurance documentation;
-- **CodeQL static security analysis in CI**;
-- **scheduled dependency vulnerability audit**;
-- **CycloneDX SBOM artifact**;
-- **Dependabot** for Python and GitHub Actions;
-- remediated dependency advisory discovered by the new supply-chain gate;
-- explicit zero-trust **agent security model** and delegated-principal ADR.
+- CodeQL;
+- scheduled dependency vulnerability audit;
+- CycloneDX SBOM;
+- Dependabot;
+- explicit agent security model and delegated-principal ADR.
 
 Still external: real provider IdP, production audit/SIEM, KMS/encryption, hospital agreements/approval, applicable C5/customer-control evidence and independent pentest.
 
 ## G4 — Reliability / operations
 
-Internal evidence now includes:
+Internal evidence includes:
 
 - explicit `current / stale / unavailable / unknown` source state;
 - fail-closed pagination/partial reads;
@@ -120,102 +122,76 @@ Internal evidence now includes:
 - deployment/rollback and incident-response runbooks;
 - SLO framework;
 - safety failure-injection CI;
-- non-root container image;
-- container health check;
+- non-root container image + health check;
 - container CI proving synthetic startup;
-- container CI proving `live-readonly` **does not start** while G0–G5 are incomplete;
-- transactional/write-back mode remains unsupported.
+- container CI proving `live-readonly` does not start while G0–G5 are incomplete;
+- transactional/write-back mode unsupported.
 
 Still external: target-environment dependency failures, recovery drills, RPO/RTO, production monitoring and incident exercises.
 
 ## G5 — Regulatory / quality
 
-Internal preparation includes:
-
-- intended-purpose/safety boundary;
-- regulatory baseline;
-- risk register;
-- change-control discipline;
-- technical-documentation index with EHDS-style categories;
-- assurance crosswalk.
-
-CareOS does not self-award MDR/MDSW classification, AI Act/EHDS applicability or QMS sufficiency.
+Internal preparation includes intended-purpose/safety boundary, regulatory baseline, risk register, change control, technical-documentation index and assurance crosswalk. CareOS does not self-award MDR/MDSW classification, AI Act/EHDS applicability or QMS sufficiency.
 
 ## G6/G7 — SJK reference pathway
 
-Prepared:
-
-- synthetic SJK Infectiology reference environment;
-- low-spec/mobile browser test;
-- 5-minute team-test protocol + measurement tooling;
-- Chefarzt decision brief/page;
-- read-only integration discovery checklist;
-- staged `SJK_END_TO_END_PLAN.md`;
-- hospital assurance pack;
-- trust/data-flow model;
-- responsibility matrix;
-- deployment patterns;
-- procurement requirements;
-- safety-aware change control and pilot protocol.
+Prepared: synthetic SJK Infectiology environment, low-spec/mobile test, 5-minute team-test protocol + measurement tooling, Chefarzt brief/page, read-only integration discovery checklist, staged SJK plan, hospital assurance pack, responsibility matrix, deployment patterns, procurement requirements and pilot stop criteria.
 
 ## G8 — Repeatability
 
-The anti-consultancy architecture is explicit:
-
-- stable connector contract;
-- stable clinical-fact/provenance/failure semantics;
-- one core + specialty/country/language/audience composition;
-- vendor-specific logic behind connectors;
-- multiple deployment patterns with the same safety contracts.
-
-The gate still requires real Hospital A + different Hospital B evidence.
+Scale must preserve one core with vendor logic behind connectors and specialty/country/language/audience composition. PASS still requires Hospital A + a different Hospital B/vendor without a CareOS core fork.
 
 ## G9 — National / EU scale
 
-The **reference architecture is now proposal-grade** and includes national rails, procurement/anti-lock-in principles and EHDS-forward technical documentation.
+The reference architecture is proposal-grade and includes national rails, anti-lock-in procurement principles and EHDS-forward documentation. G9 remains **BLOCKED** because proposal completeness is not operating evidence.
 
-G9 remains **BLOCKED** because proposal completeness is not national operating evidence.
+# Agent production gates — A0 to A9
 
-## Agent production gates — A0 to A9
+Normal CareOS readiness does **not** automatically authorize an AI agent. Identifiable patient-data access requires normal G0–G5 PASS **and** all relevant A0–A9 gates PASS.
 
-Normal CareOS readiness does **not** automatically authorize AI agents. Any agent that can access identifiable patient data or invoke clinical tools has an additional independent gate set.
+| Agent gate | Status now | Internal evidence | Still blocks PASS |
+|---|---|---|---|
+| A0 Agent/workload identity | **PARTIAL** | explicit agent ID/version and separate-principal contract | real provider workload identity, revocation/rotation |
+| A1 Signed delegation | **PARTIAL** | Ed25519 signed envelope; issuer/audience/key ID; patient/encounter/task/tool/data/time/budget binding | production issuer/key lifecycle + replay prevention |
+| A2 Tool least privilege | **PARTIAL** | versioned `ToolSpec` registry; deterministic tool/effect/data/egress authorization | register/conformance-test every real production tool |
+| A3 Injection/hijacking resilience | **BLOCKED** | hostile-request containment tests; security does not rely on model refusal | model-connected adversarial corpus + independent red team |
+| A4 Egress controls | **BLOCKED** | deny-default delegation/tool egress contracts | provider network/DLP enforcement + approved model/subprocessor path |
+| A5 Agent audit | **PARTIAL** | human + agent + version + delegation + execution + tool structured audit schema | protected provider audit/SIEM + integrity/review evidence |
+| A6 Memory isolation | **PARTIAL** | organisation/patient/encounter/execution-scoped pseudonymous namespace | real memory store + retention/deletion/leakage tests |
+| A7 Abuse/blast-radius limits | **PARTIAL** | hard tool/record/page/runtime/sub-agent limits; arbitrary patient search denied | distributed rate limits, back-pressure, circuit breakers, load/runaway tests |
+| A8 Consequential actions | **BLOCKED** | write/external-send disabled; future tool contract requires confirmation | action-specific human confirmation + separate safety/regulatory release |
+| A9 Independent agent review | **EXTERNAL REVIEW** | security model + production programme + external baseline | independent security/clinical/Datenschutz/hospital review |
 
-| Agent gate | Current status | PASS requires |
-|---|---|---|
-| A0 Agent identity | **BLOCKED** | separate verifiable workload/agent identity, no human-token reuse |
-| A1 Delegation | **BLOCKED** | signed patient/task/tool/time/data bounded delegation envelope |
-| A2 Tool least privilege | **BLOCKED** | admitted allowlisted tools + deterministic authorization at tool boundary |
-| A3 Injection resilience | **BLOCKED** | adversarial indirect-prompt-injection/tool-hijacking tests with bounded harm |
-| A4 Egress controls | **BLOCKED** | explicit model/tool/network destinations, DLP/field policy and tests |
-| A5 Agent audit | **BLOCKED** | human + agent + version + execution + tool attribution with protected integrity |
-| A6 Memory isolation | **BLOCKED** | organisation/patient/execution isolation + retention/destruction evidence |
-| A7 Abuse/blast-radius limits | **BLOCKED** | hard patient/page/tool/time/recursion/rate ceilings and tests |
-| A8 Consequential actions | **BLOCKED** | explicit human confirmation; production write-back separately gated |
-| A9 Independent agent review | **BLOCKED** | actual use case red-team + clinical/security review |
+### Agent Stage 0 evidence now implemented
+
+The repository now contains:
+
+- `app/agent_policy.py` — narrow delegation authorization;
+- `app/agent_delegation.py` — Ed25519 signed delegation envelope;
+- `app/agent_tools.py` — versioned tool registry/risk metadata;
+- `app/agent_runtime.py` — deterministic gateway + execution budgets + memory namespace;
+- `app/agent_audit.py` — PHI-minimized dual-attribution agent audit events;
+- `app/agent_readiness.py` — A0–A9 machine-readable gate manifest;
+- `app/synthetic_agent.py` — first gateway-backed synthetic SJK morning-review flow;
+- adversarial tests for cross-patient access, egress, undeclared tools/data, write/break-glass escalation, recursion and budget bypass.
 
 **No A0–A9 gate is PASS today. No identifiable production agent use is approved.**
 
-The first agent experiments must remain synthetic/de-identified and low consequence. Model refusal is not considered an authorization control; the pass criterion is that deterministic policy/capability boundaries prevent harmful access/action even when the model is hijacked.
+The pass criterion is not “the model refused the attack.” It is that deterministic policy/capability boundaries prevent harmful access/action even if the reasoning worker is hijacked.
 
 ## Live-data lock
 
-Identifiable live patient data remains **locked** while any of G0–G5 is not `PASS`.
+Identifiable live patient data remains locked while any of G0–G5 is not PASS. If agentic access is added, identifiable agent use additionally remains locked until the relevant A0–A9 gates pass.
 
-This is enforced in application startup policy and tested again in the container runtime workflow.
-
-If agentic access is added later, live agent use additionally remains locked until the relevant A0–A9 gates pass.
-
-A green unit test, security scan or architecture score is not sufficient to pass an assurance gate. External-review and real-deployment gates require named qualified reviewers, real infrastructure and linked evidence.
+A green test, security scan or architecture score is never sufficient to pass an external assurance gate.
 
 ## Immediate critical path
 
 1. **G1:** improve recall/review burden on a fresh development corpus without tuning Holdout #3.
 2. **SJK Stage 0:** collect measured synthetic clinician workflow evidence.
-3. **G0/G5:** independent clinical-safety + medical-software regulatory review.
-4. **G2:** earn and obtain one real read-only KIS/LIS/vendor sandbox.
-5. **G3:** real hospital IdP/context, protected audit/KMS, hospital-specific Datenschutz/security evidence, independent pentest.
-6. **G4:** target-environment failure, backup/restore and incident/rollback exercises.
-7. **Agent lane:** keep production agent access disabled; implement A0–A9 only for a separately approved use case.
+3. **Agent Stage 1:** connect a reasoning worker only to synthetic facts through the gateway; build indirect-prompt-injection/tool-hijacking red-team harness.
+4. **G0/G5/A9:** independent clinical-safety, medical-software, security and Datenschutz review.
+5. **G2:** one real read-only KIS/LIS/vendor sandbox.
+6. **G3/A0/A4/A5:** real hospital IdP/workload identity, protected audit/KMS, network egress policy, hospital-specific Datenschutz/security evidence and pentest.
+7. **G4/A7:** target-environment failure, backup/restore, rate/back-pressure and incident exercises.
 8. **G8:** reproduce at a second hospital/vendor without a core fork.
-
-Only after G0–G5 PASS does an identifiable read-only live-data pilot become eligible for a go/no-go decision. Agentic access remains a separate decision even then.
