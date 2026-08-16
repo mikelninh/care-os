@@ -37,7 +37,7 @@ jobs:
           print(json.dumps(r, indent=2, ensure_ascii=False), file=open(Path(__import__('os').environ['GITHUB_STEP_SUMMARY']), 'a'))
           print('```', file=open(Path(__import__('os').environ['GITHUB_STEP_SUMMARY']), 'a'))
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: g1-holdout3-evidence
           path: data/g1_holdout3_report.json

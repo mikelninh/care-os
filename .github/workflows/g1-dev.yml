@@ -36,7 +36,7 @@ jobs:
           assert report['minimum_provenance_coverage'] == 1.0
           print(json.dumps({k:v for k,v in report.items() if k!='sample_failures'}, indent=2, ensure_ascii=False))
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: g1-development-report
           path: data/g1_dev_report.json
