@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0",
+  "architecture_version": "2.0",
+  "baseline_date": "2026-08-16",
+  "name": "CareOS Federated Clinical Context Layer",
+  "reference_architecture_readiness": {
+    "score": 10,
+    "max_score": 10,
+    "meaning": "proposal-package completeness and architectural reviewability only; not production approval or clinical validation"
+  },
+  "production_claim": "not-production-ready",
+  "live_patient_data_allowed": false,
+  "system_of_record": false,
+  "routine_phi_in_control_plane": false,
+  "default_data_locality": "provider-data-plane",
+  "default_clinical_mode": "read-only",
+  "autonomous_clinical_writeback": false,
+  "architecture_principles": [
+    "source-system-authority",
+    "provider-side-phi",
+    "mandatory-provenance",
+    "explicit-unknown-and-failure-state",
+    "models-are-untrusted-proposers",
+    "read-write-capability-separation",
+    "strong-patient-identity-before-auto-attach",
+    "same-patient-context-no-second-search",
+    "composition-not-core-forks",
+    "least-privilege-treatment-context",
+    "fail-visible",
+    "evidence-backed-gates"
+  ],
+  "planes": {
+    "control_plane": {
+      "routine_identifiable_phi": false,
+      "allowed": [
+        "signed-releases",
+        "pack-versions",
+        "policy-and-config-schemas",
+        "terminology-and-guideline-metadata",
+        "connector-capability-definitions",
+        "non-phi-operational-metadata"
+      ]
+    },
+    "provider_data_plane": {
+      "identifiable_clinical_processing": true,
+      "components": [
+        "connector-gateway",
+        "patient-and-encounter-identity",
+        "clinical-truth-layer",
+        "terminology-and-temporal-policy",
+        "reconciliation-and-review",
+        "authorization-policy",
+        "provider-audit",
+        "clinician-ui"
+      ]
+    }
+  },
+  "trust_contracts": {
+    "connector": ["capabilities", "source-identity", "truth-envelope", "source-state", "version-and-time", "read-write-capability"],
+    "clinical_fact": ["patient", "fact-type", "original-value", "source", "source-version", "evidence", "effective-time", "ingestion-time", "transformer-version", "trust-status", "review-state"],
+    "access": ["user", "organisation", "role-scope", "patient", "encounter-or-treatment-context", "operation"],
+    "failure": ["current", "stale", "unavailable", "unknown", "contradictory", "explicitly-negative"],
+    "audit": ["actor", "organisation", "patient-reference", "data-category", "action", "time", "origin", "break-glass-context"]
+  },
+  "deployment_patterns": [
+    "provider-on-prem-or-private-infrastructure",
+    "dedicated-provider-cloud-tenant",
+    "federated-managed-service"
+  ],
+  "national_eu_alignment": [
+    "gematik-isik",
+    "gematik-isip",
+    "ti-2-zero-trust-and-identity",
+    "popp-treatment-context-where-applicable",
+    "epa-and-kim-as-ecosystem-rails",
+    "sgb-v-393-cloud-controls-where-applicable",
+    "ehds-interoperability-and-logging-forward-design"
+  ],
+  "documents": {
+    "canonical_architecture": "docs/ARCHITECTURE_V2.md",
+    "government_reference": "docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md",
+    "deployment_patterns": "docs/DEPLOYMENT_PATTERNS.md",
+    "trust_and_data_flow": "docs/TRUST_AND_DATA_FLOW.md",
+    "national_integration_map": "docs/NATIONAL_INTEGRATION_MAP.md",
+    "technical_documentation_index": "docs/TECHNICAL_DOCUMENTATION_INDEX.md",
+    "adrs": "docs/adr/README.md",
+    "production_gates": "docs/GATES.md"
+  },
+  "non_claims": [
+    "no-certification-claim",
+    "no-datenschutz-approval-claim",
+    "no-national-rollout-claim",
+    "no-mdr-classification-claim",
+    "no-ehds-conformity-claim",
+    "no-live-clinical-safety-validation-claim"
+  ]
+}
