@@ -44,8 +44,6 @@ class ReconciliationResult:
         return sum(1 for f in surfaced if f.provenance_complete) / len(surfaced)
 
 
-# These rules are intentionally explicit. "Newest wins" is dangerous as a generic
-# medical rule, so only fact families whose semantics are state snapshots opt in.
 LATEST_STATE_FACT_TYPES = frozenset({
     "renal_function",
     "current_medications",
@@ -81,16 +79,11 @@ def _same_value(facts: list[ClinicalFact]) -> bool:
 
 
 def _pick_by_stage(facts: list[ClinicalFact]) -> tuple[ClinicalFact | None, list[ClinicalFact]]:
-    """Choose a uniquely most mature assertion; never break ties by confidence."""
-
     if not facts:
         return None, []
     top_rank = max(_STAGE_RANK[f.assertion_stage] for f in facts)
     top = [f for f in facts if _STAGE_RANK[f.assertion_stage] == top_rank]
-    if len(top) == 1 and top[0].assertion_stage in {
-        AssertionStage.FINAL,
-        AssertionStage.CORRECTED,
-    }:
+    if len(top) == 1 and top[0].assertion_stage in {AssertionStage.FINAL, AssertionStage.CORRECTED}:
         return top[0], [f for f in facts if f.fact_id != top[0].fact_id]
     return None, []
 
@@ -109,18 +102,36 @@ def _validate_patient(envelopes: Iterable[TruthEnvelope]) -> tuple[str, list[Cli
     return patient, facts
 
 
+def _apply_review_barriers(result: ReconciliationResult, barriers: list[ClinicalFact]) -> None:
+    """A newer unresolved high-risk source blocks older state from looking current."""
+
+    for barrier in barriers:
+        barrier_time = _time(barrier)
+        for current in list(result.current):
+            if current.fact_type not in barrier.blocks_fact_types:
+                continue
+            if _time(current) > barrier_time:
+                # A successfully understood source newer than the barrier can restore
+                # current state; the barrier remains review work for its own source.
+                continue
+            result.current.remove(current)
+            if current not in result.review:
+                result.review.append(current)
+            result.issues.append(ReconciliationIssue(
+                code="critical-newer-unresolved-source",
+                fact_ids=(barrier.fact_id, current.fact_id),
+                reason=(
+                    f"newer unresolved source blocks {current.fact_type}; older parsed "
+                    "state must not be presented as current"
+                ),
+            ))
+
+
 def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
     """Reconcile source assertions without inventing clinical truth.
 
-    Order of authority:
-    1. unsafe/unknown/ambiguous facts go to review, never quiet display;
-    2. explicit source correction/supersession is honored when valid;
-    3. cancelled assertions do not surface as current;
-    4. final/corrected may replace preliminary for the same logical assertion;
-    5. only explicitly governed state-snapshot fact types may use latest effective time;
-    6. unresolved conflicting current assertions are routed to review.
-
     Confidence is never used to choose between conflicting clinical assertions.
+    Unresolved newer high-risk sources can actively block older parsed state.
     """
 
     patient, facts = _validate_patient(envelopes)
@@ -129,10 +140,13 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
 
     eligible: list[ClinicalFact] = []
     explicitly_superseded: set[str] = set()
+    barriers: list[ClinicalFact] = []
 
     for fact in facts:
         if fact.status != FactStatus.CONFIRMED or not fact.provenance_complete:
             result.review.append(fact)
+            if fact.blocks_fact_types:
+                barriers.append(fact)
             continue
         if fact.assertion_stage == AssertionStage.CANCELLED:
             result.cancelled.append(fact)
@@ -144,7 +158,7 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
                 result.issues.append(ReconciliationIssue(
                     code="broken-supersedes-reference",
                     fact_ids=(fact.fact_id,),
-                    reason="source claims to supersede a fact that is not present in the reconciled evidence set",
+                    reason="source claims to supersede a fact not present in the reconciled evidence set",
                 ))
                 continue
             if target.reconciliation_key != fact.reconciliation_key:
@@ -174,18 +188,12 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
             result.current.append(group[0])
             continue
 
-        # Corroborating sources that make the same assertion are useful evidence,
-        # not a contradiction. Keep one representative while retaining all IDs.
         if _same_value(group):
             chosen = max(group, key=lambda f: (_STAGE_RANK[f.assertion_stage], _time(f)))
             result.current.append(chosen)
-            result.corroborating_fact_ids[chosen.fact_id] = tuple(
-                f.fact_id for f in group if f.fact_id != chosen.fact_id
-            )
+            result.corroborating_fact_ids[chosen.fact_id] = tuple(f.fact_id for f in group if f.fact_id != chosen.fact_id)
             continue
 
-        # A final/corrected result may replace a preliminary assertion for the same
-        # logical concept. Two conflicting finals/corrections still require review.
         chosen, older = _pick_by_stage(group)
         if chosen is not None:
             result.current.append(chosen)
@@ -206,8 +214,6 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
                 result.superseded.extend(f for f in group if f.fact_id != chosen.fact_id)
                 continue
 
-        # Unresolved conflict: no winner is guessed. All competing current assertions
-        # become visible review work and are removed from quiet/default display.
         result.review.extend(group)
         result.issues.append(ReconciliationIssue(
             code="critical-unresolved-current-conflict",
@@ -215,4 +221,5 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
             reason=f"conflicting current assertions for {key}; no governed rule can choose a winner",
         ))
 
+    _apply_review_barriers(result, barriers)
     return result
