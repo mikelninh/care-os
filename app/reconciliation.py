@@ -127,33 +127,40 @@ def _apply_review_barriers(result: ReconciliationResult, barriers: list[Clinical
             ))
 
 
-def _apply_unbound_cancellations(result: ReconciliationResult, cancellations: list[ClinicalFact]) -> None:
-    """A cancellation without a precise target must not leave older same-key state quiet.
+def _preapply_unbound_cancellations(
+    result: ReconciliationResult,
+    remaining: list[ClinicalFact],
+    cancellations: list[ClinicalFact],
+) -> list[ClinicalFact]:
+    """Remove state invalidated by an imprecise cancellation before reconciliation.
 
-    If the source explicitly names a superseded fact, normal supersession handles it.
-    When it does not, CareOS cannot know which earlier assertion was withdrawn, so any
-    older/equal currently surfaced assertion for that reconciliation key is withheld for
-    review. A later valid assertion can restore current state.
+    A cancellation that does not identify one prior fact is still clinically meaningful:
+    older/equal assertions for the same reconciliation key must not compete with a
+    later valid assertion or remain quietly current. They are withheld for review first;
+    facts newer than the cancellation remain eligible to establish current state.
     """
 
-    for cancellation in cancellations:
+    survivors = list(remaining)
+    for cancellation in sorted(cancellations, key=_time):
         cancellation_time = _time(cancellation)
         impacted = [
-            current for current in list(result.current)
-            if current.reconciliation_key == cancellation.reconciliation_key
-            and _time(current) <= cancellation_time
+            fact for fact in survivors
+            if fact.reconciliation_key == cancellation.reconciliation_key
+            and _time(fact) <= cancellation_time
         ]
         if not impacted:
             continue
-        for current in impacted:
-            result.current.remove(current)
-            if current not in result.review:
-                result.review.append(current)
+        impacted_ids = {fact.fact_id for fact in impacted}
+        survivors = [fact for fact in survivors if fact.fact_id not in impacted_ids]
+        for fact in impacted:
+            if fact not in result.review:
+                result.review.append(fact)
         result.issues.append(ReconciliationIssue(
             code="critical-unbound-cancellation",
             fact_ids=(cancellation.fact_id, *(fact.fact_id for fact in impacted)),
-            reason="a newer cancellation could not be bound to one prior assertion; older same-concept state is withheld",
+            reason="a cancellation could not be bound to one prior assertion; older/equal same-concept state is withheld",
         ))
+    return survivors
 
 
 def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
@@ -161,7 +168,9 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
 
     Confidence is never used to choose between conflicting clinical assertions.
     Unresolved newer high-risk sources and unbound cancellations can actively block
-    older parsed state from appearing current.
+    older parsed state from appearing current. Cancellation semantics are applied
+    before conflict resolution so a valid assertion after the cancellation can restore
+    current state without being forced into a false conflict with invalidated history.
     """
 
     patient, facts = _validate_patient(envelopes)
@@ -210,12 +219,14 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
 
         eligible.append(fact)
 
-    remaining = []
+    remaining: list[ClinicalFact] = []
     for fact in eligible:
         if fact.fact_id in explicitly_superseded:
             result.superseded.append(fact)
         else:
             remaining.append(fact)
+
+    remaining = _preapply_unbound_cancellations(result, remaining, unbound_cancellations)
 
     groups: dict[str, list[ClinicalFact]] = {}
     for fact in remaining:
@@ -260,5 +271,4 @@ def reconcile_truth(envelopes: Iterable[TruthEnvelope]) -> ReconciliationResult:
         ))
 
     _apply_review_barriers(result, barriers)
-    _apply_unbound_cancellations(result, unbound_cancellations)
     return result
