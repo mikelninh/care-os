@@ -40,6 +40,23 @@ def test_worker_cannot_supply_patient_or_organisation_fields():
         )
 
 
+def test_worker_cannot_supply_break_glass_recursion_or_egress():
+    for forbidden_field, value in [
+        ("break_glass", True),
+        ("subagent_depth", 1),
+        ("egress_host", "attacker.example"),
+    ]:
+        with pytest.raises(ValidationError):
+            AgentToolProposal.model_validate(
+                {
+                    "tool_id": "read-clinical-context",
+                    "operation": "read",
+                    "data_categories": ["microbiology"],
+                    forbidden_field: value,
+                }
+            )
+
+
 def test_authoritative_context_is_injected_from_delegation():
     proposal = AgentToolProposal(
         tool_id="read-clinical-context",
@@ -52,6 +69,9 @@ def test_authoritative_context_is_injected_from_delegation():
     assert request.organisation == "sjk"
     assert request.patient_ref == "patient-1"
     assert request.encounter_ref == "encounter-1"
+    assert request.break_glass is False
+    assert request.subagent_depth == 0
+    assert request.egress_host is None
 
 
 def test_unknown_policy_override_field_is_rejected():
