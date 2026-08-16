@@ -1,0 +1,82 @@
+name: safety failure injection
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app/auth_oidc.py'
+      - 'app/access_policy.py'
+      - 'app/clinical_session.py'
+      - 'app/context_launch.py'
+      - 'app/deployment_policy.py'
+      - 'app/fhir_adapter.py'
+      - 'app/kill_switch.py'
+      - 'app/source_state.py'
+      - 'app/connectors/**'
+      - 'tests/test_auth_oidc.py'
+      - 'tests/test_access_policy.py'
+      - 'tests/test_clinical_session.py'
+      - 'tests/test_context_launch.py'
+      - 'tests/test_deployment_policy.py'
+      - 'tests/test_fhir_paging.py'
+      - 'tests/test_source_state.py'
+      - '.github/workflows/safety-failure-injection.yml'
+
+jobs:
+  fail-closed-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run targeted fail-closed scenarios
+        run: |
+          pytest -q \
+            tests/test_auth_oidc.py \
+            tests/test_access_policy.py \
+            tests/test_clinical_session.py \
+            tests/test_context_launch.py \
+            tests/test_deployment_policy.py \
+            tests/test_fhir_paging.py \
+            tests/test_source_state.py \
+            --junitxml=safety-failure-injection.xml
+
+      - name: Record evidence manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          evidence = {
+              "claim": "Targeted software failure scenarios passed; this is not a production resilience or penetration-test claim.",
+              "scenarios": [
+                  "wrong issuer/audience/expired authentication fails closed",
+                  "wrong role/scope/treatment patient denied",
+                  "break-glass requires reason",
+                  "global and connector kill switches block reads",
+                  "source unavailable never becomes empty success",
+                  "stale source withheld from quiet rendering",
+                  "patient/connector identity mismatch withheld",
+                  "required audit failure withholds patient truth",
+                  "expired/mismatched context launch rejected",
+                  "live-data startup locked while G0-G5 incomplete",
+                  "FHIR cross-origin pagination/loops/truncation rejected"
+              ]
+          }
+          Path("safety-failure-injection.json").write_text(json.dumps(evidence, indent=2), encoding="utf-8")
+          PY
+
+      - name: Upload safety evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-failure-injection-evidence
+          path: |
+            safety-failure-injection.xml
+            safety-failure-injection.json
