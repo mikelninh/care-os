@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from itertools import permutations
 
 from app.clinical_truth import AssertionStage, ClinicalFact, FactStatus, SourceKind, SourceRef, TruthEnvelope
 from app.reconciliation import reconcile_truth
@@ -86,6 +87,36 @@ def test_explicit_correction_can_supersede_fact_from_another_envelope():
     result = reconcile_truth([_env(old), _env(corrected)])
     assert [f.fact_id for f in result.current] == ["corrected"]
     assert [f.fact_id for f in result.superseded] == ["old"]
+
+
+def test_explicit_cancellation_removes_cancelled_target_from_current_surface():
+    old = _fact("micro-wrong", "microbiology", "E. coli", day=1, stage=AssertionStage.FINAL, logical_key="culture-1")
+    cancelled = _fact(
+        "micro-cancel", "microbiology", "result cancelled", day=2,
+        stage=AssertionStage.CANCELLED, logical_key="culture-1", supersedes="micro-wrong",
+    )
+    for ordered in permutations([old, cancelled]):
+        result = reconcile_truth([_env(*ordered)])
+        assert "micro-wrong" not in {f.fact_id for f in result.current}
+        assert "micro-wrong" in {f.fact_id for f in result.superseded}
+        assert "micro-cancel" in {f.fact_id for f in result.cancelled}
+
+
+def test_newer_unbound_cancellation_withholds_older_same_concept_for_review():
+    old = _fact("micro-old", "microbiology", "E. coli", day=1, stage=AssertionStage.FINAL, logical_key="culture-1")
+    cancelled = _fact("micro-cancel", "microbiology", "cancelled", day=2, stage=AssertionStage.CANCELLED, logical_key="culture-1")
+    result = reconcile_truth([_env(old, cancelled)])
+    assert not result.current
+    assert "micro-old" in {f.fact_id for f in result.review}
+    assert any(i.code == "critical-unbound-cancellation" for i in result.issues)
+
+
+def test_valid_assertion_newer_than_unbound_cancellation_can_restore_current_state():
+    old = _fact("micro-old", "microbiology", "E. coli", day=1, stage=AssertionStage.FINAL, logical_key="culture-1")
+    cancelled = _fact("micro-cancel", "microbiology", "cancelled", day=2, stage=AssertionStage.CANCELLED, logical_key="culture-1")
+    restored = _fact("micro-new", "microbiology", "No growth", day=3, stage=AssertionStage.FINAL, logical_key="culture-1")
+    result = reconcile_truth([_env(old, cancelled, restored)])
+    assert {f.fact_id for f in result.current} == {"micro-new"}
 
 
 def test_cross_concept_supersession_is_blocked():
