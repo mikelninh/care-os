@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from app.agent_policy import AgentDelegation, AgentOperation
 from app.agent_redteam import run_containment_suite
@@ -32,7 +37,7 @@ report = run_containment_suite(delegation, now=NOW)
 report["generated_at"] = NOW.isoformat()
 report["data_mode"] = "synthetic-only"
 
-out = Path("artifacts/agent-redteam-report.json")
+out = ROOT / "artifacts" / "agent-redteam-report.json"
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
 print(json.dumps(report, indent=2, sort_keys=True))
