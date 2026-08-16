@@ -41,7 +41,8 @@ class ClinicalReadCoordinator:
 
     Authentication occurs before UserContext construction. Authorization, runtime
     safety controls, source currentness, patient identity and required audit must all
-    succeed before patient truth is returned.
+    succeed before patient truth is returned. Connector exceptions are converted into
+    an explicit unavailable outcome without leaking provider/internal exception text.
     """
 
     def __init__(self, audit_sink: AuditSink, safety_controls: SafetyControls | None = None):
@@ -77,7 +78,21 @@ class ClinicalReadCoordinator:
                 pass
             return ClinicalReadOutcome(status="runtime-disabled", reason=runtime_reason, truth=None, connector_result=None, access_decision=decision)
 
-        result = connector.read_patient_truth(request.patient_ref)
+        try:
+            result = connector.read_patient_truth(request.patient_ref)
+        except Exception:
+            try:
+                self._audit(user, request, outcome="source-exception", action="read-source-failed")
+            except Exception:
+                pass
+            return ClinicalReadOutcome(
+                status="source-unavailable",
+                reason="clinical source read failed",
+                truth=None,
+                connector_result=None,
+                access_decision=decision,
+            )
+
         if result.connector_id != connector.connector_id:
             try:
                 self._audit(user, request, outcome="connector-identity-mismatch")
