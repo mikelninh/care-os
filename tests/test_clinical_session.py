@@ -22,8 +22,10 @@ class FakeConnector:
         return self.result
 
 
-def user(patients={"p1"}):
-    return UserContext(subject="doctor-1", organisation="hospital-a", roles={"doctor"}, scopes={"patient:read"}, treatment_patient_refs=set(patients))
+def user(patients={"p1"}, **overrides):
+    data = dict(subject="doctor-1", organisation="hospital-a", roles={"doctor"}, scopes={"patient:read"}, treatment_patient_refs=set(patients))
+    data.update(overrides)
+    return UserContext(**data)
 
 
 def current_result(patient="p1", connector_id="fake"):
@@ -37,6 +39,7 @@ def test_authorized_current_audited_read_returns_truth():
     outcome = ClinicalReadCoordinator(CallbackAuditSink(events.append)).read(user(), AccessRequest(patient_ref="p1"), connector)
     assert outcome.status == "ready" and outcome.allowed_to_render is True
     assert len(events) == 1 and events[0]["outcome"] == "success"
+    assert events[0]["audit_level"] == "normal" and events[0]["break_glass"] is False
     assert "p1" not in str(events[0])
 
 
@@ -44,6 +47,20 @@ def test_unauthorized_patient_is_denied_before_connector_call():
     connector = FakeConnector(current_result("p2"))
     outcome = ClinicalReadCoordinator(CallbackAuditSink(lambda _: None)).read(user(), AccessRequest(patient_ref="p2"), connector)
     assert outcome.status == "denied" and outcome.truth is None and connector.called is False
+
+
+def test_break_glass_read_is_explicitly_marked_high_audit_without_free_text_reason():
+    events = []
+    request = AccessRequest(patient_ref="p2", break_glass=True, break_glass_reason="Emergency review for unstable patient")
+    outcome = ClinicalReadCoordinator(CallbackAuditSink(events.append)).read(
+        user(set(), break_glass_allowed=True),
+        request,
+        FakeConnector(current_result("p2")),
+    )
+    assert outcome.status == "ready"
+    assert events[0]["break_glass"] is True
+    assert events[0]["audit_level"] == "high"
+    assert "Emergency review" not in str(events[0])
 
 
 def test_global_runtime_kill_switch_blocks_before_connector_call():
