@@ -20,14 +20,15 @@ class FHIRConnector:
             standard="FHIR R4",
             read_only=True,
             supports_resource_versions=False,
-            supports_paging=False,
+            supports_paging=True,
             supports_incremental_refresh=False,
             authentication_mode="transport-specific / not implemented in generic demo adapter",
             resources=["Patient", "AllergyIntolerance", "Condition", "Observation", "MedicationStatement", "Task", "DocumentReference"],
             notes=[
+                "bounded same-origin Bundle pagination is implemented and rejects loops/truncation",
                 "meta.versionId is preserved when supplied, but version reconciliation/history is not implemented",
                 "generic FHIR R4 does not imply ISiK conformance",
-                "paging and incremental synchronization remain release blockers",
+                "incremental synchronization remains a release blocker",
             ],
         )
 
