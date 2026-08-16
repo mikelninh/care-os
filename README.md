@@ -19,6 +19,31 @@ It is designed to sit **beside** existing KIS/PVS/EHR systems, not replace them:
 
 ![CareOS clinician focus](docs/screenshots/clinical-focus.svg)
 
+## Production-readiness status
+
+CareOS does **not** call itself production-ready because a demo works.
+
+It graduates through evidence-backed gates:
+
+| Gate | Status |
+|---|---|
+| Scope & safety boundary | **EXTERNAL REVIEW** |
+| Clinical truth | **BLOCKED** |
+| German interoperability | **PARTIAL** |
+| Privacy & security | **PARTIAL** |
+| Production reliability | **PARTIAL** |
+| Regulatory & quality | **EXTERNAL REVIEW** |
+| Invisible workflow integration | **PARTIAL** |
+| Hospital deployment kit | **PARTIAL** |
+| Repeatable multi-hospital deployment | **PARTIAL** |
+| National / EU scale | **BLOCKED** |
+
+**No gate is marked PASS yet. Identifiable live patient data remains locked.**
+
+The lock is enforced in code: `CAREOS_DATA_MODE=live-readonly` refuses startup while core gates G0–G5 are incomplete; transactional/write-back mode is unsupported by the current release policy.
+
+See [`docs/GATES.md`](docs/GATES.md), [`docs/SAFETY_CASE.md`](docs/SAFETY_CASE.md) and [`docs/ARCHITECTURE_V1.md`](docs/ARCHITECTURE_V1.md).
+
 ## Why CareOS
 
 A clinician should not have to reconstruct one patient across KIS, lab, microbiology, nursing notes, PDFs, fax and phone calls.
@@ -90,6 +115,28 @@ The same truth layer does **not** mean everyone gets the same screen or access.
 
 See [`docs/PAYER_VIEW.md`](docs/PAYER_VIEW.md) and [`docs/V10_PATIENT_FAMILY.md`](docs/V10_PATIENT_FAMILY.md).
 
+## Clinical truth architecture
+
+Source systems and extractors do not write directly into the clinician UI.
+
+```text
+FHIR / KIS / LIS / documents
+             ↓
+      untrusted/source adapter
+             ↓
+    ClinicalFact / TruthEnvelope
+             ↓
+ provenance · time · status · source
+             ↓
+ contradiction / review / freshness
+             ↓
+          clinician view
+```
+
+Document/model extraction is explicitly untrusted. A proposed document-derived fact must cite exact character offsets and a verbatim source quote; unsupported/paraphrased evidence is rejected before the fact can enter the truth layer. Ambiguous or unknown facts are routed to review rather than silently presented as confirmed.
+
+See [`app/clinical_truth.py`](app/clinical_truth.py), [`app/document_pipeline.py`](app/document_pipeline.py) and [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
+
 ## Integration strategy
 
 The adoption path is intentionally incremental:
@@ -97,41 +144,51 @@ The adoption path is intentionally incremental:
 ```text
 1. Synthetic browser pilot
         ↓
-2. Hospital-internal read-only pilot
+2. Hospital network / no-PHI integration proof
         ↓
-3. FHIR / ISiK / vendor connector
+3. Hospital-internal read-only live-data pilot — only after G0–G5 PASS
         ↓
-4. Governed write-back only much later
+4. Repeat across another vendor/hospital
+        ↓
+5. Transactional/write-back programme only if separately justified
 ```
 
-CareOS includes a real FHIR R4 transport adapter. GitHub CI starts a HAPI FHIR server, waits for its CapabilityStatement, seeds synthetic resources, and reads them back through the CareOS adapter with upstream resource IDs retained as provenance.
+CareOS includes a real FHIR R4 transport adapter. FHIR data are normalized through the canonical truth layer while retaining resource IDs, resource versions where supplied, and effective/recorded time separately.
 
-```bash
-docker compose -f integration/docker-compose.fhir.yml up -d
-python scripts/seed_fhir.py
-FHIR_BASE_URL=http://localhost:8080/fhir uvicorn app.main:app --reload
-```
+FHIR search uses bounded same-origin Bundle pagination: pagination loops, cross-origin continuation and max-page truncation fail closed rather than silently returning partial patient truth.
 
-**FHIR R4 support is not an ISiK certification claim.** The Germany-specific next step is validation against applicable gematik ISiK profiles and a read-only hospital / KIS vendor sandbox.
+CareOS also runs a pinned gematik reference-validator workflow against a synthetic ISiK5 Patient fixture. The validator/plugin versions and SHA-256 digests are pinned in CI.
 
-See [`docs/FHIR_INTEGRATION.md`](docs/FHIR_INTEGRATION.md).
+**This is ISiK validation evidence, not a gematik certification/confirmation claim.** A real KIS/LIS/vendor read-only sandbox remains a G2 blocker.
+
+See [`docs/FHIR_INTEGRATION.md`](docs/FHIR_INTEGRATION.md) and [`docs/CONNECTOR_SDK.md`](docs/CONNECTOR_SDK.md).
+
+## Security and privacy architecture
+
+The public demo is deliberately **synthetic only**.
+
+Current hardening includes:
+
+- asymmetric OIDC/JWT verification contract with issuer, audience, expiry and signature checks;
+- role/scope/treatment-context authorization;
+- short-lived identity/organisation/patient-bound context launch;
+- elevated break-glass semantics;
+- secure read orchestration that withholds patient truth on authorization failure, source failure/staleness, patient mismatch or required audit failure;
+- global / connector-specific runtime kill switches;
+- provider-controlled data-plane architecture for identifiable clinical data;
+- DSFA/DPIA support, AVV requirements, incident and deployment/rollback dossiers.
+
+Still missing before live PHI: real hospital IdP/context integration, immutable production audit, KMS/secrets/encryption deployment, hospital-specific privacy agreements/approval, applicable German cloud evidence, independent penetration test and the remaining G0–G5 evidence.
+
+See [`docs/HOSPITAL_ASSURANCE_PACK.md`](docs/HOSPITAL_ASSURANCE_PACK.md), [`docs/DATA_FLOW_AND_PRIVACY.md`](docs/DATA_FLOW_AND_PRIVACY.md), [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md), [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) and [`SECURITY.md`](SECURITY.md).
 
 ## We actively try to break it
 
-CareOS includes a frozen **500-case unseen adversarial benchmark** covering:
+CareOS keeps a frozen **500-case unseen adversarial benchmark** covering allergy, medication, diagnoses, renal function, follow-ups, discharge, contradictions and provenance.
 
-- allergy;
-- current medication;
-- relevant diagnoses;
-- renal function;
-- open follow-ups;
-- discharge;
-- contradictions;
-- provenance.
+The legacy deterministic document extractor still fails badly on unseen phrasing, including critical silent contradiction misses. Those failures remain public and are why **G1 is BLOCKED**.
 
-The current deterministic extractor still fails badly on unseen phrasing, including silent contradiction misses. Those failures are public because they are exactly what must be solved **before** clinical deployment.
-
-The next extraction architecture prioritises source-native structured data, schema-constrained document extraction, exact evidence spans, temporal reasoning, unit / terminology normalisation, contradiction detection and explicit `unknown/review` rather than guessing.
+We are not fixing that by tuning more regexes against the frozen holdout. The replacement architecture is structured-first, source-span verified, versioned, uncertainty-aware and evaluated on untouched holdouts.
 
 See [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
@@ -157,23 +214,17 @@ Source updates never silently change patient-specific behaviour.
 
 See [`docs/GUIDELINE_ARCHITECTURE.md`](docs/GUIDELINE_ARCHITECTURE.md).
 
-## Security and hospital deployment
-
-The public demo is deliberately **synthetic only**.
-
-Real patient data requires a separate deployment gate: supported and patched browser surface, hospital identity / SSO, role and treatment-context authorisation, audit trail, PHI-safe telemetry, encryption, retention rules, incident processes and the applicable German privacy / cloud evidence.
-
-CareOS deliberately fails its production-readiness gate in the default repo.
-
-See [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md), [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) and [`SECURITY.md`](SECURITY.md).
-
 ## Hospital pilot
 
-The first ask is intentionally small:
+The first ask remains intentionally small:
 
 > **5–10 clinicians, synthetic cases, ~20 minutes, no patient data, no integration.**
 
-Measure whether CareOS actually reduces search effort, clicks, phone/fax chasing and documentation burden. If there is no clear value, stop. If there is, then evaluate a hospital-internal read-only pilot with IT and Datenschutz.
+If that demonstrates a real workflow benefit, the next step is not “upload patient data.” It is to complete the assurance/integration gates with hospital IT, Datenschutz, Informationssicherheit and clinical leadership.
+
+The eventual live pilot is measured on time-to-fact, searches/calls/faxes avoided, corrections, provenance, unsupported claims, wrong-patient events, contradiction misses, stale-data handling, review burden and cognitive effort—not on AI usage.
+
+See [`docs/PILOT_MEASUREMENT_PROTOCOL.md`](docs/PILOT_MEASUREMENT_PROTOCOL.md).
 
 ## Run locally
 
@@ -184,12 +235,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open:
+Useful endpoints:
 
 - clinician UI: `http://127.0.0.1:8000/`
 - specialty packs: `http://127.0.0.1:8000/specialty`
 - integration / stress dashboard: `http://127.0.0.1:8000/platform`
 - API docs: `http://127.0.0.1:8000/docs`
+- gate board: `http://127.0.0.1:8000/api/readiness/gates`
+- data-mode lock: `http://127.0.0.1:8000/api/readiness/data-mode`
 
 ## Tests
 
@@ -207,9 +260,11 @@ CareOS currently:
 - performs no production KIS/PVS/EHR writes;
 - makes no autonomous diagnosis or treatment decisions;
 - does not silently merge ambiguous patient identities;
-- keeps provenance as a core contract;
-- requires human review for prepared documentation;
-- exposes benchmark failures instead of hiding them.
+- makes provenance part of the clinical-fact contract;
+- distinguishes stale/unavailable from clinically absent;
+- requires human review for uncertain/prepared outputs;
+- exposes benchmark failures instead of hiding them;
+- refuses live-data startup while core assurance gates are incomplete.
 
 ---
 
