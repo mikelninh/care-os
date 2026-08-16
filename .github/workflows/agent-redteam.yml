@@ -38,6 +38,7 @@ jobs:
           tests/test_agent_phase1.py
           tests/test_agent_orchestrator.py
           tests/test_agent_model_adapter.py
+          tests/test_agent_data_projection.py
           tests/test_agent_redteam.py
           tests/test_agent_phases4_7.py
           tests/test_synthetic_agent.py
