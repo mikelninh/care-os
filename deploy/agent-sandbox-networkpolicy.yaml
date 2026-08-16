@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: careos-agent-deny-all-egress
+  namespace: careos
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: agent-worker
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+---
+# Reference only: production deployments must add narrowly scoped egress rules
+# for provider-approved internal gateway/proxy endpoints and prove enforcement
+# in the actual target infrastructure. Direct Internet egress from agent workers
+# is not part of the CareOS reference design.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: careos-agent-network-policy-note
+  namespace: careos
+data:
+  status: "reference-only-not-production-evidence"
+  rule: "agent workers have no direct Internet/KIS/FHIR access; approved traffic flows through provider-controlled CareOS gateways/proxies"
