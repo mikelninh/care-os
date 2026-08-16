@@ -33,7 +33,8 @@ The proposal package now includes:
 - `docs/ASSURANCE_CROSSWALK.md`;
 - `docs/RESPONSIBILITY_MODEL.md`;
 - `docs/PROCUREMENT_REQUIREMENTS.md`;
-- ten Architecture Decision Records under `docs/adr/`;
+- `docs/AGENT_SECURITY_MODEL.md`;
+- Architecture Decision Records under `docs/adr/` including ADR-011 for delegated agents;
 - machine-readable `architecture/reference-architecture.json` with CI invariants.
 
 The architecture score is intentionally **not used to unlock live data**.
@@ -104,7 +105,8 @@ Internal evidence now includes:
 - **scheduled dependency vulnerability audit**;
 - **CycloneDX SBOM artifact**;
 - **Dependabot** for Python and GitHub Actions;
-- remediated dependency advisory discovered by the new supply-chain gate.
+- remediated dependency advisory discovered by the new supply-chain gate;
+- explicit zero-trust **agent security model** and delegated-principal ADR.
 
 Still external: real provider IdP, production audit/SIEM, KMS/encryption, hospital agreements/approval, applicable C5/customer-control evidence and independent pentest.
 
@@ -174,11 +176,34 @@ The **reference architecture is now proposal-grade** and includes national rails
 
 G9 remains **BLOCKED** because proposal completeness is not national operating evidence.
 
+## Agent production gates — A0 to A9
+
+Normal CareOS readiness does **not** automatically authorize AI agents. Any agent that can access identifiable patient data or invoke clinical tools has an additional independent gate set.
+
+| Agent gate | Current status | PASS requires |
+|---|---|---|
+| A0 Agent identity | **BLOCKED** | separate verifiable workload/agent identity, no human-token reuse |
+| A1 Delegation | **BLOCKED** | signed patient/task/tool/time/data bounded delegation envelope |
+| A2 Tool least privilege | **BLOCKED** | admitted allowlisted tools + deterministic authorization at tool boundary |
+| A3 Injection resilience | **BLOCKED** | adversarial indirect-prompt-injection/tool-hijacking tests with bounded harm |
+| A4 Egress controls | **BLOCKED** | explicit model/tool/network destinations, DLP/field policy and tests |
+| A5 Agent audit | **BLOCKED** | human + agent + version + execution + tool attribution with protected integrity |
+| A6 Memory isolation | **BLOCKED** | organisation/patient/execution isolation + retention/destruction evidence |
+| A7 Abuse/blast-radius limits | **BLOCKED** | hard patient/page/tool/time/recursion/rate ceilings and tests |
+| A8 Consequential actions | **BLOCKED** | explicit human confirmation; production write-back separately gated |
+| A9 Independent agent review | **BLOCKED** | actual use case red-team + clinical/security review |
+
+**No A0–A9 gate is PASS today. No identifiable production agent use is approved.**
+
+The first agent experiments must remain synthetic/de-identified and low consequence. Model refusal is not considered an authorization control; the pass criterion is that deterministic policy/capability boundaries prevent harmful access/action even when the model is hijacked.
+
 ## Live-data lock
 
 Identifiable live patient data remains **locked** while any of G0–G5 is not `PASS`.
 
 This is enforced in application startup policy and tested again in the container runtime workflow.
+
+If agentic access is added later, live agent use additionally remains locked until the relevant A0–A9 gates pass.
 
 A green unit test, security scan or architecture score is not sufficient to pass an assurance gate. External-review and real-deployment gates require named qualified reviewers, real infrastructure and linked evidence.
 
@@ -190,6 +215,7 @@ A green unit test, security scan or architecture score is not sufficient to pass
 4. **G2:** earn and obtain one real read-only KIS/LIS/vendor sandbox.
 5. **G3:** real hospital IdP/context, protected audit/KMS, hospital-specific Datenschutz/security evidence, independent pentest.
 6. **G4:** target-environment failure, backup/restore and incident/rollback exercises.
-7. **G8:** reproduce at a second hospital/vendor without a core fork.
+7. **Agent lane:** keep production agent access disabled; implement A0–A9 only for a separately approved use case.
+8. **G8:** reproduce at a second hospital/vendor without a core fork.
 
-Only after G0–G5 PASS does an identifiable read-only live-data pilot become eligible for a go/no-go decision.
+Only after G0–G5 PASS does an identifiable read-only live-data pilot become eligible for a go/no-go decision. Agentic access remains a separate decision even then.
