@@ -21,6 +21,14 @@ class ExecutionStatus(str, Enum):
     EXPIRED = "expired"
 
 
+TERMINAL_STATUSES = {
+    ExecutionStatus.COMPLETED,
+    ExecutionStatus.DENIED,
+    ExecutionStatus.ABORTED,
+    ExecutionStatus.EXPIRED,
+}
+
+
 class AgentExecutionState(BaseModel):
     execution_id: str = Field(default_factory=lambda: str(uuid4()))
     status: ExecutionStatus = ExecutionStatus.CREATED
@@ -77,15 +85,26 @@ class AgentGateway:
         )
         return f"agent-memory:{pseudonymous_ref(raw, secret=self.memory_secret)}"
 
-    def _deny(self, reason: str, *, tool: ToolSpec | None = None) -> GatewayDecision:
-        self.execution.status = ExecutionStatus.DENIED
+    def _deny(
+        self,
+        reason: str,
+        *,
+        tool: ToolSpec | None = None,
+        status: ExecutionStatus = ExecutionStatus.DENIED,
+    ) -> GatewayDecision:
+        self.execution.status = status
         self.execution.last_denial_reason = reason
         return GatewayDecision(False, reason, tool, self.memory_namespace)
 
     def authorize(self, request: AgentRequest, *, now: datetime | None = None) -> GatewayDecision:
         current = now or datetime.now(timezone.utc)
-        if self.execution.status in {ExecutionStatus.COMPLETED, ExecutionStatus.ABORTED, ExecutionStatus.EXPIRED}:
-            return self._deny(f"execution is {self.execution.status.value}")
+        if self.execution.status in TERMINAL_STATUSES:
+            return GatewayDecision(
+                False,
+                f"execution is {self.execution.status.value}",
+                None,
+                self.memory_namespace,
+            )
 
         # Runtime-owned counters replace any model-provided accounting fields.
         effective_request = request.model_copy(
@@ -104,9 +123,8 @@ class AgentGateway:
             consequential_actions_enabled=self.consequential_actions_enabled,
         )
         if not base.allowed:
-            if "expired" in base.reason:
-                self.execution.status = ExecutionStatus.EXPIRED
-            return self._deny(base.reason)
+            status = ExecutionStatus.EXPIRED if "expired" in base.reason else ExecutionStatus.DENIED
+            return self._deny(base.reason, status=status)
 
         tool = self.registry.get(request.tool_id)
         if tool is None or not tool.enabled:
