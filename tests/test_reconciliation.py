@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from app.clinical_truth import AssertionStage, ClinicalFact, SourceKind, SourceRef, TruthEnvelope
+from app.clinical_truth import AssertionStage, ClinicalFact, FactStatus, SourceKind, SourceRef, TruthEnvelope
 from app.reconciliation import reconcile_truth
 
 
@@ -14,6 +14,9 @@ def _fact(
     logical_key: str | None = None,
     confidence: float = 1.0,
     supersedes: str | None = None,
+    status: FactStatus = FactStatus.CONFIRMED,
+    blocks: tuple[str, ...] = (),
+    review_reason: str | None = None,
 ):
     return ClinicalFact(
         fact_id=fact_id,
@@ -31,6 +34,9 @@ def _fact(
         assertion_stage=stage,
         confidence=confidence,
         supersedes_fact_id=supersedes,
+        status=status,
+        blocks_fact_types=blocks,
+        review_reason=review_reason,
     )
 
 
@@ -105,3 +111,35 @@ def test_identical_assertions_are_corroborating_not_conflicting():
     assert len(result.current) == 1
     chosen = result.current[0]
     assert result.corroborating_fact_ids[chosen.fact_id]
+
+
+def test_newer_unresolved_lab_blocks_older_renal_state_from_quiet_display():
+    old = _fact("renal-old", "renal_function", {"creatinine": 1.2}, day=1, logical_key="renal-function")
+    barrier = _fact(
+        "lab-review",
+        "review_required",
+        {"document_kind": "lab"},
+        day=2,
+        status=FactStatus.UNKNOWN,
+        blocks=("renal_function",),
+        review_reason="newer lab document could not be parsed safely",
+    )
+    result = reconcile_truth([_env(old), _env(barrier)])
+    assert "renal-old" not in {f.fact_id for f in result.current}
+    assert {"renal-old", "lab-review"} <= {f.fact_id for f in result.review}
+    assert any(i.code == "critical-newer-unresolved-source" for i in result.issues)
+
+
+def test_newer_successfully_parsed_state_can_restore_current_after_older_barrier():
+    barrier = _fact(
+        "lab-review",
+        "review_required",
+        {"document_kind": "lab"},
+        day=1,
+        status=FactStatus.UNKNOWN,
+        blocks=("renal_function",),
+        review_reason="older lab unresolved",
+    )
+    current = _fact("renal-new", "renal_function", {"creatinine": 1.4}, day=2, logical_key="renal-function")
+    result = reconcile_truth([_env(barrier), _env(current)])
+    assert "renal-new" in {f.fact_id for f in result.current}
