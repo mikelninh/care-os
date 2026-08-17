@@ -1,1 +1,1 @@
-Current README screenshots are generated from the latest shareable CareOS clinician demo. Public screenshots use synthetic patient data only.
+README visuals are **repository-rendered SVG previews** of the current synthetic CareOS interfaces. They are kept in sync with the shareable demo content, but they are not literal browser screenshots or clinical screenshots. No real patient data is used.
