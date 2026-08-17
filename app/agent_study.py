@@ -50,14 +50,35 @@ _SEQUENCES = (
 
 def assignment_for(participant_code: str) -> dict:
     code = participant_code.strip()
-    if not code or len(code) > 40 or not all(ch.isalnum() or ch in "_-" for ch in code):
-        raise ValueError("participant_code must be 1-40 letters/numbers/_/-")
+    if len(code) < 2 or len(code) > 40 or not all(ch.isalnum() or ch in "_-" for ch in code):
+        raise ValueError("participant_code must be 2-40 letters/numbers/_/-")
     bucket = hashlib.sha256(code.lower().encode("utf-8")).digest()[0] % len(_SEQUENCES)
     rounds = [
         {"order_position": index + 1, "case_id": case_id, "condition": condition}
         for index, (case_id, condition) in enumerate(_SEQUENCES[bucket])
     ]
     return {"participant_code": code, "sequence": bucket + 1, "rounds": rounds}
+
+
+def assignment_matches(observations: list[StudyObservation]) -> bool:
+    if not observations:
+        return False
+    codes = {row.participant_code for row in observations}
+    if len(codes) != 1:
+        return False
+    expected = assignment_for(observations[0].participant_code)["rounds"]
+    observed = sorted(
+        (
+            {
+                "order_position": row.order_position,
+                "case_id": row.case_id,
+                "condition": row.condition,
+            }
+            for row in observations
+        ),
+        key=lambda row: row["order_position"],
+    )
+    return observed == expected
 
 
 def _condition_summary(items: list[StudyObservation]) -> dict:
@@ -84,7 +105,8 @@ def summarize_paired_study(observations: list[StudyObservation]) -> dict:
 
     Incomplete participants remain visible as an evidence-quality signal but can never
     influence the estimated agent effect. Duplicate conditions/order slots are rejected
-    instead of silently double-weighting a clinician.
+    instead of silently double-weighting a clinician. Complete pairs must match the
+    deterministic counterbalanced assignment generated for the participant code.
     """
 
     by_participant: dict[str, list[StudyObservation]] = defaultdict(list)
@@ -94,7 +116,9 @@ def summarize_paired_study(observations: list[StudyObservation]) -> dict:
     complete_pairs: list[tuple[StudyObservation, StudyObservation]] = []
     incomplete_codes: list[str] = []
     for code, rows in sorted(by_participant.items()):
-        if len(rows) != 2:
+        if len(rows) > 2:
+            raise ValueError(f"duplicate or extra study rows for {code}")
+        if len(rows) < 2:
             incomplete_codes.append(code)
             continue
         conditions = {row.condition for row in rows}
@@ -102,6 +126,8 @@ def summarize_paired_study(observations: list[StudyObservation]) -> dict:
         cases = {row.case_id for row in rows}
         if conditions != {"careos", "careos-agent"} or positions != {1, 2} or len(cases) != 2:
             raise ValueError(f"invalid paired study rows for {code}")
+        if not assignment_matches(rows):
+            raise ValueError(f"study rows do not match counterbalanced assignment for {code}")
         control = next(row for row in rows if row.condition == "careos")
         agent = next(row for row in rows if row.condition == "careos-agent")
         complete_pairs.append((control, agent))
