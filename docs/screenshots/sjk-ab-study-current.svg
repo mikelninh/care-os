@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+<defs><style>
+text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;fill:#122018}.muted{fill:#68736d}.green{fill:#176b50}.blue{fill:#2452a5}.red{fill:#8d211b}.card{fill:#fff;stroke:#dce4df}.label{font-size:12px;font-weight:750;fill:#68736d}.small{font-size:12px;fill:#68736d}.title{font-size:22px;font-weight:820}
+</style><filter id="s"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#173126" flood-opacity=".08"/></filter></defs>
+<rect width="1200" height="720" fill="#f3f6f4"/>
+<text x="42" y="54" font-size="13" font-weight="800" class="green">CAREOS A/B · SYNTHETISCHE PRODUKTFORSCHUNG</text>
+<text x="42" y="94" font-size="34" font-weight="860">Spart CareOS Zeit, ohne Vertrauen zu verlieren?</text>
+<text x="42" y="124" class="small">Zwei gegengewichtete Infektiologie-Runden · normaler CareOS-Kontext vs. zusätzlich untrusted source-linked draft</text>
+<rect x="930" y="42" width="220" height="32" rx="16" fill="#fdeeee"/><text x="1040" y="63" text-anchor="middle" font-size="12" font-weight="780" class="red">keine Patientendaten</text>
+<rect class="card" filter="url(#s)" x="42" y="154" width="700" height="444" rx="24"/>
+<text x="68" y="184" class="label">RUNDE 2 VON 2 · CAREOS + DRAFT</text><text x="68" y="218" class="title">Synthetischer Infektiologie-Fall</text><text x="665" y="210" font-size="32" font-weight="820">01:24</text>
+<rect x="68" y="242" width="648" height="94" rx="18" fill="#edf3ff" stroke="#cbd8f4"/><text x="90" y="268" class="label blue">UNTRUSTED SOURCE-LINKED DRAFT</text><text x="90" y="295" font-size="14" font-weight="700">2/2 Blutkulturen mit E. coli · finale Empfindlichkeit offen.</text><text x="90" y="318" class="small">Ceftriaxon dokumentiert, nicht empfohlen · Kontrollkultur und Screening offen.</text>
+<rect class="card" x="68" y="354" width="308" height="100" rx="16"/><text x="88" y="378" class="label">MIKROBIOLOGIE</text><text x="88" y="406" font-size="16" font-weight="780">vorläufig vs. final klar markiert</text><text x="88" y="432" font-size="11" class="blue">Quelle öffnen ↗</text>
+<rect class="card" x="392" y="354" width="324" height="100" rx="16"/><text x="412" y="378" class="label">OFFENE PUNKTE</text><text x="412" y="406" font-size="16" font-weight="780">pending bleibt sichtbar</text><text x="412" y="432" font-size="11" class="blue">Quellen prüfen ↗</text>
+<text x="68" y="487" class="label">AUFGABEN</text><text x="68" y="516" font-size="14" font-weight="700">1. sicher / vorläufig / offen · 2. Therapie · 3. Hygiene · 4. offene Punkte · 5. Quelle · 6. Übergabe</text>
+<rect x="68" y="544" width="648" height="38" rx="13" fill="#101411"/><text x="392" y="569" text-anchor="middle" fill="#fff" font-size="13" font-weight="780">Antwort fertig · Beobachtung erfassen</text>
+<rect class="card" filter="url(#s)" x="770" y="154" width="388" height="444" rx="24"/>
+<text x="796" y="184" class="label">WAS WIR MESSEN</text>
+<text x="796" y="219" font-size="16" font-weight="800">Zeit</text><text x="1118" y="219" text-anchor="end" class="small">automatisch</text>
+<line x1="796" y1="234" x2="1132" y2="234" stroke="#dce4df"/>
+<text x="796" y="262" font-size="16" font-weight="800">Quellenöffnungen</text><text x="1118" y="262" text-anchor="end" class="small">automatisch</text>
+<line x1="796" y1="277" x2="1132" y2="277" stroke="#dce4df"/>
+<text x="796" y="305" font-size="16" font-weight="800">Falsche Antworten</text><text x="1118" y="305" text-anchor="end" class="small">strukturiert</text>
+<line x1="796" y1="320" x2="1132" y2="320" stroke="#dce4df"/>
+<text x="796" y="348" font-size="16" font-weight="800">Offene Punkte verpasst</text><text x="1118" y="348" text-anchor="end" class="small">strukturiert</text>
+<line x1="796" y1="363" x2="1132" y2="363" stroke="#dce4df"/>
+<text x="796" y="391" font-size="16" font-weight="800">Ungeprüfte Übernahme</text><text x="1118" y="391" text-anchor="end" class="small">verification decay</text>
+<rect x="796" y="426" width="336" height="110" rx="16" fill="#fdeeee" stroke="#edcbc8"/><text x="816" y="453" font-size="12" font-weight="800" class="red">SAFETY STOP</text><text x="816" y="480" font-size="13" font-weight="720">pending → negativ/erledigt</text><text x="816" y="502" font-size="13" font-weight="720">Therapie → CareOS-Empfehlung</text><text x="816" y="524" font-size="13" font-weight="720">Draft → Quellenwahrheit</text>
+<text x="42" y="636" font-size="18" font-weight="820">Faster is not better if verification or safety gets worse.</text><text x="42" y="666" class="small">Paired analysis only · incomplete sessions excluded from effect estimate · no automatic pass · local structured export</text>
+<text x="1150" y="704" text-anchor="end" font-size="10" class="muted">Repository-rendered preview · synthetic data</text>
+</svg>
