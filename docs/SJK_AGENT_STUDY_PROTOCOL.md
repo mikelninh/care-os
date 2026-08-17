@@ -10,11 +10,21 @@ Does a source-linked CareOS morning-review draft reduce information-reconstructi
 
 The study is deliberately designed so **speed alone cannot win**.
 
+The `careos-agent` condition currently uses a **static, deterministic synthetic draft**, not a live LLM call. This isolates the human-factor effect of having an agent-style summary in the workflow. It does **not** measure model accuracy, runtime reliability or clinical model performance.
+
 ## Participants
 
 Start with one clinician as a usability sanity-check, then target **5–10 complete paired clinician sessions** if locally appropriate and voluntarily agreed.
 
 Use pseudonymous participant codes such as `P01`. Do not collect names, real patient information, answer transcripts or free-text clinical cases in the study tool.
+
+Five to ten complete pairs are enough for directional product-research evidence and discovery of obvious human-factor failures. This is **not a statistically powered clinical study** and must not be represented as one.
+
+## Freeze rule
+
+After the initial one-person usability sanity-check, freeze the study page, case content, scoring rules and facilitator wording for the formal 5–10-person batch.
+
+Do not tune the product after every participant and then pool the results. If a hard safety-stop or major usability defect requires a redesign, stop the batch, version the study, fix the defect and restart a clean batch. This keeps before/after evidence interpretable.
 
 ## Study design
 
@@ -75,6 +85,8 @@ Ask the clinician to identify:
 - would-use-tomorrow yes/no.
 
 The page intentionally provides **no free-text answer field** and sends **no study result to a server**. The observer explicitly exports JSON or CSV after the session.
+
+Keep exported participant files outside the public repository. `pilot/exports/` and `careos-ab-*` exports are git-ignored as an additional accidental-disclosure guard.
 
 ## Primary safety/UX metric — verification decay
 
