@@ -23,6 +23,16 @@ def obs(code: str, condition: str, case_id: str, order: int, **updates):
     return StudyObservation(**base)
 
 
+def assigned_pair(code: str, *, control_updates=None, agent_updates=None):
+    control_updates = control_updates or {}
+    agent_updates = agent_updates or {}
+    rows = []
+    for round_ in assignment_for(code)["rounds"]:
+        updates = control_updates if round_["condition"] == "careos" else agent_updates
+        rows.append(obs(code, round_["condition"], round_["case_id"], round_["order_position"], **updates))
+    return rows
+
+
 def test_assignment_is_deterministic_and_balances_two_cases_two_conditions():
     a = assignment_for("P01")
     b = assignment_for("P01")
@@ -33,11 +43,9 @@ def test_assignment_is_deterministic_and_balances_two_cases_two_conditions():
 
 
 def test_incomplete_participant_never_changes_agent_effect():
-    rows = [
-        obs("P01", "careos", "case-a", 1, task_seconds=100),
-        obs("P01", "careos-agent", "case-b", 2, task_seconds=70),
-        obs("P02", "careos-agent", "case-a", 1, task_seconds=1, wrong_answers=20),
-    ]
+    rows = assigned_pair("P01", control_updates={"task_seconds": 100}, agent_updates={"task_seconds": 70})
+    lone = assignment_for("P02")["rounds"][0]
+    rows.append(obs("P02", lone["condition"], lone["case_id"], lone["order_position"], task_seconds=1, wrong_answers=20))
     report = summarize_paired_study(rows)
     assert report["complete_pairs"] == 1
     assert report["incomplete_participants"] == 1
@@ -59,14 +67,40 @@ def test_duplicate_condition_or_case_is_rejected_instead_of_double_weighted():
         raise AssertionError("invalid pair should be rejected")
 
 
+def test_complete_pair_must_match_counterbalanced_assignment():
+    rows = [
+        obs("P01", "careos", "case-a", 1),
+        obs("P01", "careos-agent", "case-b", 2),
+    ]
+    try:
+        summarize_paired_study(rows)
+    except ValueError as exc:
+        assert "counterbalanced assignment" in str(exc)
+    else:
+        raise AssertionError("assignment mismatch should be rejected")
+
+
+def test_more_than_two_rows_for_participant_is_rejected():
+    rows = assigned_pair("P01")
+    rows.append(rows[0].model_copy())
+    try:
+        summarize_paired_study(rows)
+    except ValueError as exc:
+        assert "duplicate or extra study rows" in str(exc)
+    else:
+        raise AssertionError("extra study row should be rejected")
+
+
 def test_verification_decay_is_agent_minus_control_unverified_acceptance():
     rows = []
     for i in range(5):
-        code = f"P{i}"
-        rows.extend([
-            obs(code, "careos", "case-a", 1, accepted_without_source_check=False),
-            obs(code, "careos-agent", "case-b", 2, accepted_without_source_check=(i < 2)),
-        ])
+        rows.extend(
+            assigned_pair(
+                f"P{i}",
+                control_updates={"accepted_without_source_check": False},
+                agent_updates={"accepted_without_source_check": i < 2},
+            )
+        )
     report = summarize_paired_study(rows)
     assert report["complete_pairs"] == 5
     assert report["verification_decay"] == 0.4
@@ -77,19 +111,16 @@ def test_verification_decay_is_agent_minus_control_unverified_acceptance():
 def test_any_pending_as_negative_or_recommendation_confusion_triggers_safety_stop():
     rows = []
     for i in range(5):
-        code = f"P{i}"
-        rows.extend([
-            obs(code, "careos", "case-a", 1),
-            obs(
-                code,
-                "careos-agent",
-                "case-b",
-                2,
-                pending_as_negative=(i == 0),
-                recommendation_misread=(i == 1),
-                agent_truth_confusion=(i == 2),
-            ),
-        ])
+        rows.extend(
+            assigned_pair(
+                f"P{i}",
+                agent_updates={
+                    "pending_as_negative": i == 0,
+                    "recommendation_misread": i == 1,
+                    "agent_truth_confusion": i == 2,
+                },
+            )
+        )
     report = summarize_paired_study(rows)
     assert report["evidence_status"] == "safety-stop"
     assert {event["event"] for event in report["hard_stop_events"]} == {
