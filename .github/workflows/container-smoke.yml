@@ -27,7 +27,7 @@ jobs:
   container-smoke:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build image
         run: docker build --pull --tag careos:ci .
       - name: Verify image does not run as root
