@@ -9,3 +9,9 @@ venv/
 *.log
 coverage.xml
 htmlcov/
+
+# Local synthetic clinician-study exports. Even pseudonymous research records should
+# not be accidentally committed to the public repository.
+pilot/exports/
+careos-ab-*.csv
+careos-ab-*.json
