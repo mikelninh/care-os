@@ -4,14 +4,27 @@ from app.agent_assistance import AssistanceDraft, validate_read_only_assistance
 from app.agent_modes import AgentOperatingMode, assert_agent_mode_allowed
 from app.agent_sandbox import SandboxProfile, sjk_deidentified_target_profile
 from app.agent_shadow import ShadowComparison, evaluate_shadow
-from app.agent_study import StudyObservation, summarize_paired_study
+from app.agent_study import StudyObservation, assignment_for, summarize_paired_study
 
 
 def test_paired_study_exposes_verification_decay_and_never_auto_passes():
-    report = summarize_paired_study([
-        StudyObservation(participant_code="p1", condition="careos", task_seconds=100, source_opens=2, effort=3),
-        StudyObservation(participant_code="p1", condition="careos-agent", task_seconds=60, source_opens=0, accepted_without_source_check=True, effort=2),
-    ])
+    rounds = assignment_for("p1")["rounds"]
+    observations = []
+    for round_ in rounds:
+        is_agent = round_["condition"] == "careos-agent"
+        observations.append(
+            StudyObservation(
+                participant_code="p1",
+                condition=round_["condition"],
+                case_id=round_["case_id"],
+                order_position=round_["order_position"],
+                task_seconds=60 if is_agent else 100,
+                source_opens=0 if is_agent else 2,
+                accepted_without_source_check=is_agent,
+                effort=2 if is_agent else 3,
+            )
+        )
+    report = summarize_paired_study(observations)
     assert report["agent"]["median_task_seconds"] < report["control"]["median_task_seconds"]
     assert report["verification_decay"] > 0
     assert report["automatic_pass"] is False
