@@ -90,6 +90,7 @@ def manifest(strategy=PatientIdentityStrategy.SHARED_ENTERPRISE_ID):
         oidc_or_sso_available=True,
         trusted_patient_context_launch=True,
         patient_identity_strategy=strategy,
+        trusted_mpi_resolver_available=(strategy == PatientIdentityStrategy.TRUSTED_MPI),
         audit_destination_available=True,
         rollback_owner_named=True,
         security_owner_named=True,
