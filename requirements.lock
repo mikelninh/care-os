@@ -1,5 +1,5 @@
 # CareOS fully pinned Python environment
-# Baseline: 2026-08-16
+# Baseline: 2026-08-18
 # Direct requirements are declared in requirements.txt.
 # This lock is consumed by CI/container/security workflows to prevent transitive drift.
 
@@ -23,7 +23,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 Pygments==2.20.0
 PyJWT==2.13.0
-pytest==9.0.3
+pytest==9.1.1
 starlette==1.6.0
 typing_extensions==4.16.0
 typing-inspection==0.4.4
