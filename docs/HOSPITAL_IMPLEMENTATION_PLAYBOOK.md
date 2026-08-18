@@ -2,24 +2,25 @@
 
 Baseline: **18 August 2026**
 
-> Goal: introduce a clinical AI/context workflow with the least possible disruption, prove value before increasing authority, and make rollback easier than escalation.
+> Goal: introduce a clinical context/AI workflow with the least possible disruption, prove value before increasing authority, and make rollback easier than escalation.
 
-This playbook is intentionally product-agnostic. It can be used for CareOS research, a Recare deployment, or another hospital AI workflow.
+This playbook is product-agnostic. It can support CareOS research, a Recare deployment or another hospital workflow.
 
-## Core principle
+## The promise we can responsibly make
 
-A hospital implementation is not successful because software was installed.
+We cannot guarantee that no component will ever fail.
 
-It is successful when:
+We can design the migration so failure is far less dangerous:
 
-- clinicians spend less time hunting/re-entering information;
-- the workflow is safer or no less safe;
-- source verification does not degrade;
-- support burden is acceptable;
-- users choose to keep using it;
-- the hospital can understand, govern and reverse the integration.
+1. **no big-bang cutover**;
+2. **legacy stays available** until the new capability earns dependency;
+3. **clinical uncertainty fails closed** rather than becoming false absence;
+4. **read does not imply write**;
+5. **every stage is reversible**;
+6. **vendor/system upgrades are preflighted before rollout**;
+7. **one legacy capability retires at a time**.
 
-North-star metric:
+North star:
 
 > **Time Returned to Care — gated by safety and verification.**
 
@@ -27,110 +28,190 @@ North-star metric:
 
 # Phase 0 — Workflow archaeology
 
-Before proposing automation, observe the current workflow.
+Before automation, observe the real work.
 
-Do not ask only "what would you like AI to do?"
-
-Ask users to **show the real work**.
-
-Capture a baseline for 5–10 representative cases where feasible:
+For representative cases, capture where feasible:
 
 - elapsed task time;
-- KIS/LIS/RIS/PACS/ePA/other systems opened;
-- searches;
-- window/context switches;
-- phone calls/messages;
-- manual copy/paste;
-- duplicate entry;
+- systems opened;
+- searches/context switches;
+- calls/messages;
+- copy/paste and duplicate entry;
 - corrections;
-- missing/pending items discovered late;
+- pending work found late;
 - handoffs;
-- workarounds / paper / fax / spreadsheets;
-- frustration and cognitive load.
+- paper/fax/spreadsheet workarounds;
+- cognitive load.
 
 Outputs:
 
-1. workflow map;
-2. baseline metrics;
-3. pain-ranked opportunity list;
-4. explicit non-goals.
-
-Rule:
-
-> Automate the painful step, not the imagined workflow.
-
----
-
-# Phase 1 — Hospital technical preflight
-
-Create one reusable discovery sheet before engineers start integration work.
-
-## Primary systems
-
-- KIS/EHR vendor + version;
-- LIS / microbiology;
-- RIS/PACS;
-- PVS where relevant;
-- document archive;
-- medication systems;
-- identity / AD / SSO;
-- ePA/TI paths;
-- local integration engine.
-
-## Interfaces
-
-- HL7 v2 availability;
-- FHIR endpoints and versions;
-- ISiK profile/stage support;
-- vendor APIs;
-- file/document feeds;
-- event/notification interfaces;
-- write-back options;
-- sandbox/test environment.
-
-## Workplace reality
-
-- Windows versions;
-- browsers;
-- Citrix/VDI/RDP;
-- workstation restrictions;
-- mobile/tablet availability;
-- network segmentation;
-- proxies/firewalls;
-- offline/degraded workflows;
-- shared terminals/session behavior.
-
-## Governance / security
-
-- data controller / processor roles;
-- DPO/Datenschutz contact;
-- CISO/IT security;
-- clinical safety/medical leadership;
-- works council where relevant;
-- AVV/DPA;
-- DSFA/DPIA applicability;
-- hosting/processing locations;
-- identity/role model;
-- audit/SIEM requirements;
-- retention/deletion;
-- incident process;
-- subprocessor/model-provider policy.
-
-Classify the implementation before starting:
-
 ```text
-GREEN  = standard path / known interface / low uncertainty
-AMBER  = custom mapping, legacy constraint or governance dependency
-RED    = missing authority, unsafe identity context, no reliable source, or unacceptable deployment dependency
+workflow map
+baseline metrics
+pain-ranked opportunity
+explicit non-goals
 ```
 
-Do not hide red items inside an implementation estimate.
+> **Automate the painful step, not the imagined workflow.**
 
 ---
 
-# Phase 2 — Read-only first
+# Phase 1 — Describe the hospital once
 
-Default rollout order:
+The discovery output should become a **machine-readable Hospital Capability Manifest**, not disappear into consulting notes.
+
+Capture:
+
+```text
+hospital/site
+KIS / LIS / RIS-PACS / document systems
+vendor / product / version
+FHIR / ISiK / HL7 / vendor APIs / feeds
+authentication mode
+patient + encounter identity
+cross-source identity strategy
+source IDs / versions / effective time / lifecycle support
+read / write capability
+SSO + patient-context launch
+audit destination
+network constraints
+security / privacy / clinical / rollback owners
+```
+
+CareOS implementation: `app/hospital_install.py` + `deploy/hospital.example.json`.
+
+The manifest is **non-secret**. Endpoints, tokens, certificates and passwords remain in hospital-controlled secret infrastructure and are referenced by name only.
+
+## Preflight
+
+Run deterministic preflight before engineers build custom integration:
+
+```bash
+python scripts/careos.py doctor hospital.json --env-file hospital.env
+python scripts/careos.py preflight hospital.json
+```
+
+The output classifies:
+
+```text
+PASS  = known requirement satisfied
+WARN  = usable for planning but needs conformance/review
+BLOCK = missing safe runtime path, identity or accountable control
+```
+
+Do not hide a blocker inside an implementation estimate.
+
+---
+
+# Phase 2 — Discover what the source actually exposes
+
+Where a permitted FHIR endpoint exists, inspect its `CapabilityStatement` rather than relying only on meetings/spreadsheets:
+
+```bash
+python scripts/careos.py discover-fhir hospital.json --env-file hospital.env
+```
+
+Discovery can report:
+
+- advertised FHIR version/software;
+- resource types;
+- interactions;
+- search parameters;
+- resource versioning;
+- differences between declared and advertised capabilities.
+
+Discovery **suggests**. It does not silently rewrite the hospital manifest or decide governance facts.
+
+For non-FHIR paths, equivalent safe discovery should eventually exist, but only after a real adapter implementation and conformance contract exist.
+
+---
+
+# Phase 3 — Select the least bespoke adapter
+
+Preferred migration path:
+
+```text
+ISiK / FHIR
+      ↓
+FHIR R4
+      ↓
+HL7 v2
+      ↓
+stable vendor API
+      ↓
+document/source feed
+      ↓
+UI/computer-use bridge as explicit fallback
+```
+
+But **a standard named by the hospital does not mean the platform implements it**.
+
+Current CareOS truth:
+
+| Path | Status |
+|---|---|
+| FHIR R4 read | implemented research runtime |
+| ISiK/FHIR read | FHIR runtime + validation path |
+| HL7 v2 | contract-only |
+| vendor API | contract-only |
+| source feed | contract-only |
+| UI bridge | contract-only |
+| live write | blocked |
+
+If the strongest available hospital interface is contract-only, integration stops cleanly and creates a bounded adapter task.
+
+---
+
+# Phase 4 — Conformance before connection
+
+Connectivity is not interoperability.
+
+Every site/adapter should replay the same behavioral checks:
+
+### Identity
+
+- patient identity survives the boundary;
+- encounter identity survives where required;
+- cross-source mapping is governed;
+- patient A cannot become patient B.
+
+### Provenance
+
+- upstream resource/document IDs survive;
+- versions survive where exposed;
+- clinical effective time remains separate from ingestion/recorded time.
+
+### Lifecycle
+
+- preliminary;
+- final;
+- corrected;
+- cancelled;
+- pending;
+- stale;
+- unavailable.
+
+### Transport
+
+- paging completes or fails closed;
+- partial reads are visible;
+- outages are visible;
+- retry/idempotency is explicit.
+
+### Security
+
+- authentication failure closes access;
+- credentials do not appear in logs/config;
+- network destinations are bounded;
+- read does not become write.
+
+A conformance failure becomes a regression fixture before broader rollout.
+
+---
+
+# Phase 5 — Read-only + shadow first
+
+Default authority ladder:
 
 ```text
 READ
@@ -144,80 +225,46 @@ HUMAN APPROVAL
 BOUNDED EXECUTION
 ```
 
-Do not begin with autonomous write-back merely because an API exists.
+Initial question:
 
-Initial proof question:
+> **Can we surface the right patient context with the right source/state semantics without becoming a new dependency?**
 
-> Can we reliably surface the right patient context with the right source/state semantics inside the clinician workflow?
+Shadow mode runs beside the normal workflow and compares what the new path would show/propose against what actually happened.
 
-Read-only exit criteria should include:
+Exit criteria should include:
 
 - correct patient/encounter binding;
-- provenance available for consequential facts;
+- provenance for consequential facts;
 - pending/unavailable/stale states preserved;
 - source outages visible;
-- response latency acceptable;
-- no second patient search introduced unnecessarily;
+- acceptable latency;
+- no unnecessary second patient search;
 - audit functioning;
-- rollback tested.
+- rollback rehearsed.
 
 ---
 
-# Phase 3 — Shadow mode
+# Phase 6 — One workflow, one ward
 
-Run the new logic without changing the clinician's consequential workflow.
-
-Compare:
-
-```text
-what the system would have shown/proposed
-vs
-what happened in the normal workflow
-```
-
-Measure:
-
-- correct/incorrect facts;
-- missed items;
-- pending-state errors;
-- contradictions;
-- unsupported claims;
-- source failures;
-- latency;
-- correction burden;
-- agent/tool denials;
-- user-visible degraded state.
-
-Use shadow failures to create regression tests before widening exposure.
-
----
-
-# Phase 4 — One workflow, one ward
-
-Avoid a hospital-wide "AI transformation" launch.
+Avoid hospital-wide AI transformation launches.
 
 Choose:
 
-- one workflow;
-- one ward/team;
-- one clinical champion;
-- one implementation owner;
-- one engineering owner;
-- one IT/integration owner;
-- one measurable outcome.
-
-Example:
-
-> Infectiology discharge-prep / morning review on Ward X.
+```text
+one workflow
+one ward/team
+one clinical champion
+one implementation owner
+one engineering owner
+one IT/integration owner
+one measurable outcome
+```
 
 Pilot charter:
 
 ```text
-problem
-baseline
-scope
-users
-source systems
+problem + baseline
+sources
 excluded decisions
 human approval boundary
 success metrics
@@ -228,26 +275,19 @@ review date
 
 ---
 
-# Phase 5 — Copilot mode
+# Phase 7 — Copilot mode
 
 The system may now:
 
 - extract;
-- organise;
-- surface context;
+- organize;
+- surface source-linked context;
 - draft;
-- propose next administrative action.
+- propose administrative next actions.
 
-The human:
+Humans verify, correct and approve.
 
-- verifies;
-- corrects;
-- approves;
-- remains the authority for consequential clinical output.
-
-Record corrections as training/evaluation evidence, not as hidden cleanup work.
-
-Important telemetry:
+Capture:
 
 - accepted unchanged;
 - edited;
@@ -255,213 +295,222 @@ Important telemetry:
 - source opened;
 - pending item missed;
 - contradiction reviewed;
-- time to complete;
-- reason for abandonment.
+- completion time;
+- abandonment reason.
+
+Corrections become evaluation/regression evidence, not invisible cleanup.
 
 ---
 
-# Phase 6 — Legacy-system bridge
+# Phase 8 — Controlled legacy bridge
 
-Integration preference:
+A UI/computer-use bridge can be valuable when no practical typed write path exists, but it is a separate risk surface.
 
-1. standards-based interface (FHIR/ISiK/HL7 where appropriate);
-2. stable vendor API;
-3. provider integration engine;
-4. controlled document/file path;
-5. UI automation / computer-use only when it is the pragmatic bridge.
+Require compatibility evidence for:
 
-Computer-use can be valuable in legacy KIS environments because it avoids long interface projects, but it must be treated as a different risk surface:
-
-- UI/version fragility;
-- session ownership;
-- concurrent-user behavior;
-- field targeting;
+- KIS UI/version;
+- expected screen state;
+- session/concurrency behavior;
+- field mapping;
 - confirmation;
-- replay/idempotency;
-- screen-state validation;
-- audit;
-- safe halt on unexpected UI.
+- retry/idempotency;
+- safe halt on UI changes;
+- read-after-write verification;
+- audit.
 
-Never describe UI automation as equivalent to a typed transactional API.
+Never describe computer-use as equivalent to a typed API.
 
 ---
 
-# Phase 7 — Bounded execution
+# Phase 9 — Bounded execution
 
-Only consider write/send actions after read/draft value is proven and the deployment's governance permits them.
+Only consider consequential write/send actions after read/draft value is proven and governance permits them.
 
-Every consequential capability should have an explicit manifest:
+Every action needs an explicit authority contract:
 
 ```text
-agent/workflow identity + version
+workflow/agent identity + version
 patient/encounter scope
-allowed tool
-allowed operation
-allowed data categories
-record/page/runtime budgets
+allowed tool + operation
+data categories
+budgets
 human confirmation
-idempotency / replay behavior
-audit requirement
-egress destinations
-kill / revocation mechanism
+idempotency/replay
+allowed egress
+audit
+kill/revocation
 ```
 
 Rules:
 
-- no agent self-escalation;
+- no self-escalation;
 - no autonomous break-glass;
-- write and external send remain separate capabilities;
-- retry behavior is explicit;
-- human confirmation is bound to the actual proposed action, not a generic prior approval;
-- failed/partial execution is visible.
+- write and external send are separate;
+- failed/partial execution is visible;
+- read-after-write verification where applicable.
+
+Current CareOS release intentionally ships no live transactional adapter.
 
 ---
 
-# Phase 8 — Measure before scale
+# Phase 10 — Measure before scale
 
-A rollout dashboard should include **benefit and risk together**.
+Measure benefit and risk together.
 
-## Benefit
+### Benefit
 
-- median task time;
-- searches/window switches;
+- task time;
+- searches/context switches;
 - calls/messages;
 - manual entries;
-- overtime/admin burden where reliably measurable;
-- user effort;
-- adoption;
-- repeat use.
+- effort;
+- adoption/repeat use.
 
-## Reliability / safety
+### Reliability / safety
 
 - wrong-patient events;
 - source outages;
 - unsupported facts;
 - stale/pending confusion;
-- missed pending items;
+- missed pending work;
 - corrections;
-- contradictions requiring review;
-- write/tool denials;
+- contradictions;
 - system availability;
-- degraded-mode frequency;
-- support tickets.
+- support incidents.
 
-## Verification behavior
+### Verification
 
 - source-opening rate;
 - acceptance without source check;
 - draft-vs-source confusion;
 - correction after source review.
 
-Decision:
-
 ```text
-PASS -> expand carefully
-HOLD -> fix / gather more evidence
-FAIL -> rollback or redesign
+PASS → expand carefully
+HOLD → fix / gather evidence
+FAIL → rollback or redesign
 ```
 
-A speed win does **not** override a safety-stop event.
+A speed win never cancels a safety-stop event.
 
 ---
 
-# Phase 9 — Repeatability
+# Phase 11 — Treat upgrades like migrations
 
-Do not call the approach scalable after one successful ward.
+Before a KIS/LIS/interface upgrade, compare last-known-good and proposed capability manifests:
 
-Next proof:
+```bash
+python scripts/careos.py upgrade-check current.json proposed.json
+```
 
-1. second ward / specialty;
-2. second KIS or vendor configuration;
-3. second hospital;
-4. no fork of the core clinical-state/evidence/agent contracts.
+CareOS upgrade preflight blocks changes such as:
 
-Track per deployment:
+- source removal;
+- vendor/product replacement under the same identity;
+- interface loss;
+- patient-identity loss;
+- provenance/effective-time/lifecycle loss;
+- newly introduced write capability;
+- a proposed configuration that no longer passes preflight.
 
-- connector work hours;
-- mapping differences;
-- policy differences;
-- workflow configuration;
-- custom code introduced;
-- deployment lead time;
-- test reuse rate;
+A normal vendor/version change still requires shadow revalidation.
+
+This is how a vendor upgrade becomes a compatibility test **before** it becomes a clinical surprise.
+
+---
+
+# Phase 12 — Prove repeatability
+
+Do not call the platform scalable after one successful site.
+
+The real infrastructure test is:
+
+```text
+Hospital A / Vendor A
+        ↓
+reusable adapter + configuration
+        ↓
+no core fork
+
+Hospital B / different vendor/version
+        ↓
+reusable adapter + configuration
+        ↓
+no core fork
+```
+
+Track:
+
+- human integration hours/site;
+- time from manifest to first validated data;
+- time to shadow mode;
+- custom code/site;
+- adapter/test reuse rate;
+- configuration-only deployment rate;
+- pre-production conformance failures;
+- upgrade regressions caught before rollout;
 - support burden.
 
-The goal is to move hospital variation into **versioned adapters/packs/configuration**, not branches of the core product.
+The goal is **marginal hospital integration cost approaching configuration + conformance, not custom software engineering**.
 
 ---
 
-# Hospital implementation team
-
-A practical minimum cross-functional group:
+# Implementation team
 
 | Role | Responsibility |
 |---|---|
 | clinical sponsor | outcome, scope, escalation |
-| clinician champion | workflow truth + user feedback |
+| clinician champion | workflow truth + feedback |
 | implementation owner | rollout coordination |
-| integration engineer | source interfaces / mapping |
+| integration engineer | source interfaces/mapping |
 | AI/product engineer | agent/model/workflow behavior |
-| hospital IT | infrastructure / operations |
-| security / DPO | controls / privacy / risk |
-| product | scope + adoption + metrics |
-| support | incident / friction feedback |
+| hospital IT | infrastructure/operations |
+| security / DPO | controls/privacy/risk |
+| product | scope/adoption/metrics |
+| support | incident/friction feedback |
 
-One person may cover multiple roles in a small pilot, but the responsibilities must remain explicit.
+One person may cover multiple roles; the responsibilities still need named owners.
 
 ---
 
-# The implementation experience we want
+# Desired implementation experience
 
-For the hospital:
+For hospital IT:
 
 ```text
-one discovery package
-one accountable implementation owner
-one technical preflight
-one privacy/security evidence pack
-one synthetic conformance suite
-one pilot dashboard
-one rollback plan
+one non-secret capability manifest
+one preflight report
+one adapter/conformance plan
+one security/network data-flow package
+one local deployment path
+one upgrade check
+one rollback route
 ```
 
 For clinicians:
 
 ```text
-no new patient search if avoidable
+no second patient search if avoidable
 minimal new UI
 source visible when needed
 uncertainty visible
 fast correction
 human authority obvious
-no hidden background writes
-```
-
-For hospital IT:
-
-```text
-known interfaces
-known egress
-known data flows
-known model/providers
-known failure modes
-known logs
-known update path
-known rollback
+no hidden writes
 ```
 
 ---
 
-# CareOS assets supporting this playbook
+## CareOS assets
 
-- [Pre-Hospital Handoff](PRE_HOSPITAL_HANDOFF.md)
+- [Hospital Self-Install Platform](HOSPITAL_SELF_INSTALL_PLATFORM.md)
+- [Connector SDK](CONNECTOR_SDK.md)
+- [Current Status & Gaps](CURRENT_STATUS_AND_GAPS.md)
 - [Reference Architecture V2](ARCHITECTURE_V2.md)
-- [Deployment Patterns](DEPLOYMENT_PATTERNS.md)
 - [Trust & Data Flow](TRUST_AND_DATA_FLOW.md)
 - [Hospital Assurance Pack](HOSPITAL_ASSURANCE_PACK.md)
-- [Responsibility Model](RESPONSIBILITY_MODEL.md)
-- [Safety Case](SAFETY_CASE.md)
 - [Agent Security Model](AGENT_SECURITY_MODEL.md)
-- [Recare Collaboration Map](RECARE_COLLABORATION_MAP.md)
+- [Recare Integration Accelerator](RECARE_INTEGRATION_ACCELERATOR.md)
+- [Endgame](ENDGAME.md)
 
-> **Best implementation strategy: reduce uncertainty in layers, earn authority from evidence, and never make the hospital absorb complexity merely because the software can.**
+> **Reduce uncertainty in layers, earn authority from evidence, and never make the hospital absorb complexity merely because the software can.**
