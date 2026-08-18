@@ -89,3 +89,5 @@ jobs:
           tests/test_future_api.py
       - name: Validate study aggregation command
         run: python scripts/aggregate_time_returned_to_care.py --help
+
+# Final verification marker: current main including coordination + Future API.
