@@ -1,76 +1,77 @@
-## What changes?
+## What problem does this solve?
 
-Describe the behavior change and why it is needed.
+Describe the workflow friction, failure mode or contributor need in a few sentences.
 
-## Readiness / safety impact
+## What changed?
 
-Check every area touched by this PR:
+Keep this concrete and reviewable.
 
-- [ ] No clinical-truth behavior change
-- [ ] Clinical fact / extraction / reconciliation
-- [ ] Patient identity / record matching
-- [ ] Authentication / authorization / treatment context
-- [ ] Audit / logging / telemetry / PHI handling
-- [ ] Connector / FHIR / ISiK / terminology / freshness
-- [ ] Model / prompt / provider / schema
-- [ ] Intended purpose / clinical workflow boundary
-- [ ] Data flow / retention / processor / deployment pattern
-- [ ] Write capability
-- [ ] Reliability / degraded-mode / rollback
-- [ ] Regulatory / quality documentation
-- [ ] Architecture contract / ADR
+## Show the evidence
 
-## Evidence
+What demonstrates the change?
 
-- [ ] tests added/updated
-- [ ] current regression CI green
-- [ ] safety/failure tests added where relevant
-- [ ] provenance/source behavior tested where relevant
-- [ ] benchmark impact assessed where relevant
-- [ ] architecture/gate docs updated where relevant
-- [ ] dependency/security impact assessed
+- [ ] test / regression fixture
+- [ ] screenshot or interaction proof, where relevant
+- [ ] benchmark / measurement, where relevant
+- [ ] documentation updated, where relevant
 
-Link exact evidence/artifacts:
+Links / notes:
 
-## Gate impact
+## Safety check
 
-Does this PR change evidence or blockers for G0–G9?
+Most PRs only need a quick pass here. Check anything this change can affect:
+
+- [ ] patient / encounter binding
+- [ ] provenance / source evidence
+- [ ] pending / stale / unavailable / contradictory state
+- [ ] model / prompt / extraction behaviour
+- [ ] agent tool scope / authorization / egress
+- [ ] clinical write capability
+- [ ] PHI / privacy / logging / telemetry
+- [ ] FHIR / ISiK / connector behaviour
+- [ ] none of the above
+
+If you checked any safety-sensitive area, explain the failure mode and regression evidence:
+
+## Honest boundary
+
+What does this PR **not** prove?
+
+Examples: synthetic-only, no real hospital integration, formative UX only, no production load evidence.
+
+## Contributor checklist
+
+- [ ] I used synthetic data only.
+- [ ] I did not add secrets, credentials or private hospital/vendor material.
+- [ ] I did not silently turn missing/unavailable/pending into a reassuring negative state.
+- [ ] I did not give the model new authority without deterministic controls.
+- [ ] If I changed a clinical/safety invariant, I added a regression test.
+- [ ] The claim in the PR matches the evidence.
+
+<details>
+<summary><strong>Deeper assurance / gate impact — only if relevant</strong></summary>
+
+### Readiness gates
+
+Does this change evidence or blockers for G0–G9?
 
 - Gate(s):
 - Previous status:
 - Proposed status:
-- Evidence supporting any status change:
+- Evidence:
 
 > A code change alone is not sufficient to mark an assurance gate PASS.
 
-## Clinical truth questions
-
-If clinical data behavior changes:
+### High-risk review questions
 
 1. Can this create or hide a wrong-patient fact?
-2. Can source unavailable/stale become a reassuring empty state?
-3. Can a model-derived claim bypass exact provenance/evidence checks?
+2. Can unavailable/stale data become a reassuring empty state?
+3. Can a model-derived claim bypass provenance/evidence verification?
 4. Can conflicting sources be silently resolved?
-5. Can a newer unresolved source leave stale state looking current?
-6. Does the user still have a direct route to the source?
+5. Can a read-only deployment reach a write capability?
+6. Does any new identifiable data leave the provider boundary?
+7. Is the action auditable and reversible?
 
-## Privacy / security questions
+</details>
 
-If data flow/access changes:
-
-1. Is any new identifiable data processed or retained?
-2. Does any new data leave the provider boundary?
-3. Does any new processor/model/provider receive PHI?
-4. Is the action auditable?
-5. Does authentication remain distinct from patient authorization?
-6. Is rollback/kill-switch behavior preserved?
-
-## Intended purpose / write boundary
-
-- [ ] This PR does not add autonomous diagnosis/treatment selection.
-- [ ] This PR does not make production write-back reachable.
-- [ ] If either boundary changes, a superseding ADR + safety/regulatory review is included before merge.
-
-## Rollback
-
-How can this change be disabled or reverted safely?
+Thank you for helping make clinical software calmer, safer and more useful. ❤️
