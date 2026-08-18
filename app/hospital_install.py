@@ -116,6 +116,8 @@ class AdapterSelection(BaseModel):
     reuse_key: str
     direction: Literal["read", "write"] = "read"
     risk: Literal["green", "amber", "red"]
+    implementation_status: Literal["implemented", "validation-path", "contract-only"]
+    runtime_available: bool
     rationale: str
 
 
@@ -148,15 +150,80 @@ READ_PRIORITY = (
 )
 
 
-def _adapter_id(interface: InterfaceKind) -> tuple[str, str, Literal["green", "amber", "red"]]:
-    return {
-        InterfaceKind.ISIK_FHIR: ("standard-isik-fhir", "fhir", "green"),
-        InterfaceKind.FHIR_R4: ("standard-fhir-r4", "fhir", "green"),
-        InterfaceKind.HL7V2: ("standard-hl7v2-read", "hl7v2", "green"),
-        InterfaceKind.VENDOR_API: ("vendor-api-configured", "vendor-api", "amber"),
-        InterfaceKind.DOCUMENT_FEED: ("standard-document-ingest", "documents", "amber"),
-        InterfaceKind.UI_BRIDGE: ("controlled-ui-bridge", "computer-use", "amber"),
-    }[interface]
+# This catalog is deliberately about *CareOS implementation maturity*, not what a
+# hospital/vendor supports. Do not turn a standards label in a site manifest into a
+# claim that a working CareOS adapter exists.
+ADAPTER_CATALOG: dict[InterfaceKind, dict[str, object]] = {
+    InterfaceKind.ISIK_FHIR: {
+        "adapter_id": "standard-isik-fhir",
+        "family": "fhir",
+        "risk": "green",
+        "implementation_status": "validation-path",
+        "runtime_available": True,
+        "rationale": (
+            "Uses the implemented generic FHIR R4 runtime plus the CareOS ISiK validation path. "
+            "Real hospital/vendor ISiK compatibility is still external evidence."
+        ),
+    },
+    InterfaceKind.FHIR_R4: {
+        "adapter_id": "standard-fhir-r4",
+        "family": "fhir",
+        "risk": "green",
+        "implementation_status": "implemented",
+        "runtime_available": True,
+        "rationale": "Generic CareOS FHIR R4 read runtime exists; real vendor compatibility remains to be evidenced.",
+    },
+    InterfaceKind.HL7V2: {
+        "adapter_id": "standard-hl7v2-read",
+        "family": "hl7v2",
+        "risk": "amber",
+        "implementation_status": "contract-only",
+        "runtime_available": False,
+        "rationale": "HL7 v2 is part of the target adapter contract, but CareOS does not yet ship a generic HL7 v2 runtime adapter.",
+    },
+    InterfaceKind.VENDOR_API: {
+        "adapter_id": "vendor-api-configured",
+        "family": "vendor-api",
+        "risk": "amber",
+        "implementation_status": "contract-only",
+        "runtime_available": False,
+        "rationale": "Vendor API support requires a tested adapter implementation for the specific API contract/version.",
+    },
+    InterfaceKind.DOCUMENT_FEED: {
+        "adapter_id": "standard-document-ingest",
+        "family": "documents",
+        "risk": "amber",
+        "implementation_status": "contract-only",
+        "runtime_available": False,
+        "rationale": "CareOS has document-processing research components but not a generic production source-feed connector contract implementation.",
+    },
+    InterfaceKind.UI_BRIDGE: {
+        "adapter_id": "controlled-ui-bridge",
+        "family": "computer-use",
+        "risk": "amber",
+        "implementation_status": "contract-only",
+        "runtime_available": False,
+        "rationale": "UI/computer-use is a planned legacy fallback; no CareOS production UI bridge exists today.",
+    },
+}
+
+
+def _selection(source: SourceSystem, interface: InterfaceKind, *, direction: Literal["read", "write"] = "read") -> AdapterSelection:
+    item = ADAPTER_CATALOG[interface]
+    base_id = str(item["adapter_id"])
+    adapter_id = base_id if direction == "read" else f"{base_id}-write"
+    return AdapterSelection(
+        source_id=source.source_id,
+        adapter_id=adapter_id,
+        adapter_family=str(item["family"]),
+        interface=interface,
+        reuse_key=f"{base_id}:{direction}:{source.vendor.lower()}:{source.product.lower()}:{source.version}",
+        direction=direction,
+        risk=("amber" if direction == "write" and item["risk"] == "green" else str(item["risk"])),
+        implementation_status=str(item["implementation_status"]),
+        runtime_available=bool(item["runtime_available"]) and direction == "read",
+        rationale=str(item["rationale"]),
+    )
 
 
 def _select_read_adapter(source: SourceSystem) -> AdapterSelection | None:
@@ -164,16 +231,7 @@ def _select_read_adapter(source: SourceSystem) -> AdapterSelection | None:
         return None
     for interface in READ_PRIORITY:
         if interface in source.interfaces:
-            adapter_id, family, risk = _adapter_id(interface)
-            return AdapterSelection(
-                source_id=source.source_id,
-                adapter_id=adapter_id,
-                adapter_family=family,
-                interface=interface,
-                reuse_key=f"{adapter_id}:{source.vendor.lower()}:{source.product.lower()}:{source.version}",
-                risk=risk,
-                rationale=f"Prefer {interface.value} before vendor-specific or UI automation paths.",
-            )
+            return _selection(source, interface)
     return None
 
 
@@ -183,7 +241,8 @@ def _select_write_adapter(source: SourceSystem, manifest: HospitalManifest) -> A
     if not (manifest.allow_any_write and source.write_supported):
         return None
 
-    # Typed interfaces beat UI automation. UI bridge is a controlled last-mile fallback.
+    # Write remains contract-only in the current CareOS release. We still identify the
+    # best future target interface so a hospital/reviewer can see the migration path.
     for interface in (
         InterfaceKind.ISIK_FHIR,
         InterfaceKind.FHIR_R4,
@@ -197,17 +256,11 @@ def _select_write_adapter(source: SourceSystem, manifest: HospitalManifest) -> A
             manifest.allow_ui_bridge_fallback and source.ui_bridge_allowed
         ):
             continue
-        adapter_id, family, risk = _adapter_id(interface)
-        return AdapterSelection(
-            source_id=source.source_id,
-            adapter_id=f"{adapter_id}-write",
-            adapter_family=family,
-            interface=interface,
-            reuse_key=f"{adapter_id}:write:{source.vendor.lower()}:{source.product.lower()}:{source.version}",
-            direction="write",
-            risk="amber" if risk == "green" else risk,
-            rationale="Write path remains separate, explicit, human-approved and independently testable.",
-        )
+        selected = _selection(source, interface, direction="write")
+        selected.runtime_available = False
+        selected.implementation_status = "contract-only"
+        selected.rationale = "Write path is identified for planning only; the current CareOS release ships no live transactional adapter."
+        return selected
     return None
 
 
@@ -234,18 +287,47 @@ def build_hospital_install_plan(manifest: HospitalManifest) -> HospitalInstallPl
         selection = _select_read_adapter(source)
         if selection:
             adapters.append(selection)
+            if not selection.runtime_available:
+                checks.append(
+                    PreflightCheck(
+                        id=f"source:{source.source_id}:adapter-runtime",
+                        status="block",
+                        message=(
+                            f"{selection.adapter_id} is {selection.implementation_status}; "
+                            "CareOS does not yet ship a runnable adapter for this path."
+                        ),
+                    )
+                )
+            elif selection.implementation_status == "validation-path":
+                checks.append(
+                    PreflightCheck(
+                        id=f"source:{source.source_id}:adapter-runtime",
+                        status="warn",
+                        message=(
+                            f"{selection.adapter_id} uses the implemented FHIR runtime plus a validation path; "
+                            "real vendor/profile compatibility remains unproven."
+                        ),
+                    )
+                )
         else:
             checks.append(
                 PreflightCheck(
                     id=f"source:{source.source_id}:read-path",
                     status="block",
-                    message="No supported read interface. Do not invent an integration; discover a governed source path.",
+                    message="No declared read interface. Do not invent an integration; discover a governed source path.",
                 )
             )
 
         write_selection = _select_write_adapter(source, manifest)
         if write_selection:
             adapters.append(write_selection)
+            checks.append(
+                PreflightCheck(
+                    id=f"source:{source.source_id}:write-runtime",
+                    status="block",
+                    message="Write target identified for planning, but current CareOS ships no live transactional/write adapter.",
+                )
+            )
 
         checks.extend(
             [
@@ -282,20 +364,15 @@ def build_hospital_install_plan(manifest: HospitalManifest) -> HospitalInstallPl
     blocking = [check for check in checks if check.status == "block"]
     execution_allowed, release_blocker = _current_release_allows(manifest.deployment_intent)
 
-    standard_read_count = sum(
-        1
-        for adapter in adapters
-        if adapter.direction == "read" and adapter.interface in {InterfaceKind.ISIK_FHIR, InterfaceKind.FHIR_R4, InterfaceKind.HL7V2}
+    read_selections = [adapter for adapter in adapters if adapter.direction == "read"]
+    all_sources_have_runtime = (
+        len(read_selections) == len(manifest.sources)
+        and all(adapter.runtime_available for adapter in read_selections)
     )
-    all_sources_have_read = all(_select_read_adapter(source) is not None for source in manifest.sources)
-    base_ready = not blocking and all_sources_have_read and bool(adapters)
-    shadow_ready = base_ready and standard_read_count > 0
+    base_ready = not blocking and all_sources_have_runtime and bool(read_selections)
+    shadow_ready = base_ready
     copilot_ready = shadow_ready and manifest.trusted_patient_context_launch and manifest.audit_destination_available
-    controlled_write_ready = (
-        copilot_ready
-        and manifest.allow_any_write
-        and any(adapter.direction == "write" for adapter in adapters)
-    )
+    controlled_write_ready = False  # explicitly unsupported by current release
 
     next_steps: list[str] = []
     for check in blocking:
@@ -306,8 +383,8 @@ def build_hospital_install_plan(manifest: HospitalManifest) -> HospitalInstallPl
         next_steps.append("Run connector conformance suite and start synthetic/deidentified shadow evaluation.")
     if shadow_ready and manifest.deployment_intent in {DeploymentIntent.SHADOW_READONLY, DeploymentIntent.COPILOT_READONLY}:
         next_steps.append("After external gates permit, run read-only shadow mode before clinician dependency.")
-    if controlled_write_ready:
-        next_steps.append("Write path still requires per-workflow approval, read-after-write verification and rollback rehearsal.")
+    if manifest.deployment_intent == DeploymentIntent.CONTROLLED_WRITE:
+        next_steps.append("Controlled write remains a future evidence-gated product; no current write adapter is runnable.")
 
     return HospitalInstallPlan(
         hospital_id=manifest.hospital_id,
