@@ -2,293 +2,267 @@
 
 Baseline: **18 August 2026**
 
-> Purpose: separate what is demonstrated from what still requires clinicians, hospitals, vendors, production infrastructure or external assurance.
+> Purpose: one concise source of truth for what CareOS has demonstrated, what is implemented but non-live, and what still requires clinicians, hospitals, vendors, production infrastructure or independent assurance.
 
 ## Executive status
 
 CareOS is best described as:
 
-> **synthetic product research + runnable engineering proof + a manifest-driven hospital self-install/scaling scaffold + proposal-ready reference architecture**
+> **synthetic product research + runnable engineering proof + a manifest-driven hospital integration/scaling scaffold + proposal-ready reference architecture.**
 
-It is **not** clinically validated, production approved or authorised for identifiable live patient data.
+It is **not** clinically validated, production approved, authorised for identifiable live patient data, or proven across hospitals.
 
-The newest infrastructure hypothesis is now executable: hospital capability manifest → adapter selection/maturity → local FHIR-family data plane → Docker/Helm packaging → upgrade preflight. It remains **synthetic/deidentified evidence**, not proof of zero-touch real-hospital deployment.
+The pre-hospital engineering question is now largely coherent. The decisive unknown is external reality: do the workflow, clinical-state, agent-safety and repeatable-integration ideas survive real clinicians, Recare's production architecture and real hospital systems?
 
 ---
 
-## 1. Evidence-state summary
+# 1. Evidence-state summary
 
-| Dimension | Evidence state | What exists | What is still missing |
+| Dimension | Current evidence state | What exists | What is still missing |
 |---|---|---|---|
-| Problem / workflow | **DEMONSTRATED SYNTHETICALLY** | concrete Infectiology workflow; measurable admin/search burden | observed real workflow baseline |
-| Clinical UX | **DEMONSTRATED SYNTHETICALLY** | source-linked clinician demo; pending/conflict/open-work states | multi-clinician usability evidence |
-| Clinical truth / provenance | **DEMONSTRATED SYNTHETICALLY** | source/time/state/contradiction/supersession contracts + tests | acceptable recall/review burden + real-source evidence |
-| Agent containment | **DEMONSTRATED SYNTHETICALLY** | deterministic authority, bounded tools, delegation, audit, hostile scenarios | production identity, traffic and incident evidence |
-| Adversarial evaluation | **DEMONSTRATED SYNTHETICALLY** | wrong-patient, injection, outage, stale and write-escalation tests | production regression history |
-| Hospital capability manifest / preflight | **IMPLEMENTED + SYNTHETICALLY TESTED** | non-secret manifest, adapter selection, owner/identity/readiness checks | real hospital manifests and discovery accuracy |
-| Adapter maturity registry | **IMPLEMENTED** | FHIR implemented; ISiK validation-path; HL7/vendor/doc/UI paths labelled contract-only | real adapter implementations + compatibility evidence |
-| Hospital-local data plane | **IMPLEMENTED — NON-LIVE** | multi-source FHIR-family runtime with source-state and cross-source identity guards | real auth/MPI/vendor runtime + live approval |
-| Docker / Helm install scaffold | **IMPLEMENTED — NON-LIVE** | hardened Docker Compose + Kubernetes/Helm shape, read-only config, deny-default egress | validated target-hospital deployment + approved image/release process |
-| Upgrade compatibility preflight | **IMPLEMENTED + SYNTHETICALLY TESTED** | interface/identity/provenance/write capability regressions block rollout | real KIS/LIS upgrade history |
-| German interoperability | **PARTIAL** | FHIR/ISiK-oriented paths and CI | real KIS/LIS/vendor sandbox |
-| EU/global portability | **RESEARCH PROOF** | IPS/trust/translation/state separation | real conformance/exchange evidence |
-| Hospital rollout | **PROPOSAL READY** | read-only → shadow → one-ward → copilot evidence ladder | an actual implementation |
-| Recare-targeted capstone | **RUNNABLE SYNTHETIC PROOF** | FastAPI + real CareOS gateway/tool/eval path | captured provider-backed trace + production context |
-| Real clinician evidence | **EXTERNAL EVIDENCE REQUIRED** | study protocol, counterbalanced UI, export + aggregator | completed clinician sessions |
-| Real KIS/LIS integration | **EXTERNAL EVIDENCE REQUIRED** | discovery + manifest + connector contracts | vendor/system access |
-| Production PHI operations | **BLOCKED BY DESIGN** | live-data locks + security architecture | hospital identity, KMS, SIEM, DPIA/DPA, operations |
-| Multi-hospital repeatability | **NOT YET EVIDENCED** | anti-fork contract + reusable adapter/install scaffold | second independent real site/vendor |
+| Problem / workflow | **DEMONSTRATED SYNTHETICALLY** | concrete Infectiology workflow + golden journey | observed real workflow baseline |
+| Clinical UX | **DEMONSTRATED SYNTHETICALLY** | changed/pending/conflict/source-linked views | multi-clinician usability evidence |
+| Clinical truth / provenance | **DEMONSTRATED SYNTHETICALLY — G1 BLOCKED** | source/time/lifecycle/contradiction/supersession contracts | useful recall/review burden + real-source variation |
+| Patient-local graph | **IMPLEMENTED + TESTED** | hard patient partition, evidence-linked derived relations | real source/event volume |
+| Stale-artifact invalidation | **IMPLEMENTED + TESTED** | corrected/superseded facts reopen dependent unsigned content | real clinical workflow evidence |
+| Agent containment | **DEMONSTRATED SYNTHETICALLY** | deterministic gateway/tool proxy/delegation/audit | production identity, traffic and incident evidence |
+| Adversarial evaluation | **DEMONSTRATED SYNTHETICALLY** | wrong patient, injection, outage, stale, write escalation | production regression history + independent red team |
+| Resilience / recovery | **IMPLEMENTED + TESTED SYNTHETICALLY** | NORMAL/DEGRADED/OFFLINE/RECOVERY + reconciliation | target-hospital downtime/recovery exercise |
+| Patient/family experience | **IMPLEMENTED SYNTHETICALLY** | source-linked explanation, pending state, teach-back, proxy grant | patient/family usability + real access infrastructure |
+| Cross-provider lifecycle | **IMPLEMENTED CONTRACT** | acknowledged request lifecycle + purpose-limited context | real KIM/FHIR/vendor/network transport |
+| Hospital manifest / preflight | **IMPLEMENTED + TESTED** | non-secret capability manifest, adapter/identity/owner checks | real hospital manifests + discovery accuracy |
+| Hospital-local FHIR-family data plane | **IMPLEMENTED — NON-LIVE** | multi-source source-state-aware runtime | real auth/vendor/MPI + live approval |
+| Trusted MPI/source-ID resolver | **IMPLEMENTED CONTRACT** | deterministic source-specific ID resolution, fail-closed states | approved real hospital resolver integration |
+| Hospital review pack | **IMPLEMENTED + TESTED** | JSON/Markdown/Mermaid generated from non-secret manifest | real DPO/CISO/IT review feedback |
+| Canary / rollback controller | **IMPLEMENTED + TESTED** | preflight→conformance→canary→promote/rollback evidence gates | target-environment rollout evidence |
+| Compatibility registry | **IMPLEMENTED + TESTED** | vendor/product/version evidence classes + explicit version matching | real vendor/version records |
+| HL7 v2 ADT/ORU library connector | **IMPLEMENTED SYNTHETICALLY** | read-only parsing, lifecycle, dedup, wrong-patient/malformed handling | real transport/interface engine + vendor/profile evidence |
+| Docker / Helm install scaffold | **IMPLEMENTED — NON-LIVE** | hardened local/cluster deployment shape | validated target-hospital deployment + release operations |
+| Time Returned to Care study | **IMPLEMENTED — EVIDENCE PENDING** | counterbalanced matched-case UI, export, aggregator, safety gates | actual participant sessions |
+| Recare-targeted capstone | **RUNNABLE SYNTHETIC PROOF** | FastAPI + CareOS gateway/tool/eval path | provider-backed trace + production context |
+| German interoperability | **PARTIAL** | FHIR/ISiK path, national integration blueprint | real KIS/LIS/vendor sandbox |
+| EU/global portability | **RESEARCH PROOF** | state/provenance/trust/translation separation | real conformance/exchange evidence |
+| Production PHI operations | **BLOCKED BY DESIGN** | live-data locks + security architecture | hospital IdP/KMS/SIEM/DPIA/DPA/operations |
+| Multi-hospital repeatability | **NOT EVIDENCED** | anti-fork architecture + reuse contracts | two independent real sites/vendors |
+| Clinical/regulatory assurance | **EXTERNAL REVIEW REQUIRED** | safety/risk/regulatory question set | fixed intended use + qualified independent review |
 
-### Claim boundary
+---
 
-**Safe to claim today:**
+# 2. Claim boundary
 
-- a runnable synthetic healthcare-agent architecture;
-- source-linked clinical-state semantics;
-- explicit uncertainty and contradiction handling;
+## Safe to claim today
+
+- a runnable synthetic healthcare-agent/workflow architecture;
+- source-linked clinical-state semantics with explicit lifecycle and uncertainty;
 - deterministic agent authority outside the model;
-- adversarial/replayable safety tests;
+- replayable adversarial/failure scenarios;
+- patient-local graph + downstream invalidation on source correction;
+- explicit degraded/offline/recovery behavior;
+- a source-linked synthetic patient/family experience;
+- transport-agnostic cross-provider workflow state;
 - FHIR/ISiK-oriented interoperability architecture;
 - a runnable non-live hospital manifest/preflight/local-data-plane scaffold;
-- explicit adapter implementation maturity rather than implied support;
+- deterministic trusted-MPI/source-ID resolver contract;
+- generated non-secret hospital review artifacts;
+- evidence-gated rollout/rollback contract;
+- vendor/product/version compatibility registry;
+- narrow synthetic/deidentified HL7 v2 ADT/ORU library connector;
 - Docker/Helm packaging for synthetic/deidentified evaluation;
-- fail-closed hospital upgrade compatibility checks;
+- a paired Time Returned to Care study with counterbalanced order + matched case variants;
 - clinician-study and hospital-rollout methodology;
-- global portability research preserving state/provenance/trust separation.
+- global portability research preserving content/state/provenance/trust/policy distinctions.
 
-**Do not claim today:**
+## Do not claim today
 
-- clinical validation;
+- clinical validation or clinical effectiveness;
+- measured clinician time savings;
 - production hospital deployment;
 - production PHI handling;
-- a fully self-service real-hospital install;
-- generic HL7 v2 runtime support;
+- fully self-service real-hospital installation;
+- a production-ready generic HL7 v2 transport/interface-engine integration;
+- compatibility with a named KIS/LIS/MPI merely because the contract exists;
 - a CareOS computer-use/KIS Operator implementation;
 - production-scale GenAI reliability;
 - real KIS/LIS interoperability;
-- measured clinician time savings;
+- zero-downtime rollout;
+- 24/7 contractual service;
 - multi-hospital repeatability;
-- regulatory approval.
+- regulatory approval or certification.
 
 ---
 
-## 2. Gaps closed as far as responsibly possible outside a hospital
+# 3. What is closed as far as responsibly possible outside a hospital
 
-### Clinical / product
+## Clinical/product foundation
 
-- [x] one concrete first specialty/workflow;
-- [x] clinician-first information hierarchy;
-- [x] source-linked facts;
-- [x] pending / unavailable / stale / contradiction semantics;
-- [x] preliminary → final → corrected / cancelled reconciliation behaviour;
-- [x] human review / approval boundaries;
-- [x] clinician study protocol/UI;
-- [x] structured anonymous result export;
-- [x] study aggregator where safety gates override speed.
+- [x] one bounded first specialty/workflow;
+- [x] clinician-first changed/pending/conflict/source hierarchy;
+- [x] patient-facing source-linked presentation;
+- [x] explicit preliminary/final/corrected/cancelled/pending/stale/unavailable semantics;
+- [x] patient-local graph;
+- [x] downstream stale-artifact invalidation;
+- [x] cross-provider request lifecycle;
+- [x] paired workflow study protocol/UI/export/aggregator;
+- [x] safety-stop metrics that override speed;
+- [x] golden end-to-end regression story.
 
-### Engineering
+## Engineering/scaling foundation
 
 - [x] Python / FastAPI / Pydantic backend;
 - [x] FHIR integration path;
 - [x] ISiK-oriented validation path;
-- [x] typed clinical-truth contracts;
-- [x] conservative evidence verification;
-- [x] agent runtime + deterministic gateway;
-- [x] trusted tool proxy;
-- [x] provider-neutral + direct-provider external-model paths for synthetic/deidentified evaluation;
-- [x] machine-readable traces/evals in the Recare capstone;
-- [x] six-case Recare containment suite;
-- [x] global portability contract + tests;
-- [x] non-secret Hospital Capability Manifest;
-- [x] deterministic adapter selection + explicit implementation maturity;
-- [x] governed cross-source patient-identity preflight;
-- [x] hospital-local multi-source FHIR-family runtime for synthetic/deidentified evaluation;
-- [x] partial-source behavior that prevents absence claims when context is incomplete;
-- [x] one-command CLI surface: init / doctor / preflight / up / down / upgrade-check;
-- [x] Docker Compose hospital install scaffold;
-- [x] Helm/Kubernetes hospital deployment scaffold;
-- [x] hospital upgrade compatibility preflight;
-- [x] dedicated self-install CI workflow definition.
+- [x] clinical-truth contracts;
+- [x] zero-trust agent gateway + trusted tool proxy;
+- [x] hostile-worker/failure test cases;
+- [x] hospital capability manifest;
+- [x] deterministic adapter selection/maturity;
+- [x] FHIR capability discovery;
+- [x] shared-enterprise-ID multi-source runtime;
+- [x] trusted MPI/source-ID resolver contract;
+- [x] partial-source behavior that forbids false absence;
+- [x] hospital review-pack generation;
+- [x] upgrade compatibility preflight;
+- [x] canary/promotion/rollback state/evidence contract;
+- [x] compatibility registry;
+- [x] narrow HL7 v2 ADT/ORU library connector;
+- [x] Docker Compose + Helm deployment scaffolds;
+- [x] CI for hospital platform, future foundation and adversarial agent behavior.
 
-### Security / safety design
+## Security/safety architecture
 
 - [x] wrong-patient denial;
-- [x] cross-source identity is explicit rather than assumed;
-- [x] cross-scope agent denial;
+- [x] no fuzzy/model patient matching;
+- [x] patient/encounter/task/tool agent scope;
 - [x] prompt-injection containment scenarios;
-- [x] source outage / degraded state;
-- [x] stale-state handling;
-- [x] write/tool escalation denial;
-- [x] read and write adapter paths separated;
-- [x] workload/delegation/revocation foundations;
-- [x] deny-default egress concept + Helm default-deny policy;
-- [x] audit foundations;
-- [x] kill/release gates;
+- [x] unavailable/stale state preserved;
+- [x] read/write separated;
+- [x] hidden/consequential write disabled;
+- [x] deny-default egress reference posture;
+- [x] audit/revocation/kill-switch foundations;
 - [x] code-enforced live-data/live-agent locks;
-- [x] hospital-local endpoint/credential values kept outside versionable manifest;
-- [x] local hospital files ignored by default;
-- [x] dependency lock, container and supply-chain foundations.
-
-### Architecture / governance
-
-- [x] provider/control-plane separation;
-- [x] systems of record remain authoritative;
-- [x] responsibility model;
-- [x] trust/data-flow documentation;
-- [x] deployment patterns;
-- [x] hospital assurance pack;
-- [x] German government reference architecture;
-- [x] ISiK/ePA/TI/EHDS integration map;
-- [x] international comparison / global blueprint;
-- [x] hospital implementation playbook;
-- [x] Recare overlap/collaboration map;
-- [x] Recare integration-accelerator hypothesis;
-- [x] explicit CareOS endgame / open interoperability fabric;
-- [x] Apache-2.0 open-source license + contributor contract.
+- [x] endpoint/credential values outside versionable manifests;
+- [x] dependency lock, CodeQL, container and supply-chain foundations.
 
 ---
 
-## 3. Remaining gaps we can still engineer without pretending they are proven
+# 4. What we can still improve without external access
 
-### A. Adapter breadth
+These are legitimate engineering improvements, but they are now secondary to real feedback.
 
-Current runtime truth:
+### Clinical-truth development
 
-```text
-FHIR R4      = implemented read runtime
-ISiK/FHIR    = FHIR runtime + validation path
-HL7 v2       = contract-only
-vendor API   = contract-only
-source feed  = contract-only
-a UI bridge  = contract-only
-write paths  = contract-only / globally disabled
-```
+G1 is the largest internal blocker. Improve recall/review burden on a **fresh development corpus** while preserving precision, provenance and critical-silent-miss reporting. Do not tune against the frozen holdout.
 
-The next adapter work should be triggered by real Recare/hospital integration data where possible. If a generic HL7 v2 adapter is built independently, it must ship with a synthetic conformance suite and remain labelled non-production until exercised against a real interface engine/vendor.
+### Builder/observability UX
 
-### B. Automatic discovery
+A local trace explorer can make model → policy → tool → evidence → draft → eval behavior easier to inspect. Useful for reviewers, but not a substitute for production observability.
 
-The manifest is intentionally explicit today. Useful next automation:
+### Accessibility
 
-- FHIR `CapabilityStatement` discovery;
-- generated source/resource capability suggestions;
-- safe interface-engine probes;
-- compatibility registry by vendor/product/version;
-- generated DPO/CISO network/data-flow artifact;
-- Kubernetes/VM overlay generation.
+Complete keyboard, focus, 200% zoom, reduced-motion and assistive-technology checks on the synthetic clinician surface.
 
-Automation may suggest capabilities; hospital IT remains responsible for confirming identity, purpose, ownership and governance facts that cannot be discovered technically.
+### HL7 transport abstraction
 
-### C. Release distribution / fleet upgrade
+The ADT/ORU parser exists. A transport/interface-engine layer can be designed, but real MLLP/channel/auth/ACK/retry behavior should be informed by an actual integration environment rather than invented.
 
-Need a production-grade path for:
+### Documentation consistency
 
-- signed/pinned release images;
-- SBOM/provenance verification at install time;
-- canary deployment;
-- automatic compatibility check against the last-known-good manifest;
-- rollback rehearsal;
-- non-PHI fleet version/health reporting where hospitals approve it.
-
-### D. Provider-backed synthetic model trace
-
-The provider paths are implemented, but the public evidence package still needs one captured real-provider synthetic run to demonstrate model/version/tool/policy/eval telemetry end to end. Do not fake it with a mock and call it live.
+Keep this file + `FOUNDATION_IMPLEMENTATION_STATUS.md` + `GATES.md` as the current-state sources. The master plan/endgame describe the future and should not be read as evidence that future-state capabilities exist.
 
 ---
 
-## 4. Remaining gaps that require external reality
+# 5. Gaps that require external reality
 
-### A. Real clinician behaviour
+## Real clinicians / users
 
-Need several complete paired synthetic clinician sessions with actual task time, errors, pending-work misses, source checks, corrections, effort and qualitative friction.
+Need complete paired synthetic sessions with actual task time, errors, pending-work misses, source checks, corrections, effort and observed friction.
 
-### B. Real KIS / LIS / hospital integration
+## Recare / production architecture
 
-Need actual vendor/version, one real capability manifest, interface discovery, patient/encounter context launch, source lifecycle behaviour, local terminology, network/latency/partial-read behaviour and an approved sandbox/deidentified boundary.
+Need expert critique of overlap and assumptions: actual adapter SDKs, configuration vs custom integration, source lifecycle, provenance, Agent/Patient Overview architecture, rollout/versioning and real implementation bottlenecks.
 
-This is now also the first real test of the self-install hypothesis:
+## Real KIS / LIS / hospital integration
 
-> **How much of deployment is configuration + conformance, and how much still requires custom engineering?**
+Need a named vendor/version, one real capability manifest, interface discovery, source lifecycle behavior, identity/context launch, local terminology, latency/partial-read behavior and an approved sandbox/deidentified boundary.
 
-### C. Hospital privacy / security operations
+## Privacy/security operations
 
-Need provider evidence for IdP/role/treatment context, KMS/secrets, network controls, audit/SIEM, DLP where required, backup/recovery, AVV/DPA, DSFA/DPIA, processors/subprocessors, incident response and independent penetration testing.
+Need provider evidence for IdP/role/treatment context, KMS/secrets, network controls, protected audit/SIEM, backup/restore, DPA/AVV, DPIA/DSFA where applicable, incident response and independent penetration testing.
 
-### D. Clinical / regulatory / quality assurance
+## Clinical/regulatory/quality assurance
 
-Need a fixed intended use and deployment context before medical-device applicability, clinical safety governance, QMS/change control, human-factors evidence and EHDS/EHR obligations can be assessed responsibly.
+Need fixed intended use and deployment context before medical-device applicability, clinical safety governance, QMS/change control, human factors and applicable EU/German obligations can be assessed responsibly.
 
-### E. Production GenAI operations
+## Production GenAI operations
 
-Need real traffic, provider configuration, latency/cost, prompt/model versioning, production traces, user-correction loops, incidents/replay, model migration behaviour and actual SLOs.
+Need real provider configuration, traffic, latency/cost, model/prompt versioning, production traces, correction loops, incidents, model migrations and actual SLO evidence.
 
-### F. Multi-site repeatability
+## Repeatability
 
-Need:
+Need at least:
 
-1. Hospital A real read-only/deidentified source path;
-2. Hospital B with a different vendor/version;
-3. no fork of the canonical clinical context/agent contracts;
-4. measured custom engineering hours/site;
-5. measured adapter/test reuse;
+1. Hospital A real approved read-only/deidentified source path;
+2. Hospital B with another vendor/version;
+3. no core contract fork;
+4. custom engineering hours/site;
+5. adapter/conformance reuse measurement;
 6. upgrade regression evidence.
 
 ---
 
-## 5. Production gates
+# 6. Production gates
 
 | Gate | State | Why it cannot close synthetically |
 |---|---|---|
-| G0 Scope & clinical safety | **EXTERNAL REVIEW** | intended use + independent clinical review |
-| G1 Clinical truth | **BLOCKED** | recall/review burden + real workflow evidence |
-| G2 German interoperability | **PARTIAL** | real vendor/sandbox needed |
+| G0 Scope & clinical safety | **EXTERNAL REVIEW** | intended use + independent clinical/regulatory review |
+| G1 Clinical truth | **BLOCKED** | recall/review burden + workflow evidence |
+| G2 German interoperability | **PARTIAL** | real vendor/sandbox required |
 | G3 Privacy & security | **PARTIAL** | provider controls + independent evidence |
-| G4 Reliability | **PARTIAL** | target-environment load/recovery/SLO |
-| G5 Regulatory & quality | **EXTERNAL REVIEW** | classification / QMS lifecycle |
-| G6 Invisible workflow | **PARTIAL** | actual KIS-context launch |
-| G7 Hospital deployment | **PARTIAL** | self-install scaffold exists; provider approvals/operations missing |
-| G8 Repeatability | **NOT EVIDENCED** | second real deployment required |
+| G4 Reliability | **PARTIAL** | target-environment load/recovery/SLO evidence |
+| G5 Regulatory & quality | **EXTERNAL REVIEW** | classification + quality/risk lifecycle |
+| G6 Invisible workflow | **PARTIAL** | real KIS-context launch / actual devices |
+| G7 Hospital deployment | **PARTIAL** | provider approvals + target operations |
+| G8 Repeatability | **NOT EVIDENCED** | two real independent sites/vendors |
 | G9 Germany/EU scale | **RESEARCH ONLY** | real national/cross-border integration |
 
-No identifiable-live-data gate should be changed merely to improve a demo or installer UX.
+No identifiable-live-data gate changes merely to make the demo or installer look more complete.
 
 ---
 
-## 6. What not to build before external feedback
+# 7. Highest-value next actions
+
+1. **Pavlo/Recare critique.** Learn what production already solves better and where the real integration pain lives.
+2. **Run real synthetic user sessions.** Start with clinician morning review; capture paired behavior rather than opinions.
+3. **Turn feedback into issues/regressions.** Every recurring friction or safety misunderstanding becomes a concrete change/test.
+4. **First real hospital capability manifest.** Fill it with hospital IT without accessing live patient data.
+5. **Approved synthetic/deidentified KIS/LIS/vendor sandbox.** Discover actual interoperability gaps.
+6. **Measure integration economics.** Configuration vs custom engineering, conformance failures, time to first useful workflow.
+7. **Shadow workflow only after governance.** No dependency first.
+8. **Second site/vendor.** The first real proof that the architecture is infrastructure rather than one-off consulting.
+
+---
+
+# 8. What not to build before external feedback
 
 Avoid productivity theatre:
 
 - more specialties with no users;
+- another broad AI feature;
 - fake production integrations;
-- claiming a vendor adapter exists because a standard is named in a manifest;
-- autonomous diagnosis/treatment logic merely for portfolio breadth;
-- another country pack without a real partner;
+- autonomous diagnosis/treatment logic for portfolio breadth;
+- another country pack just to make the roadmap longer;
 - a parallel Recare product;
-- extra dashboards with no operational consumer;
-- invented clinician time savings;
-- real patient data used to accelerate evidence.
-
-Scaling infrastructure is worth building only when it reduces repeat deployment work or turns a known failure mode into a reusable test.
-
----
-
-## 7. Highest-value next actions
-
-1. **Recare/Pavlo integration critique** — learn what their real adapter/implementation architecture already does.
-2. **Clinician synthetic sessions** — collect actual paired behaviour.
-3. **First real hospital capability manifest** — fill it with hospital IT without touching live patient data.
-4. **Approved synthetic/deidentified KIS/LIS sandbox** — test the FHIR path and discover actual gaps.
-5. **Measure integration economics** — hours, custom code, adapter reuse, conformance failures.
-6. **Implement the highest-frequency real missing adapter** — probably only after seeing real integration demand.
-7. **Shadow workflow**.
-8. **Second site/vendor** — the first true proof of infrastructure scaling.
+- extra dashboards with no user;
+- invented time savings;
+- patient data used to accelerate evidence;
+- self-awarded architecture/production scores.
 
 ---
 
-## Definition of “pre-hospital phase complete”
+## Definition of pre-hospital phase complete
 
-The pre-hospital phase is complete when the problem is concrete, one workflow is usable synthetically, trust boundaries and failure states are explicit, adversarial tests exist, model authority is bounded, interoperability direction is standards-aligned, rollout methodology and outcome metrics are explicit, and a plausible repeatable deployment contract exists without pretending it has been proven in hospitals.
+The pre-hospital phase is complete when the problem is concrete, one workflow is usable synthetically, trust/failure boundaries are explicit, adversarial tests exist, model authority is bounded, interoperability direction is standards-aligned, rollout/evaluation methods are explicit, and a plausible repeatable deployment contract exists **without claiming it has been proven in hospitals**.
 
-CareOS now satisfies that definition.
+**CareOS now satisfies that definition.**
 
-> **The honest gap is no longer imagination. It is external evidence — especially whether the self-install/adapter model survives real hospital systems.**
+> The honest gap is no longer imagination. It is external evidence — especially whether the workflow and integration model survive Recare and real hospital systems.
