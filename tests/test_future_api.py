@@ -33,6 +33,23 @@ def test_resilience_api_recovers_only_after_reconciliation():
     assert body["absence_claim_ever_allowed_while_stale_or_offline"] is False
 
 
+def test_coordination_api_has_acknowledged_lifecycle_not_fire_and_forget():
+    response = client.get("/api/coordination/synthetic-lifecycle")
+    assert response.status_code == 200
+    states = [item["state"] for item in response.json()["states"]]
+    assert states == [
+        "draft",
+        "requested",
+        "received",
+        "accepted",
+        "scheduled",
+        "performed",
+        "result-available",
+        "follow-up-complete",
+    ]
+    assert "synthetic" in response.json()["boundary"]
+
+
 def test_service_catalog_does_not_claim_current_sla():
     response = client.get("/api/service/catalog")
     assert response.status_code == 200
