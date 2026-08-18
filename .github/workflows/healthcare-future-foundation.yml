@@ -96,3 +96,5 @@ jobs:
           tests/test_future_api.py
       - name: Validate study aggregation command
         run: python scripts/aggregate_time_returned_to_care.py --help
+
+# Final golden-journey verification marker: exact current main under PR merge semantics.
