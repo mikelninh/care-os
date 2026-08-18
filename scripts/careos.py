@@ -20,6 +20,7 @@ from app.hospital_install import (
     SystemRole,
     build_hospital_install_plan,
 )
+from app.hospital_review_pack import build_hospital_review_pack, review_pack_json
 from app.hospital_upgrade import compare_hospital_manifests
 
 
@@ -72,7 +73,7 @@ def cmd_init(args) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(template.model_dump_json(indent=2) + "\n", encoding="utf-8")
     print(f"created {out}")
-    print("next: fill source capabilities/owners, then run `careos doctor` and `careos preflight`")
+    print("next: fill source capabilities/owners, then run `careos doctor`, `careos preflight` and `careos review-pack`")
     return 0
 
 
@@ -109,6 +110,10 @@ def cmd_doctor(args) -> int:
         failures.append("Docker CLI not found")
         print("BLOCK docker: Docker CLI not found")
 
+    if manifest.patient_identity_strategy == PatientIdentityStrategy.TRUSTED_MPI:
+        failures.append("trusted MPI adapter is not configured by the current self-install CLI")
+        print("BLOCK identity: trusted MPI contract exists, but self-install requires an approved hospital MPI resolver adapter")
+
     for source in manifest.sources:
         selection = next((a for a in plan.adapters if a.source_id == source.source_id and a.direction == "read"), None)
         if selection and selection.runtime_available:
@@ -137,6 +142,19 @@ def cmd_doctor(args) -> int:
     return 2 if failures else 0
 
 
+def cmd_review_pack(args) -> int:
+    manifest = _load(args.manifest)
+    pack = build_hospital_review_pack(manifest)
+    out = Path(args.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "review-pack.json").write_text(review_pack_json(pack), encoding="utf-8")
+    (out / "review-pack.md").write_text(pack.markdown, encoding="utf-8")
+    (out / "data-flow.mmd").write_text(pack.mermaid + "\n", encoding="utf-8")
+    print(f"review pack written to {out} · blockers={len(pack.blockers)} · warnings={len(pack.warnings)}")
+    print("boundary: technical review/support artifact; not DSFA/DPIA/security/regulatory approval")
+    return 0
+
+
 def cmd_discover_fhir(args) -> int:
     cmd = [sys.executable, str(ROOT / "scripts" / "fhir_discover.py"), args.manifest]
     if args.source_id:
@@ -159,6 +177,9 @@ def _compose_env(args) -> dict[str, str]:
 def cmd_up(args) -> int:
     manifest = _load(args.manifest)
     plan = build_hospital_install_plan(manifest)
+    if manifest.patient_identity_strategy == PatientIdentityStrategy.TRUSTED_MPI:
+        print("BLOCK trusted MPI requires an approved resolver adapter injected into the hospital runtime; current self-install CLI does not guess source patient IDs")
+        return 2
     if not plan.installable_for_synthetic_or_deidentified:
         print("BLOCK hospital preflight does not permit self-install runtime")
         for check in plan.checks:
@@ -209,15 +230,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_init)
 
+    p = sub.add_parser("doctor", help="check local tooling, identity/runtime adapter support and secret/env references")
+    p.add_argument("manifest")
+    p.add_argument("--env-file")
+    p.set_defaults(func=cmd_doctor)
+
     p = sub.add_parser("preflight", help="select adapters and evaluate install readiness")
     p.add_argument("manifest")
     p.add_argument("--json-out")
     p.set_defaults(func=cmd_preflight)
 
-    p = sub.add_parser("doctor", help="check local tooling, runtime adapter support and secret/env references")
+    p = sub.add_parser("review-pack", help="generate non-secret hospital IT/security/data-flow review artifacts")
     p.add_argument("manifest")
-    p.add_argument("--env-file")
-    p.set_defaults(func=cmd_doctor)
+    p.add_argument("--out-dir", default="hospital-review-pack")
+    p.set_defaults(func=cmd_review_pack)
 
     p = sub.add_parser("discover-fhir", help="inspect permitted FHIR CapabilityStatements without rewriting the manifest")
     p.add_argument("manifest")
