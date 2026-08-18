@@ -1,90 +1,66 @@
-# CareOS Reference Architecture Readiness Scorecard
+# CareOS Reference Architecture Review Checklist
 
-Baseline date: **2026-08-16**.
+Baseline date: **2026-08-18**.
 
-This scorecard answers one narrow question:
+> Historical filename retained for stable links. This document no longer assigns a self-score; it records which proposal-level questions have reviewable evidence and which production questions remain external.
 
-> **Is the CareOS architecture package complete enough to take into serious government, hospital-CIO, clinical-leadership and public-sector architecture discussions?**
+This checklist answers one narrow question:
 
-It does **not** answer whether CareOS is production-approved for identifiable live patient data. That remains governed separately by G0–G9.
+> **Is the CareOS architecture package coherent enough to take into serious government, hospital-CIO, clinical-leadership and public-sector architecture discussions?**
 
-## Score
+It does **not** answer whether CareOS is production-approved for identifiable live patient data. That remains governed by G0–G9 and external evidence.
 
-# **10 / 10 — proposal/reference-architecture readiness**
+## Proposal-review evidence
 
-The score is justified by documentation and reviewability, not by self-certification.
+| Dimension | Evidence state | Evidence |
+|---|---|---|
+| Clear product/system boundary | **DOCUMENTED** | `ARCHITECTURE_V2.md`, safety case |
+| Federated national architecture | **DOCUMENTED** | `GOVERNMENT_REFERENCE_ARCHITECTURE.md` |
+| Trust/data-flow boundaries | **DOCUMENTED** | `TRUST_AND_DATA_FLOW.md` |
+| Deployment patterns | **DOCUMENTED** | `DEPLOYMENT_PATTERNS.md` |
+| Clinical truth/provenance contract | **IMPLEMENTED + SYNTHETICALLY TESTED** | clinical truth/reconciliation code + tests |
+| Security/identity/failure model | **IMPLEMENTED IN RESEARCH BOUNDARY** | agent/security code + threat/security docs |
+| German/EU integration map | **DOCUMENTED / PARTIAL EVIDENCE** | `NATIONAL_INTEGRATION_MAP.md` |
+| Technical documentation/conformity mapping | **DOCUMENTED** | `TECHNICAL_DOCUMENTATION_INDEX.md` |
+| Durable architecture decisions | **DOCUMENTED** | `docs/adr/` |
+| Machine-readable architecture invariants | **IMPLEMENTED + TESTED** | `architecture/reference-architecture.json` + tests |
 
-| Dimension | Score | Evidence |
-|---|---:|---|
-| Clear product/system boundary | 1/1 | `ARCHITECTURE_V2.md`, safety case |
-| Federated national architecture | 1/1 | `GOVERNMENT_REFERENCE_ARCHITECTURE.md` |
-| Trust/data-flow boundaries | 1/1 | `TRUST_AND_DATA_FLOW.md` |
-| Deployment patterns | 1/1 | `DEPLOYMENT_PATTERNS.md` |
-| Clinical truth/provenance contract | 1/1 | clinical truth code + Architecture V2 |
-| Security/identity/failure model | 1/1 | Architecture V2 + threat/security docs |
-| German/EU integration map | 1/1 | `NATIONAL_INTEGRATION_MAP.md` |
-| Technical documentation/conformity mapping | 1/1 | `TECHNICAL_DOCUMENTATION_INDEX.md` |
-| Durable architecture decisions | 1/1 | `docs/adr/` |
-| Machine-readable + CI-enforced architecture invariants | 1/1 | `architecture/reference-architecture.json` + tests |
+### Proposal-level conclusion
 
-## Why this can be 10/10 while production gates are not PASS
+The package is **ready for institutional critique and architecture discussion** because a reviewer can inspect the boundary, data/trust flows, failure semantics, deployment patterns, national alignment, machine-readable invariants and explicit limitations.
 
-There are two different maturity questions.
+That is not a production-readiness claim.
 
-### A. Reference architecture readiness
+## Production evidence still required
 
-Can a serious reviewer understand:
-
-- what the system is;
-- what it is not;
-- where patient data lives;
-- how it connects;
-- who is trusted;
-- how source truth is preserved;
-- what happens on failure;
-- how Germany/EU infrastructure fits;
-- what deployment patterns exist;
-- which decisions are fixed;
-- which claims are explicitly not being made?
-
-For CareOS, that package is now complete enough for proposal/review discussions.
-
-### B. Production readiness
-
-Can the system process identifiable patient data in a real hospital safely and legally?
-
-That still requires evidence CareOS cannot self-generate:
+A live hospital deployment still requires evidence CareOS cannot self-generate:
 
 - real provider IdP/context;
 - real KIS/LIS integration;
 - independent regulatory/classification review;
-- hospital-specific Datenschutz approval/DSFA/AVV where applicable;
+- hospital-specific Datenschutz/DSFA/AVV review where applicable;
 - production KMS/audit/SIEM/backup/monitoring;
-- penetration test;
+- independent penetration/security testing;
 - target-environment resilience evidence;
-- clinically useful G1 recall/review burden;
+- clinically useful recall/review burden;
 - shadow/live evaluation;
 - second-hospital repeatability.
 
-Therefore **reference architecture = 10/10** does not change `live_patient_data_allowed=false`.
+`live_patient_data_allowed=false` remains the correct posture while those gates are incomplete.
 
 ## What to show each audience
 
-### Chefarzt / clinical lead
-
-Use:
+### Clinical lead
 
 1. synthetic demo;
 2. 30-second product architecture;
 3. one workflow hypothesis;
 4. safety boundaries;
-5. tiny read-only discovery ask.
+5. small read-only discovery ask.
 
 Do not lead with national architecture.
 
 ### CIO / hospital architecture
-
-Use:
 
 - `ARCHITECTURE_V2.md`;
 - `DEPLOYMENT_PATTERNS.md`;
@@ -95,8 +71,6 @@ Use:
 
 ### CISO / Datenschutz
 
-Use:
-
 - trust/data-flow document;
 - threat model;
 - access/audit/identity controls;
@@ -106,20 +80,16 @@ Use:
 
 ### Government / gematik / public-sector architecture
 
-Use:
-
 - `GOVERNMENT_REFERENCE_ARCHITECTURE.md` as front door;
 - `ARCHITECTURE_V2.md` as canonical technical design;
 - `NATIONAL_INTEGRATION_MAP.md` for alignment;
-- ADRs for non-negotiable design choices;
+- ADRs for design decisions;
 - technical-documentation index for assurance;
-- production gates to demonstrate non-hype discipline.
+- production gates to make claim boundaries explicit.
 
-## Proposal claim language
+## Recommended claim language
 
-Recommended:
-
-> **CareOS provides a proposal-ready federated reference architecture for a source-grounded clinical context layer above heterogeneous German healthcare systems. The architecture package is complete enough for institutional review; production deployment remains gated by real integration, independent assurance and clinical evidence.**
+> **CareOS provides a proposal-ready federated reference architecture for a source-grounded clinical context layer above heterogeneous German healthcare systems. The architecture is available for institutional review; production deployment remains gated by real integration, independent assurance and clinical evidence.**
 
 Do not say:
 
