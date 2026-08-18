@@ -34,7 +34,14 @@ class AgentToolProxy:
         if handler is None:
             self.gateway.abort("registered tool has no trusted handler")
             raise RuntimeError("registered tool has no trusted handler")
-        payload = handler(request)
+        try:
+            payload = handler(request)
+        except Exception as exc:
+            # Once a request has been admitted, a trusted handler failure is terminal
+            # for that execution. Do not leave runtime state ACTIVE after a source,
+            # identity, parser or integration boundary has failed.
+            self.gateway.abort(f"trusted tool handler failed: {type(exc).__name__}")
+            raise
         external = bool(request.egress_host)
         self.gateway.record_tool_result(request, external_call=external)
         return ToolResult(tool_id=request.tool_id, payload=payload, external_call=external)
