@@ -85,4 +85,4 @@ jobs:
       - name: Verify container stays non-root
         run: test "$(docker run --rm --entrypoint sh careos:hospital-ci -c 'id -u')" != "0"
 
-# PR verification marker: exercises the complete hospital self-install contract.
+# PR verification marker: rerun after direct-entrypoint import-path fix.
