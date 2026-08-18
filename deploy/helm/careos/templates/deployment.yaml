@@ -1,3 +1,4 @@
+{{- $manifestConfigMap := default (printf "%s-careos-manifest" .Release.Name) .Values.hospital.existingManifestConfigMap }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,27 +24,36 @@ spec:
         - name: careos
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["uvicorn"]
+          args: ["app.hospital_api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
           securityContext:
 {{ toYaml .Values.containerSecurityContext | indent 12 }}
           env:
+            - name: CAREOS_HOSPITAL_MANIFEST
+              value: /etc/careos/hospital.json
             - name: CAREOS_DATA_MODE
               value: {{ .Values.careos.dataMode | quote }}
             - name: FHIR_BASE_URL
               value: {{ .Values.careos.fhirBaseUrl | quote }}
             - name: CAREOS_EXTERNAL_DEIDENTIFIED_ACK
               value: {{ .Values.careos.externalDeidentifiedAck | quote }}
+{{- if .Values.hospital.runtimeSecretName }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.hospital.runtimeSecretName | quote }}
+{{- end }}
           ports:
             - name: http
               containerPort: 8000
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /health
               port: http
             initialDelaySeconds: 15
             periodSeconds: 30
@@ -52,7 +62,14 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: hospital-manifest
+              mountPath: /etc/careos/hospital.json
+              subPath: hospital.json
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir:
             sizeLimit: 64Mi
+        - name: hospital-manifest
+          configMap:
+            name: {{ $manifestConfigMap }}
