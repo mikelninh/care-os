@@ -1,0 +1,49 @@
+name: future-healthcare-foundation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/offline_policy.py'
+      - 'app/time_returned_to_care.py'
+      - 'app/clinical_context_graph.py'
+      - 'tests/test_offline_policy.py'
+      - 'tests/test_time_returned_to_care.py'
+      - 'tests/test_clinical_context_graph.py'
+      - 'docs/FUTURE_HEALTHCARE_MASTER_PLAN.md'
+      - 'docs/STAKEHOLDER_JOURNEYS.md'
+      - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
+      - 'docs/INTERFACE_SYSTEM.md'
+      - 'docs/SYNTHETIC_BEFORE_AFTER_CASES.md'
+      - '.github/workflows/future-healthcare-foundation.yml'
+  pull_request:
+    paths:
+      - 'app/offline_policy.py'
+      - 'app/time_returned_to_care.py'
+      - 'app/clinical_context_graph.py'
+      - 'tests/test_offline_policy.py'
+      - 'tests/test_time_returned_to_care.py'
+      - 'tests/test_clinical_context_graph.py'
+      - '.github/workflows/future-healthcare-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12.13'
+      - run: python -m pip install --upgrade pip
+      - run: pip install --requirement requirements.lock
+      - name: Test degraded/offline safety, impact gates and graph provenance
+        run: >-
+          pytest -q
+          tests/test_offline_policy.py
+          tests/test_time_returned_to_care.py
+          tests/test_clinical_context_graph.py
