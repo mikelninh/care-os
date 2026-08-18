@@ -12,18 +12,19 @@ from .agent_worker import AgentDraft, AgentToolProposal
 
 OPENAI_RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses"
 
+# Keep the provider schema deliberately structural. Pydantic remains the second,
+# local validator for semantic constraints such as record/page bounds.
 _TOOL_PROPOSAL_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
         "proposals": {
             "type": "array",
-            "maxItems": 8,
             "items": {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
-                    "tool_id": {"type": "string", "minLength": 1},
+                    "tool_id": {"type": "string"},
                     "operation": {
                         "type": "string",
                         "enum": ["read", "prepare", "write", "external_send", "patient_search"],
@@ -31,10 +32,9 @@ _TOOL_PROPOSAL_SCHEMA = {
                     "data_categories": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "uniqueItems": True,
                     },
-                    "requested_records": {"type": "integer", "minimum": 0},
-                    "requested_pages": {"type": "integer", "minimum": 0},
+                    "requested_records": {"type": "integer"},
+                    "requested_pages": {"type": "integer"},
                 },
                 "required": [
                     "tool_id",
@@ -57,11 +57,10 @@ _DRAFT_SCHEMA = {
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "text": {"type": "string", "minLength": 1},
+                "text": {"type": "string"},
                 "source_fact_ids": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "uniqueItems": True,
                 },
                 "review_required": {"type": "boolean"},
                 "contains_recommendation": {"type": "boolean"},
@@ -216,6 +215,8 @@ class OpenAIResponsesReasoningWorker:
         proposals = data.get("proposals")
         if not isinstance(proposals, list):
             raise ValueError("OpenAI output missing proposals list")
+        if len(proposals) > 8:
+            raise ValueError("OpenAI output returned too many tool proposals")
         return [AgentToolProposal.model_validate(p) for p in proposals]
 
     def draft(self, *, facts: list[dict], task: str) -> AgentDraft:
