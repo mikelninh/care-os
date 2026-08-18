@@ -6,12 +6,13 @@
 
 A clinician-first research architecture for turning fragmented hospital data into **source-linked, reviewable clinical context** for humans and bounded AI agents.
 
-[**▶ Recare work sample**](https://mikelninh.github.io/recare/) · [**▶ Clinician demo**](https://mikelninh.github.io/careos/sjk/) · [**Architecture**](docs/ARCHITECTURE_V2.md) · [**Contribute**](CONTRIBUTING.md)
+[**▶ Explore CareOS**](https://mikelninh.github.io/careos/) · [**▶ Clinician demo**](https://mikelninh.github.io/careos/sjk/) · [**▶ Recare work sample**](https://mikelninh.github.io/recare/) · [**Contribute**](CONTRIBUTING.md)
 
 [![tests](https://github.com/mikelninh/care-os/actions/workflows/test.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/test.yml)
 [![recare-capstone](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml)
 [![agent-redteam](https://github.com/mikelninh/care-os/actions/workflows/agent-redteam.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/agent-redteam.yml)
 [![global-interoperability](https://github.com/mikelninh/care-os/actions/workflows/global-interoperability.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/global-interoperability.yml)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 **Synthetic / pre-hospital research only · not for clinical use · no identifiable patient data in public demos · no production write-back**
 
@@ -23,9 +24,7 @@ A clinician-first research architecture for turning fragmented hospital data int
 
 Hospitals already have KIS/EHR, LIS, RIS/PACS, documents, ePA and other systems of record.
 
-CareOS does **not** try to replace them.
-
-It explores the layer between fragmented source systems and clinical work:
+**CareOS does not replace them.** It explores the missing context and assurance layer between fragmented sources and clinical work.
 
 ```text
 KIS · LIS · FHIR · documents · ePA
@@ -41,24 +40,24 @@ KIS · LIS · FHIR · documents · ePA
              human decision
 ```
 
-The core question is simple:
+The question is deliberately simple:
 
-> **Can we make clinicians materially faster without reducing trust, source verification or human control?**
+> **Can clinicians spend less time hunting, reconciling and re-entering information without losing provenance, uncertainty or human control?**
 
-North-star metric: **Time Returned to Care — safety gated.**
+North star: **Time Returned to Care — safety gated.**
 
 ---
 
-## The four rules
+## Four invariants
 
-| | CareOS invariant |
+| | CareOS rule |
 |---|---|
 | **01** | **Pending ≠ negative.** |
 | **02** | **Unavailable ≠ absent.** |
 | **03** | **Documented therapy ≠ AI recommendation.** |
 | **04** | **Agent draft ≠ source truth.** |
 
-These distinctions are treated as part of clinical correctness, not UI decoration.
+These are treated as correctness constraints, not UI decoration.
 
 ---
 
@@ -72,65 +71,28 @@ These distinctions are treated as part of clinical correctness, not UI decoratio
 | **Software engineer / designer / researcher** | [Contributing guide](CONTRIBUTING.md) → [community roadmap](docs/COMMUNITY_ROADMAP.md) |
 | **Hospital implementation** | [Zero-Drama Hospital Rollout](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md) |
 | **CIO / CISO / senior engineer** | [Reference Architecture V2](docs/ARCHITECTURE_V2.md) |
-| **Checking what is actually ready** | [Current Status & Gap Register](docs/CURRENT_STATUS_AND_GAPS.md) |
-| **German public sector / interoperability** | [National / EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) |
+| **Checking readiness / claims** | [Current Status & Gap Register](docs/CURRENT_STATUS_AND_GAPS.md) |
+| **Germany / public sector** | [National / EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) |
 | **EU / global interoperability** | [Germany → Global Health Interoperability Blueprint](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md) |
 | **Reviewing the whole project** | [Pre-Hospital Handoff](docs/PRE_HOSPITAL_HANDOFF.md) |
 
 ---
 
-## Build with us
-
-> **We are all in this together.**
-
-Healthcare is too important and too interconnected for one person, company or discipline to solve alone. CareOS welcomes careful contributions from **software engineers, clinicians, designers, security researchers, interoperability specialists, data scientists, product thinkers and people with lived experience of broken healthcare workflows**.
-
-You do **not** need to understand the whole architecture before helping.
-
-Start with one bounded problem:
-
-- 🟢 accessibility, mobile UX, synthetic fixtures, documentation;
-- 🔵 clinician workflow, source inspection, trace tooling;
-- 🟣 FHIR / ISiK / IPS / terminology / cross-border interoperability;
-- 🔴 agent security, prompt injection, patient isolation, audit integrity;
-- 🟠 evals, recall-vs-review burden, clinician-study analysis;
-- 🌍 country packs, portability and low-bandwidth global health.
-
-The contribution pattern is intentionally simple:
-
-> **Find one piece of friction or one way the system can fail → make it better → show the evidence.**
-
-[**How to contribute →**](CONTRIBUTING.md) · [**Pick a problem →**](docs/COMMUNITY_ROADMAP.md) · [**Open issues →**](https://github.com/mikelninh/care-os/issues)
-
-**Important:** the repository still needs an explicit project license before we should call it fully open source or encourage broad downstream reuse. That decision is tracked transparently in [Issue #22](https://github.com/mikelninh/care-os/issues/22).
-
----
-
 ## What is actually built
 
-### 1 · Clinician workflow
+### 1 · A clinician workflow
 
-A synthetic Infectiology workflow focused on the information clinicians repeatedly hunt for before review and handover:
-
-- microbiology and result lifecycle;
-- documented anti-infective therapy;
-- hygiene / isolation context;
-- trends;
-- contradictions;
-- pending work;
-- source-linked handover / documentation drafts.
+The first synthetic workflow is Infectiology: microbiology lifecycle, documented anti-infective therapy, hygiene/isolation context, trends, contradictions, pending work and source-linked handover/documentation drafts.
 
 <div align="center">
   <img src="docs/screenshots/sjk-clinician-current.svg" alt="CareOS synthetic Infectiology clinician interface" width="820">
 </div>
 
-The paired study measures **task time, wrong answers, missed pending work, source checking, corrections, effort and verification decay** — not just whether users say the interface looks good.
-
----
+The paired study measures **task time, wrong answers, missed pending work, source checking, corrections, effort and verification decay** — not whether users simply like the UI.
 
 ### 2 · Clinical truth with provenance
 
-A surfaced consequential fact is designed to preserve:
+A consequential surfaced fact can retain:
 
 ```text
 patient + encounter binding
@@ -145,7 +107,7 @@ evidence span for document-derived facts
 contradiction / supersession / review state
 ```
 
-The model may propose structure. It does **not** become the authority that creates trusted clinical truth.
+The model may propose structure. **It does not become the authority that creates trusted clinical truth.**
 
 #### Frozen synthetic holdout
 
@@ -158,11 +120,9 @@ The model may propose structure. It does **not** become the authority that creat
 | Recall | **26.32%** |
 | Review case rate | **100%** |
 
-This is deliberately **not a production pass**. The current conservative path fails safely but recalls too little and creates too much review burden, so **G1 remains blocked**.
+This is deliberately **not a production pass**. The conservative path recalls too little and creates too much review burden, so **G1 remains blocked**.
 
 [Benchmark details →](docs/BENCHMARK.md)
-
----
 
 ### 3 · A zero-trust agent boundary
 
@@ -195,11 +155,9 @@ The reasoning worker cannot grant itself a different patient, tool, network dest
 
 [Agent Security Model →](docs/AGENT_SECURITY_MODEL.md)
 
----
-
 ### 4 · Replayable failure tests
 
-The Recare-targeted capstone runs the real gateway / tool / draft / eval path against six synthetic scenarios:
+The Recare capstone exercises the real CareOS gateway/tool/draft/eval path against synthetic scenarios:
 
 | Scenario | Safe behaviour |
 |---|---|
@@ -210,15 +168,36 @@ The Recare-targeted capstone runs the real gateway / tool / draft / eval path ag
 | Stale result | preserve old vs current-pending distinction |
 | Unauthorised write | deny capability escalation |
 
-A hostile run that is correctly blocked counts as a **safety success**, not a failed completion.
+A hostile run that is correctly blocked counts as a **safety success**, not failed completion.
 
 [Run the Recare capstone →](docs/RECARE_CAPSTONE.md)
 
 ---
 
-## Interoperability: connect, don't replace
+## Evidence state, not self-scores
 
-CareOS is designed around existing infrastructure.
+CareOS reports what has been demonstrated rather than awarding itself maturity numbers.
+
+| Area | Current evidence state |
+|---|---|
+| Clinician workflow | **DEMONSTRATED SYNTHETICALLY** |
+| Clinical truth / provenance | **DEMONSTRATED SYNTHETICALLY** |
+| Agent containment | **DEMONSTRATED SYNTHETICALLY** |
+| Adversarial evaluation | **DEMONSTRATED SYNTHETICALLY** |
+| German interoperability | **PARTIAL — real vendor sandbox required** |
+| EU/global portability | **RESEARCH PROOF** |
+| Hospital rollout | **PROPOSAL READY** |
+| Recare capstone | **RUNNABLE SYNTHETIC PROOF** |
+| Real clinician evidence | **EXTERNAL EVIDENCE REQUIRED** |
+| Real KIS/LIS integration | **EXTERNAL EVIDENCE REQUIRED** |
+| Production PHI operations | **BLOCKED BY DESIGN** |
+| Multi-hospital repeatability | **NOT YET EVIDENCED** |
+
+[Full evidence and gap register →](docs/CURRENT_STATUS_AND_GAPS.md)
+
+---
+
+## Interoperability: connect, don't replace
 
 ```text
 provider systems
@@ -234,13 +213,13 @@ EU: EHDS / European exchange
 Global: FHIR / International Patient Summary + trust
 ```
 
-The portability model keeps three questions separate:
+The portability work deliberately separates:
 
-1. **Content** — what does this clinical information mean?
+1. **Content** — what does the clinical item mean?
 2. **Trust** — who issued it and can that issuer be verified?
 3. **Policy** — may the receiving context use it for this purpose?
 
-A pending result in Berlin must remain **pending** after translation or cross-border exchange. Translation may change presentation — never source truth.
+A pending result in Berlin must remain **pending** after translation or exchange. Translation may change presentation — never source truth.
 
 [Germany → Global Interoperability Blueprint →](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md)
 
@@ -268,7 +247,7 @@ measure benefit + safety
 second ward / vendor / hospital
 ```
 
-A rollout is not successful because software was installed. It is successful when clinicians spend less time hunting and re-entering information **without worse verification, corrections, missed pending work or safety outcomes**.
+Installation is not the outcome. A rollout earns expansion only when it removes work **without worse verification, corrections, missed pending items or safety behaviour**.
 
 [Hospital Implementation Playbook →](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md)
 
@@ -276,52 +255,44 @@ A rollout is not successful because software was installed. It is successful whe
 
 ## Recare: collaborate, don't duplicate
 
-CareOS is **not** intended as a competing pitch to Recare.
+Recare already operates the real product layer across hospital workflows. CareOS is **not** a proposal to replace it.
 
 The useful question is:
 
 > **Which CareOS invariants, evals and implementation patterns survive contact with Recare's real integrations and hospitals — and make the existing platform stronger?**
 
-Potential contribution areas include clinical-state semantics, provenance contracts, deterministic agent authorization, adversarial evals, verification-preserving outcomes, interoperability and low-friction rollout.
+The CareOS prototype also has a deliberately narrower authority boundary than Recare's full production product scope. That is intentional: this repository is an R&D/evaluation artifact, not a claim of equivalent production maturity.
 
 [Recare × CareOS Collaboration Map →](docs/RECARE_COLLABORATION_MAP.md)
 
 ---
 
-## Current status — the honest version
+## Build with us
 
-CareOS is best described today as:
+> **We are all in this together.**
 
-> **synthetic product research + runnable engineering proof + proposal-ready reference architecture + hospital implementation playbook**
+Healthcare is too important and too interconnected for one person, company or discipline to solve alone. CareOS welcomes careful contributions from **software engineers, clinicians, designers, security researchers, interoperability specialists, data scientists, product thinkers and people with lived experience of broken healthcare workflows**.
 
-| Dimension | Status |
-|---|---:|
-| Problem understanding | **10 / 10** |
-| Product thinking | **9.5 / 10** |
-| Clinical truth / provenance architecture | **9.6 / 10** |
-| Agent safety architecture | **9.6 / 10** |
-| Adversarial evaluation | **9.5 / 10** |
-| German interoperability architecture | **9.3 / 10** |
-| EU / global portability architecture | **9.1 / 10** |
-| Hospital rollout methodology | **9.4 / 10** |
-| Recare-targeted work sample | **9.6 / 10** |
-| **Real clinician evidence** | **2 / 10** |
-| **Real KIS / LIS integration** | **1 / 10** |
-| **Production PHI operations** | **0 / 10** |
-| **Multi-hospital deployment evidence** | **0 / 10** |
+Start with one bounded problem:
 
-**Ready for serious engineering / Recare / hospital architecture discussion:** ~**9.8 / 10**  
-**Ready for live hospital production deployment:** ~**4 / 10**
+- 🟢 accessibility, mobile UX, synthetic fixtures, documentation;
+- 🔵 clinician workflow, source inspection, trace tooling;
+- 🟣 FHIR / ISiK / IPS / terminology / cross-border interoperability;
+- 🔴 agent security, prompt injection, patient isolation, audit integrity;
+- 🟠 evals, recall-vs-review burden, clinician-study analysis;
+- 🌍 country packs, portability and low-bandwidth global health.
 
-That second score should remain low until reality provides the evidence.
+> **Find one piece of friction or one way the system can fail → make it better → show the evidence.**
 
-[Full gap register →](docs/CURRENT_STATUS_AND_GAPS.md)
+[**How to contribute →**](CONTRIBUTING.md) · [**Pick a problem →**](docs/COMMUNITY_ROADMAP.md) · [**Open issues →**](https://github.com/mikelninh/care-os/issues) · [**Apache-2.0 license →**](LICENSE)
 
 ---
 
 ## What happens next
 
 ```text
+external engineering critique
+        ↓
 synthetic clinician sessions
         ↓
 real workflow mapping
