@@ -2,9 +2,11 @@
 
 Baseline: **18 August 2026**
 
-> End-state goal: a hospital IT team should be able to deploy the CareOS data plane, describe its existing systems once, run deterministic preflight/conformance checks and enter synthetic/deidentified evaluation without a bespoke integration project.
+> Goal: a hospital IT team should be able to deploy a hospital-local CareOS data plane, describe existing systems once, run deterministic preflight/conformance checks and enter synthetic/deidentified evaluation without starting a bespoke integration project from zero.
 
-This is a **target operating model + executable pre-hospital scaffold**, not a claim that CareOS can process identifiable live patient data today. Live modes remain gated by G0–G5 and hospital-specific approvals.
+This is now an **executable pre-hospital scaffold**, not proof of production self-service. CareOS remains blocked from identifiable live patient data until G0–G5 and hospital-specific approvals permit it.
+
+---
 
 ## The product we are really building
 
@@ -20,62 +22,77 @@ legacy KIS / LIS / RIS / PACS / documents / ePA
                  reusable adapters
                         ↓
             canonical clinical context
-   identity · provenance · time · lifecycle · trust
+ identity · provenance · time · lifecycle · trust
                         ↓
              deterministic policy layer
                         ↓
-        any compatible clinician / agent app
+        compatible clinician / agent applications
 ```
 
-The scaling unit is the **adapter + capability profile**, not the hospital project.
+The scaling unit is the **adapter + capability profile + conformance evidence**, not the hospital project.
 
-If Hospital A and Hospital B use different vendors but both expose FHIR R4, they should reuse the same FHIR adapter. If both expose ISiK, they should reuse the same ISiK adapter. Vendor/site differences live in versioned configuration and conformance evidence whenever possible — not forks of the clinical core.
+If two hospitals expose compatible FHIR R4 interfaces, they should reuse the same FHIR adapter even when the source vendors differ. Vendor/site differences belong in versioned configuration and compatibility evidence whenever possible — not forks of the clinical core.
 
 ---
 
-## The hospital experience
+## What is runnable now
 
-### Target installation journey
+### One CLI surface
+
+```bash
+python scripts/careos.py init \
+  --hospital-id DE-BERLIN-001 \
+  --site-name "Example Hospital"
+
+python scripts/careos.py doctor hospital.json --env-file hospital.env
+python scripts/careos.py preflight hospital.json
+python scripts/careos.py up hospital.json --env-file hospital.env
+python scripts/careos.py upgrade-check last-known-good.json proposed.json
+python scripts/careos.py down hospital.json --env-file hospital.env
+```
+
+The CLI makes setup easier. It **does not bypass deployment gates**.
+
+### Hospital-local API
+
+`app/hospital_api.py` exposes:
 
 ```text
-1. install CareOS edge/data plane
-2. fill non-secret hospital capability manifest
-3. point secret references at hospital secret store
-4. run preflight
-5. adapter plan generated automatically
-6. run connector conformance suite
-7. synthetic/deidentified shadow evaluation
-8. hospital review + gates
-9. read-only shadow/live when allowed
-10. copilot
-11. narrowly controlled write only when separately earned
+GET /health
+GET /api/hospital/preflight
+GET /api/hospital/patients/{patient_ref}/context
 ```
 
-The target UX for hospital IT is eventually:
+The patient-context route is currently restricted to synthetic/deidentified runtime modes and implemented FHIR-family adapters. It is **not** the future live clinical endpoint; a live route must additionally use hospital identity, treatment-context authorization and production audit.
+
+### Docker Compose
 
 ```bash
-careos init
-careos preflight hospital.json
-careos verify
-careos up
-```
-
-Current executable scaffold:
-
-```bash
-python scripts/hospital_preflight.py deploy/hospital.example.json
-
 docker compose -f deploy/docker-compose.hospital.yml run --rm preflight
-docker compose -f deploy/docker-compose.hospital.yml up -d careos
+docker compose -f deploy/docker-compose.hospital.yml up -d --build careos
 ```
 
-The Docker path is currently for synthetic/deidentified evaluation. The application itself refuses current live-data modes while release gates remain incomplete.
+### Kubernetes / Helm
+
+Initial chart: `deploy/helm/careos/`.
+
+The default chart:
+
+- runs as non-root;
+- uses read-only root filesystem;
+- drops Linux capabilities;
+- mounts the hospital manifest read-only;
+- takes runtime secrets from an existing hospital Secret;
+- denies outbound network by default;
+- runs the hospital-local data-plane API.
+
+The default image reference is a **deployment scaffold**, not evidence that a signed production image has already been released.
 
 ---
 
 ## Hospital Capability Manifest
 
-Every site gets one **non-secret**, versionable manifest.
+Every site gets one non-secret, versionable manifest.
 
 It records facts that integration teams otherwise rediscover manually:
 
@@ -88,6 +105,7 @@ available interfaces
 authentication mode
 resources/domains
 patient/encounter identity capability
+cross-source identity strategy
 resource/version provenance
 clinical effective-time capability
 lifecycle-state capability
@@ -98,7 +116,7 @@ audit destination
 security/privacy/clinical/rollback owners
 ```
 
-It stores only **references to secret environment variables**, never endpoints/tokens/passwords in the versionable manifest.
+It stores only **names of environment/secret references**, never real endpoints/tokens/passwords in the versionable document.
 
 Example: `deploy/hospital.example.json`.
 
@@ -106,30 +124,68 @@ Machine model: `app/hospital_install.py`.
 
 ---
 
+## Cross-source identity is not assumed
+
+A hospital may have patient identifiers in both KIS and LIS without those identifiers being interchangeable.
+
+CareOS therefore requires an explicit strategy:
+
+```text
+shared-enterprise-id
+trusted-mpi
+unknown
+```
+
+The current automatic multi-source runtime only accepts `shared-enterprise-id`.
+
+A real trusted MPI/resolver can be added later as its own adapter. Until then, CareOS refuses to send one source's patient ID to every other system by assumption.
+
+---
+
 ## Adapter selection policy
 
-CareOS always prefers the least bespoke stable interface:
+Preference order:
 
 ```text
 1. ISiK/FHIR
 2. standard FHIR R4
 3. HL7 v2
 4. stable vendor API
-5. controlled document feed
-6. UI/computer-use bridge only as pragmatic fallback
+5. document/source feed
+6. UI/computer-use bridge only as fallback
 ```
 
-This is important for scale.
+But **preference does not mean implementation**.
 
-### Example
+Current CareOS adapter maturity is machine-readable in `architecture/adapter-catalog.json`:
+
+| Adapter family | Current CareOS status |
+|---|---|
+| FHIR R4 read | **implemented** |
+| ISiK/FHIR read | **FHIR runtime + validation path** |
+| HL7 v2 | **contract-only** |
+| vendor API | **contract-only** |
+| document/source feed | **contract-only** |
+| UI/computer-use bridge | **contract-only** |
+| live write adapters | **not runnable / blocked** |
+
+A hospital that only exposes HL7 v2 does **not** receive a green self-install result today. Preflight identifies the target adapter and blocks until a runnable/tested implementation exists.
+
+That honesty is part of the product.
+
+---
+
+## Adapter reuse
+
+Illustrative example:
 
 ```text
-Dedalus hospital A ── FHIR R4 ──┐
-                                ├── standard-fhir-r4 adapter
-SAP hospital B ───── FHIR R4 ───┘
+Hospital A / Vendor A / FHIR ─┐
+                              ├── standard-fhir-r4
+Hospital B / Vendor B / FHIR ─┘
 ```
 
-We do **not** want:
+We do not want:
 
 ```text
 hospital-a-fhir.py
@@ -137,17 +193,15 @@ hospital-b-fhir.py
 hospital-c-fhir.py
 ```
 
-unless real conformance evidence proves the standard contract cannot represent the required difference.
+unless conformance evidence proves a real incompatible difference.
 
-### Reuse key
-
-The preflight planner emits a reusable fingerprint such as:
+The preflight plan emits a reuse key such as:
 
 ```text
-standard-fhir-r4:vendor:product:version
+standard-fhir-r4:read:vendor:product:version
 ```
 
-Over time this becomes an adapter/version knowledge base:
+Over time this becomes a compatibility knowledge base:
 
 ```text
 adapter family
@@ -160,7 +214,36 @@ supported workflow domains
 known outage/lifecycle behavior
 ```
 
-A fix for one deployment can then become a tested improvement for every compatible site.
+A fix found at one hospital should become a regression test before the next compatible hospital receives it.
+
+---
+
+## Hospital-local multi-source runtime
+
+`app/hospital_runtime.py` currently composes implemented FHIR-family connectors.
+
+For each source it preserves:
+
+- source availability;
+- source-linked truth;
+- patient scope;
+- namespaced fact identity.
+
+If one source fails:
+
+```text
+KIS = current
+LIS = unavailable
+```
+
+CareOS may still return the admitted KIS facts, but the combined result becomes:
+
+```text
+complete = false
+may_assert_absence = false
+```
+
+A partial integration therefore cannot silently become a reassuring empty clinical state.
 
 ---
 
@@ -181,47 +264,46 @@ Long-term architecture:
           KIS/LIS         KIS/LIS         KIS/LIS
 ```
 
-The shared control plane should **not require routine longitudinal PHI**.
+The shared control plane should not require routine longitudinal PHI.
 
-Each hospital owns/controls:
+Each hospital controls:
 
-- local source credentials;
+- source credentials;
 - provider identity/treatment context;
-- data-plane network access;
 - patient-level clinical context;
-- local audit destination;
+- network permissions;
+- audit destination;
 - secrets/keys;
-- local retention/cache choices;
+- local retention/cache policy;
 - kill/rollback authority.
 
-The shared platform can distribute:
+Shared infrastructure may distribute:
 
 - signed software releases;
 - adapter packages;
-- schema/terminology/policy versions;
+- schemas/terminology/policy versions;
 - synthetic conformance fixtures;
 - compatibility metadata;
 - non-PHI operational telemetry where approved.
-
-This is how scale and Datenschutz reinforce rather than fight each other.
 
 ---
 
 ## Conformance before connection
 
-Every adapter/site must prove behavior, not just establish TCP connectivity.
+Every adapter/site must prove behavior, not merely TCP connectivity.
 
-Minimum reusable conformance suite:
+Minimum suite:
 
 ```text
 identity
 - patient identity preserved
 - encounter identity preserved where required
+- cross-source patient mapping explicit
 - patient A can never enter patient B
 
 provenance
 - source/resource ID preserved
-- source version preserved when available
+- source version preserved where available
 - effective vs recorded time remains distinguishable
 
 clinical lifecycle
@@ -252,13 +334,39 @@ operations
 - version compatibility
 ```
 
-A site that fails conformance does not get a magical custom bypass. The output becomes a precise integration issue.
+A site that fails conformance gets a precise integration blocker — not a custom bypass.
+
+---
+
+## Upgrades are treated like migrations
+
+`app/hospital_upgrade.py` compares a last-known-good manifest with a proposed one.
+
+Automatic rollout is blocked when an upgrade:
+
+- removes a clinical source;
+- swaps vendor/product under the same source identity;
+- removes an interface;
+- loses patient identity;
+- loses provenance/effective-time/lifecycle capability;
+- introduces new write capability;
+- no longer passes current preflight.
+
+A normal vendor/version change still requires shadow revalidation before dependency.
+
+Command:
+
+```bash
+python scripts/careos.py upgrade-check current.json proposed.json
+```
+
+This creates a path toward KIS/vendor upgrades being tested before they become clinical incidents.
 
 ---
 
 ## Read and write are two products
 
-Never let successful read integration imply write authority.
+Successful read integration never grants write authority.
 
 ```text
 READ PLANE
@@ -278,153 +386,115 @@ read-after-write verification
 audit
 ```
 
-Write adapter selection is disabled unless the manifest explicitly opts into a controlled-write deployment. The current CareOS release still blocks live transactional use globally.
+The current CareOS release ships **no runnable live transactional/write adapter**.
 
 ---
 
-## Operator / computer-use role
+## Computer-use / Operator role
 
-Computer-use can be an excellent **migration bridge**, not the canonical standard.
+Computer-use can be an excellent migration bridge where the KIS exposes no practical typed write interface.
 
-Use it when:
+Treat it as an explicit fallback tier with separate compatibility evidence for:
 
-- there is no affordable typed interface;
-- the KIS UI is the only supported write path;
-- the target workflow is narrow and deterministic enough;
-- screen/session state can be verified;
-- errors halt safely;
-- the action can be audited/replayed/verified.
+- KIS UI/version;
+- expected screen state;
+- concurrency/session limits;
+- field mapping;
+- retry/idempotency;
+- safe stop after UI changes;
+- read-after-write verification.
 
-Prefer typed FHIR/HL7/vendor APIs where available because they usually provide stronger schemas, versioning, concurrency and testability.
+Typed FHIR/HL7/vendor APIs remain preferable when they can provide stronger schemas, concurrency and conformance testing.
 
-A UI bridge should have its own compatibility profile per KIS/version and should fail closed when the UI no longer matches the tested state.
+CareOS does not currently implement a production UI bridge.
 
 ---
 
-## Zero-downtime migration contract
+## Smooth migration contract
 
-We cannot guarantee that no software component will ever fail.
+We cannot guarantee that software never fails.
 
-We can design stronger guarantees:
+We can guarantee architectural behavior:
 
 ### 1. No big-bang cutover
-Legacy remains authoritative until a replacement capability has earned retirement.
+Legacy remains authoritative until replacement evidence exists.
 
 ### 2. Fail back operationally
-Early CareOS failure must not prevent the clinician from using the existing KIS/LIS workflow.
+Early CareOS failure must not prevent clinicians using the existing workflow.
 
 ### 3. Fail closed semantically
-Unknown/unavailable/stale/pending information must never be converted into reassuring absence.
+Unknown/unavailable/stale/pending information never becomes false absence.
 
 ### 4. Reversible stages
 Every stage has a rollback owner and rollback test.
 
 ### 5. Parallel evidence first
-Shadow mode compares the new path against the existing workflow before dependency.
+Shadow mode precedes dependency.
 
 ### 6. One capability retired at a time
-Do not retire the KIS wholesale. Retire duplicated workflows only after measured stability.
+Do not retire the entire KIS wholesale.
 
-This is the closest responsible architecture to a **smooth-from-day-one migration**.
+### 7. Upgrade before rollout is testable
+Vendor/version changes go through compatibility + conformance before dependency.
 
----
-
-## Packaging tiers
-
-### Developer / synthetic
-
-```text
-Docker Compose
-synthetic fixtures
-preflight
-conformance
-```
-
-### Hospital sandbox
-
-```text
-Docker/VM/Kubernetes
-hospital manifest
-approved deidentified sources
-local secret store
-audit target
-no live PHI unless gates permit
-```
-
-### Production target
-
-```text
-signed container image
-SBOM + provenance
-Helm/Kubernetes or approved VM deployment
-hospital IdP/context launch
-network allowlists
-KMS/secrets
-audit/SIEM
-backup/restore
-monitoring/SLO
-change/rollback control
-independent security/privacy/clinical review
-```
-
-Initial Helm scaffold: `deploy/helm/careos/`.
+That is the responsible meaning of **smooth from day one**.
 
 ---
 
-## What must become automated next
+## What still needs engineering
 
-To reach true self-service deployment, build toward:
+To reach genuinely low-touch real-hospital self-service:
 
-1. `careos init` interactive manifest generator;
-2. automatic FHIR `CapabilityStatement` discovery;
-3. safe HL7/interface-engine capability probes;
-4. adapter registry + signed adapter packages;
-5. synthetic connector conformance runner;
-6. compatibility matrix by vendor/product/version;
-7. generated network/data-flow manifest for DPO/CISO review;
-8. generated Kubernetes/VM deployment overlay;
-9. one-command shadow-mode observability;
-10. upgrade compatibility test before rollout;
-11. canary + automated rollback;
-12. fleet-wide non-PHI health/version reporting;
-13. signed release + SBOM/provenance verification;
-14. hospital-owned secret/KMS integrations;
-15. installer UI/API for teams that do not want a CLI.
+1. automatic FHIR `CapabilityStatement` discovery;
+2. generic HL7 v2 read adapter + conformance fixtures;
+3. real vendor/API adapter plugin mechanism and compatibility records;
+4. trusted MPI/source patient-ID resolver adapter;
+5. generated network/data-flow package for DPO/CISO review;
+6. signed/pinned release images + SBOM/provenance verification;
+7. canary deployment + automated rollback;
+8. one-command shadow observability;
+9. non-PHI fleet compatibility/version reporting where approved;
+10. secret/KMS integrations beyond environment injection;
+11. production identity/context/audit integration;
+12. installer UI for teams that prefer GUI over CLI.
+
+These are engineering gaps. They are different from the external evidence gaps that only hospitals can close.
 
 ---
 
 ## Scale acceptance bar
 
-Do not call this self-service or repeatable merely because the installer works synthetically.
+Do not call CareOS self-service or repeatable because the installer works synthetically.
 
-The scale hypothesis becomes evidence only when:
+The hypothesis becomes evidence only when:
 
 ```text
 Hospital A / Vendor A
         ↓
-standard adapter
+reusable adapter + configuration
         ↓
 works without core fork
 
 Hospital B / different vendor
         ↓
-standard adapter/configuration
+reusable adapter + configuration
         ↓
 works without core fork
 ```
 
 Track:
 
-- human integration hours per site;
-- time to first synthetic/deidentified data;
+- integration engineer hours/site;
+- time to first validated source;
 - time to shadow mode;
-- custom code lines/site;
-- reused adapter/tests percentage;
-- configuration-only deployments percentage;
-- conformance failures found before rollout;
+- custom code/site;
+- adapter/test reuse percentage;
+- configuration-only deployment percentage;
+- conformance failures caught before rollout;
+- upgrade failures caught before production;
 - rollback rehearsal success;
 - support tickets per hospital/month.
 
 Long-term north star:
 
-> **A normal hospital IT team can get from download to validated shadow-mode readiness in hours, not months — while the clinical/security gates remain stricter than the install UX.**
+> **A normal hospital IT team can get from download to validated shadow-mode readiness in hours, not months — while clinical/security/privacy gates remain stricter than the install UX.**
