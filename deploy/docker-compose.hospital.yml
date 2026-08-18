@@ -1,0 +1,44 @@
+services:
+  preflight:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    working_dir: /opt/careos
+    entrypoint: ["python", "scripts/hospital_preflight.py"]
+    command: ["/etc/careos/hospital.json", "--json-out", "/tmp/install-plan.json"]
+    environment:
+      CAREOS_DATA_MODE: ${CAREOS_DATA_MODE:-synthetic}
+      FHIR_BASE_URL: ${FHIR_BASE_URL:-http://localhost:8080/fhir}
+    volumes:
+      - ./hospital.example.json:/etc/careos/hospital.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  careos:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      CAREOS_DATA_MODE: ${CAREOS_DATA_MODE:-synthetic}
+      FHIR_BASE_URL: ${FHIR_BASE_URL:-http://localhost:8080/fhir}
+    ports:
+      - "${CAREOS_PORT:-8000}:8000"
+    volumes:
+      - ./hospital.example.json:/etc/careos/hospital.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+# This compose file is an evaluation/self-install scaffold, not approval for live PHI.
+# The CareOS runtime itself refuses live-readonly while G0-G5 remain incomplete and
+# refuses transactional mode under the current release policy.
