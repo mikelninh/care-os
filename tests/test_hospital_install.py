@@ -4,6 +4,7 @@ from app.hospital_install import (
     DeploymentIntent,
     HospitalManifest,
     InterfaceKind,
+    PatientIdentityStrategy,
     SourceSystem,
     SystemRole,
     build_hospital_install_plan,
@@ -40,6 +41,11 @@ def manifest(sources: list[SourceSystem], intent=DeploymentIntent.DEIDENTIFIED):
         sources=sources,
         oidc_or_sso_available=True,
         trusted_patient_context_launch=True,
+        patient_identity_strategy=(
+            PatientIdentityStrategy.SHARED_ENTERPRISE_ID
+            if len(sources) > 1
+            else PatientIdentityStrategy.UNKNOWN
+        ),
         audit_destination_available=True,
         rollback_owner_named=True,
         security_owner_named=True,
@@ -60,6 +66,17 @@ def test_same_standard_adapter_reused_across_different_vendors():
     assert all(a.implementation_status == "implemented" for a in read_adapters)
     assert all(a.runtime_available for a in read_adapters)
     assert plan.installable_for_synthetic_or_deidentified is True
+    assert any(c.status == "pass" and c.id == "identity:cross-source-mapping" for c in plan.checks)
+
+
+def test_multiple_sources_block_when_cross_source_identity_is_unknown():
+    source_a = source(source_id="a", vendor="Vendor A", product="KIS", interfaces=[InterfaceKind.FHIR_R4])
+    source_b = source(source_id="b", vendor="Vendor B", product="LIS", interfaces=[InterfaceKind.FHIR_R4])
+    m = manifest([source_a, source_b])
+    m.patient_identity_strategy = PatientIdentityStrategy.UNKNOWN
+    plan = build_hospital_install_plan(m)
+    assert plan.installable_for_synthetic_or_deidentified is False
+    assert any(c.status == "block" and c.id == "identity:cross-source-mapping" for c in plan.checks)
 
 
 def test_isik_is_preferred_over_generic_fhir_but_keeps_validation_path_label():
