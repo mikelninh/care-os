@@ -69,6 +69,7 @@ on:
 permissions:
   contents: read
 
+# CI-only pre-Pavlo verification marker. Product changes live on main.
 jobs:
   foundation:
     runs-on: ubuntu-24.04
