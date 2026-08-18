@@ -6,13 +6,16 @@ on:
     paths:
       - 'app/hospital_install.py'
       - 'app/hospital_upgrade.py'
+      - 'app/hospital_runtime.py'
+      - 'app/hospital_api.py'
       - 'architecture/adapter-catalog.json'
+      - 'scripts/careos.py'
       - 'scripts/hospital_preflight.py'
       - 'scripts/hospital_upgrade_preflight.py'
-      - 'tests/test_hospital_install.py'
-      - 'tests/test_hospital_upgrade.py'
+      - 'tests/test_hospital_*.py'
       - 'tests/test_adapter_catalog.py'
       - 'deploy/hospital.example.json'
+      - 'deploy/hospital.env.example'
       - 'deploy/docker-compose.hospital.yml'
       - 'deploy/helm/careos/**'
       - 'Dockerfile'
@@ -23,13 +26,16 @@ on:
     paths:
       - 'app/hospital_install.py'
       - 'app/hospital_upgrade.py'
+      - 'app/hospital_runtime.py'
+      - 'app/hospital_api.py'
       - 'architecture/adapter-catalog.json'
+      - 'scripts/careos.py'
       - 'scripts/hospital_preflight.py'
       - 'scripts/hospital_upgrade_preflight.py'
-      - 'tests/test_hospital_install.py'
-      - 'tests/test_hospital_upgrade.py'
+      - 'tests/test_hospital_*.py'
       - 'tests/test_adapter_catalog.py'
       - 'deploy/hospital.example.json'
+      - 'deploy/hospital.env.example'
       - 'deploy/docker-compose.hospital.yml'
       - 'deploy/helm/careos/**'
       - 'Dockerfile'
@@ -52,15 +58,19 @@ jobs:
           python-version: '3.12.13'
       - run: python -m pip install --upgrade pip
       - run: pip install --requirement requirements.lock
-      - name: Test reusable adapter, upgrade and deployment policy contracts
+      - name: Test adapter, runtime, upgrade and deployment contracts
         run: >-
           pytest -q
           tests/test_hospital_install.py
           tests/test_hospital_upgrade.py
+          tests/test_hospital_runtime.py
+          tests/test_hospital_api.py
           tests/test_adapter_catalog.py
           tests/test_deployment_policy.py
       - name: Generate example install plan
         run: python scripts/hospital_preflight.py deploy/hospital.example.json --json-out /tmp/hospital-install-plan.json
+      - name: Validate one-command CLI parser
+        run: python scripts/careos.py --help
       - name: Validate compose syntax
         run: docker compose -f deploy/docker-compose.hospital.yml config
       - name: Build hardened hospital image
