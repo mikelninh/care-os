@@ -100,7 +100,9 @@ class OpenAIResponsesReasoningWorker:
     max_request_bytes: int = 131_072
     max_response_bytes: int = 262_144
     last_usage: dict[str, int] = field(default_factory=dict, init=False)
+    usage_totals: dict[str, int] = field(default_factory=dict, init=False)
     last_request_id: str | None = field(default=None, init=False)
+    request_ids: list[str] = field(default_factory=list, init=False)
 
     def _assert_allowed(self) -> None:
         if self.mode not in {AgentOperatingMode.SYNTHETIC, AgentOperatingMode.DEIDENTIFIED_SANDBOX}:
@@ -168,7 +170,11 @@ class OpenAIResponsesReasoningWorker:
         if not isinstance(data, dict):
             raise ValueError("OpenAI response must be a JSON object")
 
-        self.last_request_id = response.headers.get("x-request-id") or data.get("id")
+        request_id = response.headers.get("x-request-id") or data.get("id")
+        self.last_request_id = str(request_id) if request_id else None
+        if self.last_request_id:
+            self.request_ids.append(self.last_request_id)
+
         usage = data.get("usage")
         if isinstance(usage, dict):
             self.last_usage = {
@@ -176,6 +182,8 @@ class OpenAIResponsesReasoningWorker:
                 for k, v in usage.items()
                 if isinstance(v, int)
             }
+            for key, value in self.last_usage.items():
+                self.usage_totals[key] = self.usage_totals.get(key, 0) + value
 
         text = self._extract_output_text(data)
         try:
