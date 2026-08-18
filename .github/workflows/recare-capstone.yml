@@ -6,18 +6,22 @@ on:
     paths:
       - 'app/recare_*.py'
       - 'app/agent_*.py'
+      - 'scripts/aggregate_recare_study.py'
       - 'tests/test_recare_*.py'
       - 'tests/test_agent_model_adapter.py'
       - 'tests/test_agent_orchestrator.py'
+      - 'tests/test_agent_phase1.py'
       - 'requirements.lock'
       - '.github/workflows/recare-capstone.yml'
   pull_request:
     paths:
       - 'app/recare_*.py'
       - 'app/agent_*.py'
+      - 'scripts/aggregate_recare_study.py'
       - 'tests/test_recare_*.py'
       - 'tests/test_agent_model_adapter.py'
       - 'tests/test_agent_orchestrator.py'
+      - 'tests/test_agent_phase1.py'
       - 'requirements.lock'
       - '.github/workflows/recare-capstone.yml'
 
@@ -36,13 +40,15 @@ jobs:
       - run: python -m pip install --upgrade pip
       - name: Install locked dependencies
         run: pip install --requirement requirements.lock
-      - name: Run focused Recare agent, API and model-gateway tests
+      - name: Run focused Recare agent, API, model-gateway and study tests
         run: >-
           pytest -q
           tests/test_recare_capstone.py
           tests/test_recare_api.py
+          tests/test_recare_study_aggregation.py
           tests/test_agent_model_adapter.py
           tests/test_agent_orchestrator.py
+          tests/test_agent_phase1.py
       - name: Smoke-test six-case containment suite
         run: >-
           python -c "from app.recare_eval_suite import run_recare_eval_suite;
