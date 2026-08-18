@@ -7,6 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from app.hospital_install import (
     DeploymentIntent,
     HospitalManifest,
@@ -19,7 +23,6 @@ from app.hospital_install import (
 from app.hospital_upgrade import compare_hospital_manifests
 
 
-ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "deploy" / "docker-compose.hospital.yml"
 
 
