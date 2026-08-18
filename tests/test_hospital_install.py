@@ -49,18 +49,20 @@ def manifest(sources: list[SourceSystem], intent=DeploymentIntent.DEIDENTIFIED):
 
 
 def test_same_standard_adapter_reused_across_different_vendors():
-    dedalus = source(source_id="kis-a", vendor="Dedalus", product="KIS-A", interfaces=[InterfaceKind.FHIR_R4])
-    sap = source(source_id="kis-b", vendor="SAP", product="KIS-B", interfaces=[InterfaceKind.FHIR_R4])
+    vendor_a = source(source_id="kis-a", vendor="Vendor A", product="KIS-A", interfaces=[InterfaceKind.FHIR_R4])
+    vendor_b = source(source_id="kis-b", vendor="Vendor B", product="KIS-B", interfaces=[InterfaceKind.FHIR_R4])
 
-    plan = build_hospital_install_plan(manifest([dedalus, sap]))
+    plan = build_hospital_install_plan(manifest([vendor_a, vendor_b]))
 
     read_adapters = [a for a in plan.adapters if a.direction == "read"]
     assert {a.adapter_id for a in read_adapters} == {"standard-fhir-r4"}
     assert all(a.adapter_family == "fhir" for a in read_adapters)
+    assert all(a.implementation_status == "implemented" for a in read_adapters)
+    assert all(a.runtime_available for a in read_adapters)
     assert plan.installable_for_synthetic_or_deidentified is True
 
 
-def test_isik_is_preferred_over_generic_fhir_when_both_exist():
+def test_isik_is_preferred_over_generic_fhir_but_keeps_validation_path_label():
     kis = source(
         source_id="kis",
         vendor="ExampleVendor",
@@ -69,6 +71,20 @@ def test_isik_is_preferred_over_generic_fhir_when_both_exist():
     )
     plan = build_hospital_install_plan(manifest([kis]))
     assert plan.adapters[0].adapter_id == "standard-isik-fhir"
+    assert plan.adapters[0].implementation_status == "validation-path"
+    assert plan.adapters[0].runtime_available is True
+    assert any(c.status == "warn" and c.id.endswith("adapter-runtime") for c in plan.checks)
+
+
+def test_hl7_is_visible_as_target_but_blocks_self_service_until_runtime_exists():
+    lis = source(source_id="lis", vendor="ExampleLIS", product="LIS", interfaces=[InterfaceKind.HL7V2])
+    lis.role = SystemRole.LIS
+    plan = build_hospital_install_plan(manifest([lis]))
+    assert plan.adapters[0].adapter_id == "standard-hl7v2-read"
+    assert plan.adapters[0].implementation_status == "contract-only"
+    assert plan.adapters[0].runtime_available is False
+    assert plan.installable_for_synthetic_or_deidentified is False
+    assert any(c.status == "block" and c.id.endswith("adapter-runtime") for c in plan.checks)
 
 
 def test_manifest_rejects_endpoint_or_secret_values_in_versionable_config():
@@ -112,3 +128,4 @@ def test_write_never_appears_without_explicit_controlled_write_opt_in():
     kis.write_supported = True
     plan = build_hospital_install_plan(manifest([kis], DeploymentIntent.DEIDENTIFIED))
     assert all(a.direction == "read" for a in plan.adapters)
+    assert plan.ready_for_controlled_write is False
