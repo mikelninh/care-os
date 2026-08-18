@@ -4,10 +4,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .recare_capstone import CapstoneRunRequest, capstone_capabilities, run_capstone
+from .recare_eval_suite import run_recare_eval_suite
 
 app = FastAPI(
     title="CareOS Recare Capstone API",
-    version="1.0.0",
+    version="1.1.0",
     description=(
         "Synthetic-only runnable proof for agent routing, deterministic tool authorization, "
         "grounded drafting, observability and evaluation. Not for clinical use."
@@ -28,6 +29,7 @@ def health():
     return {
         "status": "ok",
         "service": "careos-recare-capstone",
+        "version": "1.1.0",
         "data_mode": "synthetic-only",
         "live_identifiable_phi_allowed": False,
         "production_write_back": False,
@@ -37,6 +39,11 @@ def health():
 @app.get("/api/capabilities")
 def capabilities():
     return capstone_capabilities()
+
+
+@app.get("/api/eval-suite")
+def eval_suite():
+    return run_recare_eval_suite()
 
 
 @app.post("/api/run")
