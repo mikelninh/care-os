@@ -5,9 +5,12 @@ on:
     branches: [main]
     paths:
       - 'app/hospital_install.py'
+      - 'app/hospital_upgrade.py'
       - 'architecture/adapter-catalog.json'
       - 'scripts/hospital_preflight.py'
+      - 'scripts/hospital_upgrade_preflight.py'
       - 'tests/test_hospital_install.py'
+      - 'tests/test_hospital_upgrade.py'
       - 'tests/test_adapter_catalog.py'
       - 'deploy/hospital.example.json'
       - 'deploy/docker-compose.hospital.yml'
@@ -19,9 +22,12 @@ on:
   pull_request:
     paths:
       - 'app/hospital_install.py'
+      - 'app/hospital_upgrade.py'
       - 'architecture/adapter-catalog.json'
       - 'scripts/hospital_preflight.py'
+      - 'scripts/hospital_upgrade_preflight.py'
       - 'tests/test_hospital_install.py'
+      - 'tests/test_hospital_upgrade.py'
       - 'tests/test_adapter_catalog.py'
       - 'deploy/hospital.example.json'
       - 'deploy/docker-compose.hospital.yml'
@@ -46,8 +52,13 @@ jobs:
           python-version: '3.12.13'
       - run: python -m pip install --upgrade pip
       - run: pip install --requirement requirements.lock
-      - name: Test reusable adapter planning and catalog honesty
-        run: pytest -q tests/test_hospital_install.py tests/test_adapter_catalog.py tests/test_deployment_policy.py
+      - name: Test reusable adapter, upgrade and deployment policy contracts
+        run: >-
+          pytest -q
+          tests/test_hospital_install.py
+          tests/test_hospital_upgrade.py
+          tests/test_adapter_catalog.py
+          tests/test_deployment_policy.py
       - name: Generate example install plan
         run: python scripts/hospital_preflight.py deploy/hospital.example.json --json-out /tmp/hospital-install-plan.json
       - name: Validate compose syntax
