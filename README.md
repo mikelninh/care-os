@@ -5,184 +5,95 @@
 [![tests](https://github.com/mikelninh/care-os/actions/workflows/test.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/test.yml)
 [![platform-redteam](https://github.com/mikelninh/care-os/actions/workflows/platform-redteam.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/platform-redteam.yml)
 [![agent-redteam](https://github.com/mikelninh/care-os/actions/workflows/agent-redteam.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/agent-redteam.yml)
+[![recare-capstone](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml)
+[![global-interoperability](https://github.com/mikelninh/care-os/actions/workflows/global-interoperability.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/global-interoperability.yml)
 [![supply-chain](https://github.com/mikelninh/care-os/actions/workflows/supply-chain-security.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/supply-chain-security.yml)
 
-CareOS is a **clinician-first, federated clinical context layer** for fragmented healthcare systems.
+CareOS is a **clinician-first, federated clinical-context research architecture** for fragmented healthcare systems.
 
-It is designed to sit beside KIS/PVS/EHR/LIS/RIS/ePA systems rather than replace them: bring the relevant patient story together, keep every consequential fact traceable to its source, preserve uncertainty and pending work, and return time to care without creating another system of record.
+It sits conceptually beside KIS/PVS/EHR/LIS/RIS/ePA systems rather than replacing them: bring the relevant patient story together, keep consequential information traceable to its source, preserve uncertainty and pending work, and return time to care without creating another system of record.
 
-**First specialty:** Infectiology.  
-**Current stage:** synthetic product research + proposal-ready reference architecture.  
-**Not for clinical use. No identifiable patient data is used in the public demos.**
+**First specialty:** Infectiology  
+**Current stage:** **pre-hospital synthetic phase complete enough for serious external review; real-world validation is next**  
+**Safety boundary:** synthetic/public prototype only · not for clinical use · no identifiable patient data in public demos · no production write-back
 
-## Start here
+---
 
-| Audience | Link |
+# Start here
+
+| If you are… | Start with… |
 |---|---|
-| Clinicians / Infectiology team | **[SJK synthetic workflow demo](https://mikelninh.github.io/careos/sjk/)** |
-| Clinician A/B test | **[CareOS vs CareOS + source-linked draft](https://mikelninh.github.io/careos/sjk/ab.html)** |
-| Chefarzt / medical leadership | **[Leadership view](https://mikelninh.github.io/careos/sjk/chef.html)** |
-| Senior engineers / CIO / CISO / Datenschutz | **[Reference Architecture V2](docs/ARCHITECTURE_V2.md)** |
-| Government / public-sector review | **[German Government Reference Architecture](docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md)** |
+| reviewing the whole project | **[Pre-Hospital Handoff](docs/PRE_HOSPITAL_HANDOFF.md)** |
+| Recare / healthcare AI engineering | **[Recare Collaboration Map](docs/RECARE_COLLABORATION_MAP.md)** + **[Recare Capstone](docs/RECARE_CAPSTONE.md)** |
+| a clinician / Infectiology team | **[Synthetic workflow demo](https://mikelninh.github.io/careos/sjk/)** |
+| testing clinician usefulness | **[Paired synthetic A/B study](https://mikelninh.github.io/careos/sjk/ab.html)** |
+| medical leadership | **[Leadership view](https://mikelninh.github.io/careos/sjk/chef.html)** |
+| implementing in a hospital | **[Hospital Implementation Playbook](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md)** |
+| senior engineering / CIO / CISO / Datenschutz | **[Reference Architecture V2](docs/ARCHITECTURE_V2.md)** |
+| checking what is actually ready | **[Current Status & Gaps](docs/CURRENT_STATUS_AND_GAPS.md)** |
+| German public sector / gematik / policy | **[Government Reference Architecture](docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md)** |
+| EU / global interoperability | **[Germany → Global Interoperability Blueprint](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md)** |
+
+Public Recare-targeted work sample: **https://mikelninh.github.io/recare/**
 
 ---
 
-## What exists right now
+# The question
 
-- a synthetic Infectiology workflow focused on **morning review, microbiology, pending results, documented anti-infective therapy, hygiene/isolation and handover**;
-- source-linked clinical facts with explicit provenance, lifecycle state, clinical time, freshness, contradiction/review state and patient/encounter binding;
-- a structured FHIR/ISiK integration path with bounded paging, source-state semantics and hostile wrong-patient checks;
-- a separate **zero-trust Agent Gateway** where models are untrusted proposers and deterministic policy controls patient scope, tools, data categories, budgets, egress and audit;
-- dedicated platform and agent red-team CI, supply-chain checks, SBOM, CodeQL, non-root container and live-data startup locks;
-- a paired synthetic clinician A/B study that measures **time, errors, missed pending work, source checking, corrections, cognitive effort and verification decay**;
-- a government/CIO-grade reference architecture package covering deployment, trust boundaries, interoperability, responsibility, procurement and national/EU integration.
+> **Can we make clinicians materially faster without making clinical information less trustworthy or reducing source verification?**
 
-The current objective is simple:
+CareOS treats usefulness and safety as one outcome, not two independent scorecards.
 
-> **Can CareOS make clinicians materially faster without making clinical information less trustworthy or reducing source verification?**
+A time saving does **not** compensate for:
 
----
+- wrong-patient context;
+- unsupported clinical claims;
+- pending information being interpreted as negative/complete;
+- stale information being presented as current;
+- source failure being interpreted as absence;
+- agent output being confused with source truth;
+- unauthorised clinical write/send behavior.
 
-## Current clinician view
-
-![Current SJK clinician UI preview](docs/screenshots/sjk-clinician-current.svg)
-
-The Infectiology reference workflow emphasizes the distinctions that become dangerous when collapsed:
-
-> **Pending ≠ negative. Unavailable ≠ absent. Documented therapy ≠ CareOS recommendation.**
-
-The public SJK reference is synthetic product research only and is **not an official hospital system or endorsement**.
+North-star outcome: **Time Returned to Care — safety gated.**
 
 ---
 
-## Current clinician evidence test
+# What exists right now
 
-![Current SJK A/B study UI preview](docs/screenshots/sjk-ab-study-current.svg)
+## 1. Clinician workflow
 
-The A/B study compares normal source-linked CareOS with CareOS plus an explicitly labelled **untrusted source-linked draft**.
+- synthetic Infectiology morning-review / discharge-prep workflows;
+- microbiology, medication, hygiene/isolation, trends and open tasks;
+- source-linked clinical facts;
+- explicit review and contradiction states;
+- source jumps / evidence inspection;
+- paired clinician study measuring time, errors, pending-work retention, source checks, corrections, effort and verification decay;
+- local-only pseudonymous JSON/CSV study export + paired aggregator.
 
-The design is paired and counterbalanced. Incomplete sessions do not influence the estimated agent effect. A favorable speed result is overridden by safety-stop events such as:
+Core clinical semantics:
 
-- pending/unavailable interpreted as negative or complete;
-- documented treatment interpreted as a CareOS recommendation;
-- agent draft confused with source truth.
+> **Pending ≠ negative. Unavailable ≠ absent. Stale ≠ current. Documented therapy ≠ AI recommendation.**
 
-See the full [SJK Agent Study Protocol](docs/SJK_AGENT_STUDY_PROTOCOL.md).
+## 2. Clinical truth / evidence
 
----
-
-# Architecture
-
-## Reference architecture status: **10 / 10 proposal completeness**
-
-This means **the architecture package is complete enough for serious review** by clinicians, Chefarzt/medical leadership, hospital CIO/CISO/Datenschutz, senior engineers, government architects, gematik/public-sector stakeholders and funding partners.
-
-It does **not** mean production approval, certification, clinical validation or permission to process live patient data.
-
-### Core design
+A surfaced fact is designed to preserve:
 
 ```text
-                            CAREOS CONTROL PLANE
-
-          releases · signed pack versions · policy/config bundles
-       terminology metadata · guideline metadata · non-PHI operations
-                                 │
-                       no routine identifiable PHI
-                                 │
-═════════════════════════════════╪════════════════════════════════════
-                                 │
-                    PROVIDER / HOSPITAL DATA PLANE
-                                 │
- KIS/EHR ─┐                      │
- LIS/Micro├───> Connector Gateway / Integration Boundary
- RIS/PACS ┤                      │
- PVS      ┤                      ▼
- ePA/TI   ┤              Identity + Encounter Layer
- KIM      ┤                      │
- Docs     ┘                      ▼
-                         Clinical Truth Layer
-                                 │
-           provenance · time · freshness · terminology · units
-                                 │
-                                 ▼
-                       Reconciliation Engine
-                contradiction · supersession · review
-                                 │
-                                 ▼
-                       Policy Enforcement Point
-                          │                 │
-                          ▼                 ▼
-                      Human UX         Agent Gateway
-                                            │
-                                  narrow delegated tools
-                                            │
-                                            ▼
-                                  untrusted reasoning worker
+patient / encounter binding
+source organisation / system / resource
+original value / wording
+clinical effective time
+recorded / ingestion time
+version / freshness
+preliminary / final / corrected / cancelled / pending / stale / unavailable state
+terminology / units / mapping lineage
+evidence span where document-derived
+contradiction / supersession / review state
 ```
 
-> **Keep systems of record. Standardize the trustworthy context layer above them.**
+Models may propose structure but do **not** become the authority that creates trusted clinical truth.
 
-### Architectural invariants
-
-1. Existing provider systems remain authoritative systems of record.
-2. Routine identifiable patient data stays in the provider data plane or a dedicated provider-controlled tenant.
-3. Provenance is part of correctness; consequential facts must be traceable to their source.
-4. Missing, stale, unavailable, contradictory and negative are different states.
-5. Models may propose structure but may not directly create trusted clinical truth.
-6. Read and write are separate capabilities; read-only value must be proven first.
-7. Names/DOB/address never silently merge patient records.
-8. Production should receive trusted patient/encounter context from the surrounding clinical workflow rather than create another search box.
-9. Specialty/country/language/audience behavior extends one core rather than creating product forks.
-10. Source outage, partial reads and audit failure must fail visibly.
-
-### Architecture package
-
-| Question | Document |
-|---|---|
-| Full logical architecture | [Reference Architecture V2](docs/ARCHITECTURE_V2.md) |
-| German public-sector model | [Government Reference Architecture](docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md) |
-| Executive German brief | [Government One-Pager DE](docs/GOVERNMENT_ONE_PAGER_DE.md) |
-| PHI / trust boundaries / flows | [Trust & Data Flow](docs/TRUST_AND_DATA_FLOW.md) |
-| On-prem / dedicated cloud / federated deployment | [Deployment Patterns](docs/DEPLOYMENT_PATTERNS.md) |
-| ISiK / ISiP / TI / ePA / KIM / EHDS direction | [National & EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) |
-| Technical-review evidence index | [Technical Documentation Index](docs/TECHNICAL_DOCUMENTATION_INDEX.md) |
-| Who owns which risk/control | [Responsibility Model](docs/RESPONSIBILITY_MODEL.md) |
-| Assurance evidence | [Assurance Crosswalk](docs/ASSURANCE_CROSSWALK.md) |
-| Vendor-neutral public procurement | [Procurement Requirements](docs/PROCUREMENT_REQUIREMENTS.md) |
-| Durable design decisions | [Architecture Decision Records](docs/adr/README.md) |
-| Machine-readable architecture | [`architecture/reference-architecture.json`](architecture/reference-architecture.json) |
-
----
-
-# Clinical truth and AI boundary
-
-```text
-FHIR / KIS / LIS / documents
-             ↓
-       source / connector
-             ↓
-      untrusted candidates
-             ↓
- exact source-evidence verification
-             ↓
-    ClinicalFact / TruthEnvelope
-             ↓
- identity · provenance · time · units · terminology · source state
-             ↓
- reconciliation / contradiction / review / freshness
-             ↓
-        policy enforcement
-             ↓
-          clinician view
-```
-
-A surfaced clinical fact is designed to preserve the original value/wording, source system and resource/document ID, source version where available, clinical effective time separately from ingestion time, normalization lineage, evidence span for document-derived facts, and explicit review/contradiction state.
-
-Models may **not** silently invent clinical time, create unsupported facts, resolve conflicting sources by confidence, merge patient identities, turn missing information into a negative finding, or write directly into trusted clinical truth.
-
-## Frozen unseen benchmark
-
-The current conservative truth path was evaluated on a frozen 500-case synthetic holdout:
+### Frozen synthetic holdout
 
 | Metric | Result |
 |---|---:|
@@ -195,20 +106,34 @@ The current conservative truth path was evaluated on a frozen 500-case synthetic
 | Recall | **26.32%** |
 | Review case rate | **100%** |
 
-This is **not a production pass**. It shows that CareOS currently fails conservatively rather than confidently, but the document-extraction path remains far too conservative to return enough clinical time. G1 therefore remains blocked and this holdout is not used as tuning data.
+This is deliberately **not** called a production pass. The conservative truth path fails safely but currently recalls too little and creates too much review burden. G1 therefore remains blocked.
 
 See [Benchmark](docs/BENCHMARK.md).
 
----
+## 3. German interoperability
 
-# Agentic CareOS: assume the model can be compromised
+- FHIR transport and bounded pagination;
+- FHIR source-state handling;
+- ISiK-oriented structural/profile validation;
+- vendor-neutral connector boundary;
+- explicit patient/encounter context;
+- integration map for ISiK / ISiP / TI / ePA / KIM / EHDS;
+- no attempt to replace national infrastructure.
 
-CareOS does not treat an AI agent as “the doctor, automated.” An agent is a separately identified, narrowly delegated principal.
+Architecture rule:
+
+> **Keep systems of record. Standardize trustworthy context above them.**
+
+See [National / EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md).
+
+## 4. Zero-trust agent runtime
+
+CareOS assumes the reasoning model can be wrong or compromised.
 
 ```text
-Clinician / approved workflow
-        ↓ signed narrow delegation
-Workload identity
+clinician / approved workflow
+        ↓ narrow delegation
+workload identity
         ↓
 ┌──────────────────────────────────┐
 │       CAREOS AGENT GATEWAY       │
@@ -217,99 +142,291 @@ Workload identity
 │ versioned tool registry          │
 │ deterministic authorization      │
 │ record/page/tool/runtime budgets │
-│ memory namespace                 │
-│ audit · deny-default egress      │
+│ deny-default egress              │
+│ audit                            │
 └──────────────┬───────────────────┘
-               │ admitted capability only
+               │ admitted request only
                ▼
-      untrusted reasoning worker
+       trusted Tool Proxy
                │
                ▼
-          Agent Gateway
+       source-linked result
                │
                ▼
-        trusted Tool Proxy
+      untrusted draft candidate
+               │
+               ▼
+          draft firewall
+               │
+               ▼
+          human review
 ```
 
-The reasoning worker cannot choose the authoritative organisation, patient, encounter, break-glass state, recursion policy or arbitrary network destination. Live identifiable PHI and consequential actions remain separately locked behind the normal CareOS gates plus agent-specific gates.
+The model cannot authoritatively choose a different patient, encounter, organisation, break-glass state, arbitrary tool, network destination or write permission.
 
-See [Agent Security Model](docs/AGENT_SECURITY_MODEL.md), [Agent Production Programme](docs/AGENT_PRODUCTION_PROGRAM.md) and [Phases 1–7](docs/AGENT_PHASES_1_7.md).
+See:
+
+- [Agent Security Model](docs/AGENT_SECURITY_MODEL.md)
+- [Agent Production Programme](docs/AGENT_PRODUCTION_PROGRAM.md)
+- [Agent Phases 1–7](docs/AGENT_PHASES_1_7.md)
+
+## 5. Recare-targeted runnable capstone
+
+The hiring/work-sample layer composes the real CareOS components into one synthetic clinical task.
+
+API surface:
+
+```text
+GET  /health
+GET  /api/capabilities
+GET  /api/eval-suite
+POST /api/run
+```
+
+Six regression scenarios:
+
+- happy path;
+- wrong patient;
+- prompt injection;
+- source unavailable;
+- stale result;
+- unauthorised write.
+
+A hostile run that is correctly denied counts as a **safety pass**, not as a failed completion.
+
+The provider-neutral external-model adapter can be enabled for synthetic/deidentified evaluation without changing the deterministic authority boundary.
+
+See [Recare Capstone](docs/RECARE_CAPSTONE.md).
+
+## 6. Global portability
+
+CareOS now separates three interoperability questions:
+
+```text
+CONTENT — what does this clinical information mean?
+TRUST   — who issued it and can that issuer be verified?
+POLICY  — may the receiving context use it for this purpose?
+```
+
+The global portability prototype preserves:
+
+- original clinical wording/language;
+- clinical state;
+- provenance;
+- terminology mappings;
+- translated presentation separately from source truth;
+- issuer trust state separately from data-format validity.
+
+So a result that is **pending in Berlin remains pending after translation or cross-border exchange**; a contradiction remains a contradiction; an unverified issuer stays visibly unverified.
+
+Target direction:
+
+```text
+Provider / hospital
+        ↓
+Germany: FHIR / ISiK / ePA / TI
+        ↓
+EU: EHDS / EEHRxF / MyHealth@EU
+        ↓
+Global: FHIR / International Patient Summary + trust verification
+```
+
+See [Germany as a Global Health Interoperability Reference Model](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md).
+
+---
+
+# Recare: collaborate, do not duplicate
+
+Publicly, Recare already offers substantial parts of the clinical product layer CareOS independently converged toward: Patient Overview, Extract, Docs, Voice, Agent, Operator, Discharge and Predict.
+
+Therefore the intended posture is **not**:
+
+> "Replace Recare's product with CareOS."
+
+It is:
+
+> **Bring the clinical-state, provenance, agent-authority, adversarial-eval, interoperability and implementation work into contact with a real production platform; retire duplicate ideas; keep only what survives reality.**
+
+The collaboration map includes a 30/60/90-day plan centered on real integrations and hospital implementation.
+
+See [Recare x CareOS Collaboration Map](docs/RECARE_COLLABORATION_MAP.md).
+
+---
+
+# Hospital rollout: zero drama
+
+The implementation path is now explicit:
+
+```text
+0. observe the real workflow
+        ↓
+1. technical / governance preflight
+        ↓
+2. read-only context
+        ↓
+3. shadow mode
+        ↓
+4. one workflow / one ward
+        ↓
+5. human-approved copilot
+        ↓
+6. legacy bridge where necessary
+        ↓
+7. bounded execution only when earned
+        ↓
+8. measure benefit + safety
+        ↓
+9. second ward / vendor / hospital
+```
+
+Default integration preference:
+
+1. FHIR / ISiK / HL7 where appropriate;
+2. stable vendor API;
+3. provider integration engine;
+4. controlled file/document path;
+5. computer-use/UI automation as a pragmatic legacy bridge, with its different risks made explicit.
+
+See [Hospital Implementation Playbook](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md).
+
+---
+
+# Germany as an international reference model
+
+CareOS proposes that Germany should **not** build another proprietary national EHR or integration bus.
+
+Instead, combine strong ideas already demonstrated internationally:
+
+- Estonia: auditability / once-only / citizen transparency;
+- Finland: executable interoperability certification;
+- Denmark: national services embedded into local clinical software;
+- Netherlands: technical standards + shared trust framework;
+- NHS England: standardised AI assurance with local deployment accountability;
+- Germany/EU: ISiK/ePA/TI/EHDS foundations;
+- global: FHIR / IPS + verifiable issuer/trust boundaries.
+
+The proposed German reference model adds:
+
+- **Open Clinical Context Contract**;
+- national executable conformance lab;
+- patient/clinician transparency ledger including agents;
+- machine-readable **Agent Capability Manifest**;
+- **Time Returned to Care** as a procurement/outcome contract;
+- global portability without product lock-in.
+
+See [Germany → Global Health Interoperability Blueprint](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md).
+
+---
+
+# Current readiness — honest version
+
+CareOS graduates by **evidence**, not version numbers.
+
+| Dimension | Status |
+|---|---:|
+| Problem understanding | **10 / 10** |
+| Product thinking | **9.5 / 10** |
+| Clinical truth / provenance architecture | **9.6 / 10** |
+| Agent safety architecture | **9.6 / 10** |
+| Adversarial evaluation | **9.5 / 10** |
+| German interoperability architecture | **9.3 / 10** |
+| EU/global portability architecture | **9.1 / 10** |
+| Hospital rollout methodology | **9.4 / 10** |
+| Recare-targeted work sample | **9.6 / 10** |
+| Real clinician evidence | **2 / 10** |
+| Real KIS/LIS integration | **1 / 10** |
+| Production PHI operations | **0 / 10** |
+| Multi-hospital deployment evidence | **0 / 10** |
+
+Two different questions:
+
+- **Ready for serious Recare / hospital / architecture discussion:** ~**9.8 / 10**
+- **Ready for a live hospital production deployment:** ~**4 / 10**
+
+That gap is intentional and honest. The missing evidence now requires real clinicians, actual hospital systems, provider security/privacy infrastructure, formal review and deployment experience.
+
+See [Current Status & Gap Register](docs/CURRENT_STATUS_AND_GAPS.md).
 
 ---
 
 # Production-readiness gates
 
-CareOS graduates by evidence, not version numbers.
-
 | Gate | Current state | Main remaining evidence |
 |---|---|---|
-| G0 Scope & clinical safety | **EXTERNAL REVIEW** | independent clinical-safety + medical-software assessment |
-| G1 Clinical truth | **BLOCKED** | materially higher recall with low review burden and preserved safety |
+| G0 Scope & clinical safety | **EXTERNAL REVIEW** | intended use + independent clinical-safety assessment |
+| G1 Clinical truth | **BLOCKED** | higher recall with low review burden + preserved safety |
 | G2 German interoperability | **PARTIAL** | real KIS/LIS/vendor sandbox + terminology/sync evidence |
 | G3 Privacy & security | **PARTIAL** | provider IdP/KMS/audit/DSFA/pentest evidence |
 | G4 Reliability | **PARTIAL** | target-environment load/recovery/SLO evidence |
 | G5 Regulatory & quality | **EXTERNAL REVIEW** | formal applicability/classification + quality lifecycle |
 | G6 Invisible workflow | **PARTIAL** | real KIS patient-context launch/no-second-search proof |
 | G7 Hospital deployment | **PARTIAL** | provider-specific review and approvals |
-| G8 Repeatability | **PARTIAL** | second hospital/vendor without a CareOS core fork |
-| G9 Germany/EU scale | **BLOCKED** | actual national/EU integrations + multi-site evidence |
+| G8 Repeatability | **PARTIAL** | second hospital/vendor without core fork |
+| G9 Germany/EU scale | **BLOCKED** | real national/EU + multi-site evidence |
 
 **No normal production gate is PASS. Identifiable live patient data remains locked.**
 
 `CAREOS_DATA_MODE=live-readonly` refuses startup while G0–G5 are incomplete. Transactional/write-back mode remains unsupported.
 
-See [GATES](docs/GATES.md), [Safety Case](docs/SAFETY_CASE.md), [Platform Stress Test](docs/PLATFORM_STRESS_TEST_2026-08-16.md) and [Hospital Assurance Pack](docs/HOSPITAL_ASSURANCE_PACK.md).
+See [GATES](docs/GATES.md) and [Hospital Assurance Pack](docs/HOSPITAL_ASSURANCE_PACK.md).
 
 ---
 
-# Current evidence and hardening
+# Architecture / assurance package
 
-Internal evidence currently includes:
-
-- regression + workflow scenario tests;
-- whole-platform adversarial/red-team CI;
-- hostile-agent containment CI;
-- wrong-patient FHIR/resource rejection;
-- bounded FHIR pagination and source-state handling;
-- pinned gematik ISiK5 structural/profile validation;
-- cancellation/supersession safety tests;
-- browser patient-switch race protection and clinical-string escaping;
-- OIDC/JWT and treatment-context foundations;
-- fail-closed secure reads, kill switches and audit foundations;
-- non-root runtime, dependency lock, CodeQL, vulnerability audit and CycloneDX SBOM;
-- code-enforced live-data and live-agent locks.
-
-Still external before any identifiable live-data pilot: actual hospital KIS/LIS interfaces, hospital IdP/context launch, KMS/secrets/network/DLP deployment, protected audit/SIEM, DSFA/contractual review, applicable infrastructure assurance, recovery/load testing and independent penetration testing.
+| Question | Document |
+|---|---|
+| Canonical pre-hospital bundle | [Pre-Hospital Handoff](docs/PRE_HOSPITAL_HANDOFF.md) |
+| Current score + remaining gaps | [Current Status & Gaps](docs/CURRENT_STATUS_AND_GAPS.md) |
+| Recare overlap / collaboration | [Recare Collaboration Map](docs/RECARE_COLLABORATION_MAP.md) |
+| Recare runnable agent work sample | [Recare Capstone](docs/RECARE_CAPSTONE.md) |
+| Hospital rollout | [Hospital Implementation Playbook](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md) |
+| Full logical architecture | [Reference Architecture V2](docs/ARCHITECTURE_V2.md) |
+| German public-sector model | [Government Reference Architecture](docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md) |
+| Germany → global strategy | [Global Interoperability Blueprint](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md) |
+| ISiK / TI / ePA / EHDS path | [National / EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) |
+| PHI / trust boundaries / flows | [Trust & Data Flow](docs/TRUST_AND_DATA_FLOW.md) |
+| Deployment patterns | [Deployment Patterns](docs/DEPLOYMENT_PATTERNS.md) |
+| Agent threat / authority model | [Agent Security Model](docs/AGENT_SECURITY_MODEL.md) |
+| Safety evidence | [Safety Case](docs/SAFETY_CASE.md) |
+| Assurance evidence | [Assurance Crosswalk](docs/ASSURANCE_CROSSWALK.md) |
+| Who owns which controls | [Responsibility Model](docs/RESPONSIBILITY_MODEL.md) |
+| Vendor-neutral procurement | [Procurement Requirements](docs/PROCUREMENT_REQUIREMENTS.md) |
+| Technical evidence index | [Technical Documentation Index](docs/TECHNICAL_DOCUMENTATION_INDEX.md) |
+| Durable decisions | [Architecture Decision Records](docs/adr/README.md) |
+| Machine-readable architecture | [`architecture/reference-architecture.json`](architecture/reference-architecture.json) |
 
 ---
 
-# Validation path
+# Validation ladder
 
 ```text
-synthetic clinician workflow test
+external engineering critique
         ↓
-paired clinician A/B evidence
+paired clinician synthetic evidence
         ↓
-actual workflow mapping + sponsor decision
+real workflow observation
         ↓
-IT / Datenschutz / security discovery
+hospital / KIS / LIS / security discovery
         ↓
-synthetic/deidentified KIS/LIS sandbox
+synthetic or deidentified integration sandbox
         ↓
-independent clinical/security/regulatory assurance
+independent clinical / privacy / security / regulatory review
         ↓
-shadow workflow study
+shadow workflow
         ↓
-limited live read-only pilot — only when gates allow it
+limited read-only pilot — only when gates permit
         ↓
-second hospital / different vendor
+second ward / vendor / hospital
 ```
 
-The next highest-value evidence is **real clinician behavior on synthetic cases**, followed by a de-identified integration sandbox. More synthetic feature breadth is currently less valuable than proving that CareOS actually removes search/call/window-switch work without reducing verification.
+**More synthetic feature breadth is no longer the highest-value next move.**
+
+The remaining uncertainties now require contact with reality.
 
 ---
 
-## Run locally
+# Run locally
 
 ```bash
 python -m venv .venv
@@ -326,12 +443,24 @@ Useful endpoints:
 - agent gate board: `http://127.0.0.1:8000/api/readiness/agents`
 - data-mode lock: `http://127.0.0.1:8000/api/readiness/data-mode`
 
+Recare capstone:
+
+```bash
+uvicorn app.recare_api:app --reload --port 8010
+```
+
+- health: `http://127.0.0.1:8010/health`
+- capabilities: `http://127.0.0.1:8010/api/capabilities`
+- eval suite: `http://127.0.0.1:8010/api/eval-suite`
+
 ---
 
-## Safety status
+# Safety status
 
 **Synthetic/public prototype only. Not for clinical use.**
 
-CareOS currently performs no production clinical writes, makes no autonomous diagnosis/treatment decisions, does not silently merge ambiguous patients, keeps source failure and uncertainty explicit, and refuses identifiable live-patient startup while its core assurance gates are incomplete.
+CareOS currently performs no production clinical writes, makes no autonomous diagnosis/treatment decisions, does not silently merge ambiguous patients, keeps source failure and uncertainty explicit, and refuses identifiable live-patient startup while core assurance gates are incomplete.
 
-README visuals are repository-rendered previews of the current synthetic interfaces, not literal clinical screenshots. See [`docs/screenshots/README_SCREENSHOTS_NOTE.md`](docs/screenshots/README_SCREENSHOTS_NOTE.md).
+README visuals elsewhere in the repository are synthetic previews, not clinical screenshots. See [`docs/screenshots/README_SCREENSHOTS_NOTE.md`](docs/screenshots/README_SCREENSHOTS_NOTE.md).
+
+> **Pre-hospital phase: complete enough to stop inventing and start learning from real users, integrations and implementation.**
