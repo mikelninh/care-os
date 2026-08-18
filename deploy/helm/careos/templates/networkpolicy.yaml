@@ -13,11 +13,11 @@ spec:
     - Egress
   ingress:
     - from:
-        - namespaceSelector: {}
+        - podSelector: {}
       ports:
         - protocol: TCP
           port: 8000
-  # Egress is intentionally empty here. A hospital-specific values/policy overlay must
-  # explicitly admit required FHIR/KIS/LIS, IdP, audit and approved model endpoints.
+  # Egress is intentionally empty. Hospital-specific overlays must explicitly admit
+  # only required KIS/LIS/FHIR, IdP, audit and approved provider destinations.
   egress: []
 {{- end }}
