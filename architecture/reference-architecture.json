@@ -1,12 +1,11 @@
 {
-  "schema_version": "1.2",
-  "architecture_version": "2.2",
-  "baseline_date": "2026-08-16",
+  "schema_version": "1.3",
+  "architecture_version": "2.3",
+  "baseline_date": "2026-08-18",
   "name": "CareOS Federated Clinical Context Layer",
   "reference_architecture_readiness": {
-    "score": 10,
-    "max_score": 10,
-    "meaning": "proposal-package completeness and architectural reviewability only; not production approval or clinical validation"
+    "state": "proposal-ready",
+    "meaning": "architecturally reviewable for serious discussion; not production approval, clinical validation or self-certification"
   },
   "production_claim": "not-production-ready",
   "live_patient_data_allowed": false,
@@ -28,8 +27,11 @@
     "single-use-agent-delegation",
     "read-write-capability-separation",
     "strong-patient-identity-before-auto-attach",
+    "explicit-cross-source-patient-identity",
     "same-patient-context-no-second-search",
     "composition-not-core-forks",
+    "adapter-maturity-is-machine-readable",
+    "hospital-upgrades-require-compatibility-preflight",
     "least-privilege-treatment-context",
     "deny-default-agent-egress",
     "fail-visible",
@@ -44,6 +46,8 @@
         "policy-and-config-schemas",
         "terminology-and-guideline-metadata",
         "connector-capability-definitions",
+        "adapter-compatibility-metadata",
+        "synthetic-conformance-suites",
         "agent-tool-capability-definitions",
         "non-phi-operational-metadata"
       ]
@@ -51,6 +55,7 @@
     "provider_data_plane": {
       "identifiable_clinical_processing": true,
       "components": [
+        "hospital-capability-manifest",
         "connector-gateway",
         "patient-and-encounter-identity",
         "clinical-truth-layer",
@@ -67,6 +72,7 @@
     }
   },
   "trust_contracts": {
+    "hospital_manifest": ["site", "source-system-role", "vendor-product-version", "interfaces", "secret-references-only", "patient-identity-strategy", "read-write-capability", "accountable-owners"],
     "connector": ["capabilities", "source-identity", "truth-envelope", "source-state", "version-and-time", "read-write-capability"],
     "clinical_fact": ["patient", "fact-type", "original-value", "source", "source-version", "evidence", "effective-time", "ingestion-time", "transformer-version", "trust-status", "review-state"],
     "access": ["user", "organisation", "role-scope", "patient", "encounter-or-treatment-context", "operation"],
@@ -77,6 +83,16 @@
     "failure": ["current", "stale", "unavailable", "unknown", "contradictory", "explicitly-negative"],
     "audit": ["actor", "organisation", "patient-reference", "data-category", "action", "time", "origin", "break-glass-context"],
     "agent_audit": ["human-delegator", "agent-and-version", "delegation", "execution", "patient-reference", "tool", "authorization-decision", "egress", "outcome"]
+  },
+  "adapter_maturity": {
+    "source": "architecture/adapter-catalog.json",
+    "fhir-r4-read": "implemented",
+    "isik-fhir-read": "validation-path",
+    "hl7v2": "contract-only",
+    "vendor-api": "contract-only",
+    "document-feed": "contract-only",
+    "ui-bridge": "contract-only",
+    "live-write": "unsupported-current-release"
   },
   "agent_operating_modes": {
     "synthetic": "implemented",
@@ -90,6 +106,17 @@
     "dedicated-provider-cloud-tenant",
     "federated-managed-service"
   ],
+  "self_install": {
+    "state": "synthetic-deidentified-scaffold",
+    "manifest": "deploy/hospital.example.json",
+    "cli": "scripts/careos.py",
+    "docker_compose": "deploy/docker-compose.hospital.yml",
+    "helm": "deploy/helm/careos/",
+    "local_data_plane": "app/hospital_api.py",
+    "upgrade_preflight": "app/hospital_upgrade.py",
+    "live_self_service_proven": false,
+    "multi_hospital_repeatability_proven": false
+  },
   "national_eu_alignment": [
     "gematik-isik",
     "gematik-isip",
@@ -103,6 +130,9 @@
   ],
   "documents": {
     "canonical_architecture": "docs/ARCHITECTURE_V2.md",
+    "endgame": "docs/ENDGAME.md",
+    "hospital_self_install": "docs/HOSPITAL_SELF_INSTALL_PLATFORM.md",
+    "connector_sdk": "docs/CONNECTOR_SDK.md",
     "government_reference": "docs/GOVERNMENT_REFERENCE_ARCHITECTURE.md",
     "deployment_patterns": "docs/DEPLOYMENT_PATTERNS.md",
     "trust_and_data_flow": "docs/TRUST_AND_DATA_FLOW.md",
@@ -121,6 +151,10 @@
     "no-certification-claim",
     "no-datenschutz-approval-claim",
     "no-national-rollout-claim",
+    "no-zero-touch-real-hospital-install-claim",
+    "no-multi-hospital-repeatability-claim",
+    "no-generic-hl7-runtime-claim",
+    "no-ui-bridge-runtime-claim",
     "no-mdr-classification-claim",
     "no-ehds-conformity-claim",
     "no-live-clinical-safety-validation-claim",
