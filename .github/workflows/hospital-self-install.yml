@@ -9,12 +9,23 @@ on:
       - 'app/hospital_runtime.py'
       - 'app/hospital_api.py'
       - 'app/fhir_capability_discovery.py'
+      - 'app/patient_id_resolver.py'
+      - 'app/hospital_review_pack.py'
+      - 'app/rollout_control.py'
+      - 'app/compatibility_registry.py'
+      - 'app/connectors/hl7v2_connector.py'
       - 'architecture/adapter-catalog.json'
+      - 'compatibility/**'
       - 'scripts/careos.py'
       - 'scripts/fhir_discover.py'
       - 'scripts/hospital_preflight.py'
       - 'scripts/hospital_upgrade_preflight.py'
+      - 'scripts/generate_hospital_review_pack.py'
       - 'tests/test_hospital_*.py'
+      - 'tests/test_patient_id_resolver.py'
+      - 'tests/test_rollout_control.py'
+      - 'tests/test_compatibility_registry.py'
+      - 'tests/test_hl7v2_connector.py'
       - 'tests/test_fhir_capability_discovery.py'
       - 'tests/test_adapter_catalog.py'
       - 'deploy/hospital.example.json'
@@ -32,12 +43,23 @@ on:
       - 'app/hospital_runtime.py'
       - 'app/hospital_api.py'
       - 'app/fhir_capability_discovery.py'
+      - 'app/patient_id_resolver.py'
+      - 'app/hospital_review_pack.py'
+      - 'app/rollout_control.py'
+      - 'app/compatibility_registry.py'
+      - 'app/connectors/hl7v2_connector.py'
       - 'architecture/adapter-catalog.json'
+      - 'compatibility/**'
       - 'scripts/careos.py'
       - 'scripts/fhir_discover.py'
       - 'scripts/hospital_preflight.py'
       - 'scripts/hospital_upgrade_preflight.py'
+      - 'scripts/generate_hospital_review_pack.py'
       - 'tests/test_hospital_*.py'
+      - 'tests/test_patient_id_resolver.py'
+      - 'tests/test_rollout_control.py'
+      - 'tests/test_compatibility_registry.py'
+      - 'tests/test_hl7v2_connector.py'
       - 'tests/test_fhir_capability_discovery.py'
       - 'tests/test_adapter_catalog.py'
       - 'deploy/hospital.example.json'
@@ -64,18 +86,25 @@ jobs:
           python-version: '3.12.13'
       - run: python -m pip install --upgrade pip
       - run: pip install --requirement requirements.lock
-      - name: Test adapter, discovery, runtime, upgrade and deployment contracts
+      - name: Test hospital platform contracts
         run: >-
           pytest -q
           tests/test_hospital_install.py
           tests/test_hospital_upgrade.py
           tests/test_hospital_runtime.py
           tests/test_hospital_api.py
+          tests/test_patient_id_resolver.py
+          tests/test_hospital_review_pack.py
+          tests/test_rollout_control.py
+          tests/test_compatibility_registry.py
+          tests/test_hl7v2_connector.py
           tests/test_fhir_capability_discovery.py
           tests/test_adapter_catalog.py
           tests/test_deployment_policy.py
       - name: Generate example install plan
         run: python scripts/hospital_preflight.py deploy/hospital.example.json --json-out /tmp/hospital-install-plan.json
+      - name: Generate example hospital review pack
+        run: python scripts/generate_hospital_review_pack.py deploy/hospital.example.json --out-dir /tmp/hospital-review-pack
       - name: Validate one-command CLI parser
         run: python scripts/careos.py --help
       - name: Validate compose syntax
