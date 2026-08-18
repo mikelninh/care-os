@@ -1,6 +1,7 @@
 replicaCount: 2
 
 image:
+  # Override with a hospital-approved CareOS image reference/digest.
   repository: ghcr.io/mikelninh/care-os
   tag: pre-hospital
   pullPolicy: IfNotPresent
@@ -11,8 +12,61 @@ service:
 
 careos:
   dataMode: synthetic
-  fhirBaseUrl: http://fhir-sandbox.default.svc.cluster.local:8080/fhir
+  # Package-level synthetic guard remains loopback. Hospital source endpoints are
+  # resolved separately from the manifest + hospital secret environment.
+  fhirBaseUrl: http://localhost:8080/fhir
   externalDeidentifiedAck: false
+
+hospital:
+  # Use an existing hospital-controlled ConfigMap in real deployments, or leave
+  # blank to render the synthetic manifestJson below.
+  existingManifestConfigMap: ""
+  # Optional existing Secret whose keys match endpoint/credential env references
+  # named by the Hospital Capability Manifest. Secret values never belong here.
+  runtimeSecretName: ""
+  manifestJson: |-
+    {
+      "schema_version": "1",
+      "hospital_id": "K8S-SYNTHETIC-DEMO",
+      "country": "DE",
+      "site_name": "Kubernetes Synthetic Hospital",
+      "deployment_intent": "synthetic",
+      "sources": [
+        {
+          "source_id": "kis-main",
+          "role": "kis",
+          "vendor": "CHANGE-ME",
+          "product": "CHANGE-ME",
+          "version": "CHANGE-ME",
+          "interfaces": ["fhir-r4"],
+          "authentication_mode": "synthetic-none",
+          "endpoint_env": "KIS_FHIR_BASE_URL",
+          "credential_env": null,
+          "resources": ["Patient", "Encounter"],
+          "patient_identity_available": false,
+          "encounter_identity_available": false,
+          "source_resource_ids_available": false,
+          "source_versions_available": false,
+          "effective_time_available": false,
+          "lifecycle_state_available": false,
+          "incremental_refresh_available": false,
+          "read_supported": true,
+          "write_supported": false,
+          "ui_bridge_allowed": false
+        }
+      ],
+      "oidc_or_sso_available": false,
+      "trusted_patient_context_launch": false,
+      "patient_identity_strategy": "unknown",
+      "trusted_mpi_resolver_available": false,
+      "audit_destination_available": false,
+      "rollback_owner_named": false,
+      "security_owner_named": false,
+      "privacy_owner_named": false,
+      "clinical_owner_named": false,
+      "allow_ui_bridge_fallback": false,
+      "allow_any_write": false
+    }
 
 resources:
   requests:
@@ -36,8 +90,7 @@ containerSecurityContext:
 
 networkPolicy:
   enabled: true
-  # Real hospital deployments must explicitly declare source, identity, audit and
-  # model-provider egress. The default chart does not open arbitrary outbound access.
+  # Default chart denies egress. Real deployment overlays must explicitly admit only
+  # required KIS/LIS/FHIR, IdP, audit and approved provider destinations.
 
-# No credentials belong in this file. Use the hospital-approved secret store and
-# deployment-specific references. Live PHI remains release-gated in application code.
+# No credentials belong in this file. Live PHI remains release-gated in application code.
