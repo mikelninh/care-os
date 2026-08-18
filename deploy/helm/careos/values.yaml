@@ -1,0 +1,43 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/mikelninh/care-os
+  tag: pre-hospital
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+careos:
+  dataMode: synthetic
+  fhirBaseUrl: http://fhir-sandbox.default.svc.cluster.local:8080/fhir
+  externalDeidentifiedAck: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+networkPolicy:
+  enabled: true
+  # Real hospital deployments must explicitly declare source, identity, audit and
+  # model-provider egress. The default chart does not open arbitrary outbound access.
+
+# No credentials belong in this file. Use the hospital-approved secret store and
+# deployment-specific references. Live PHI remains release-gated in application code.
