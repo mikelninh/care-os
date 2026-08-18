@@ -15,6 +15,17 @@ def test_health_is_explicitly_synthetic_and_nonclinical():
     assert body["production_phi"] is False
 
 
+def test_golden_journey_api_runs_the_complete_synthetic_regression_story():
+    response = client.get("/api/journey/golden")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["all_passed"] is True
+    assert body["journey"]["recovery"]["before"]["mode"] == "recovery"
+    assert body["journey"]["recovery"]["after"]["mode"] == "normal"
+    assert body["journey"]["sla_state"] == "not-offered"
+    assert "not clinical validation" in body["boundary"]
+
+
 def test_patient_api_returns_source_linked_view_and_teach_back():
     response = client.get("/api/patient/synthetic")
     assert response.status_code == 200
