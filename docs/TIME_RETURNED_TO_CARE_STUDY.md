@@ -31,12 +31,14 @@ Product target to test: **15–20 minutes returned per eligible case**, not assu
 
 ## Design
 
-Use paired observations. Each participant gets the baseline and CareOS condition for the same workflow family with different synthetic case variants.
+Use paired observations. Each participant gets the baseline and CareOS condition for the same workflow family with **different matched synthetic case variants**.
 
-Counterbalance order where feasible:
+Counterbalance both order and variant assignment:
 
-- odd participant codes: baseline → CareOS;
-- even participant codes: CareOS → baseline.
+- odd participant codes: **baseline / case A → CareOS / case B**;
+- even participant codes: **CareOS / case A → baseline / case B**.
+
+This means both conditions receive both case variants across the study rather than confounding one interface with one case. The exported observation records the assigned `case_variant` and `order_index`; the aggregator rejects a pair if both observations use the same variant or do not use distinct order positions 1 and 2.
 
 Do not collect names. Use pseudonymous participant codes. Do not include real patient data or free-text clinical data in exported metrics.
 
@@ -44,6 +46,10 @@ Do not collect names. Use pseudonymous participant codes. Do not include real pa
 
 `app/time_returned_to_care.py` defines the machine-readable observation contract:
 
+- participant code;
+- workflow family;
+- synthetic case variant;
+- condition order index;
 - elapsed task seconds;
 - systems opened;
 - searches;
@@ -79,9 +85,21 @@ Do not highlight a directional aggregate for a role before:
 1. **≥5 complete safe pairs** for that role/workflow family;
 2. zero observed safety-stop events in the highlighted set;
 3. no detected verification collapse;
-4. individual-pair distribution remains visible, not only the average/median.
+4. at least one baseline-first and one CareOS-first pair in the highlighted set;
+5. every pair uses distinct matched case variants;
+6. individual-pair distribution remains visible, not only the average/median.
 
 This is a minimum threshold for a synthetic directional result, **not** a claim of clinical effectiveness.
+
+## Dry run before a real participant
+
+Before the first clinician session, complete one facilitator-only dry run using clearly synthetic dummy timings. Its purpose is only to verify:
+
+- the intended case variant appears for the participant/condition;
+- the displayed suggested order matches the exported `order_index`;
+- both observations export under the same workflow family;
+- JSON validates through `scripts/aggregate_time_returned_to_care.py`;
+- the dry-run observations are deleted and are **never counted as participant evidence**.
 
 ## Aggregation
 
@@ -89,7 +107,7 @@ This is a minimum threshold for a synthetic directional result, **not** a claim 
 python scripts/aggregate_time_returned_to_care.py study-export.json --json-out report.json
 ```
 
-The aggregator refuses to mark a role aggregate publishable when the minimum pair threshold or safety gate is not met.
+The aggregator refuses to mark a role aggregate publishable when the minimum pair threshold, safety gate or counterbalance gate is not met.
 
 ## What happens after a synthetic result
 
