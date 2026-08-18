@@ -15,13 +15,17 @@ def test_health_contract_is_synthetic_only():
     assert body["production_write_back"] is False
 
 
-def test_capabilities_expose_model_gateway_without_claiming_live_use():
+def test_capabilities_expose_model_workers_without_claiming_live_use():
     response = client.get("/api/capabilities")
     assert response.status_code == 200
     body = response.json()
     assert body["deterministic_worker_available"] is True
+    assert set(body["worker_modes"]) == {"deterministic", "external_model", "openai_responses"}
     assert body["external_model_contract"]["live_modes_allowed"] is False
     assert body["external_model_contract"]["retention_or_training_allowed"] is False
+    assert body["openai_responses_contract"]["live_modes_allowed"] is False
+    assert body["openai_responses_contract"]["store"] is False
+    assert body["openai_responses_contract"]["model_is_authority"] is False
 
 
 def test_run_endpoint_returns_trace_grounding_and_evals():
@@ -56,3 +60,10 @@ def test_external_model_mode_fails_closed_when_not_configured(monkeypatch):
     response = client.post("/api/run", json={"scenario": "happy_path", "worker_mode": "external_model"})
     assert response.status_code == 503
     assert "external model worker not configured" in response.json()["detail"]
+
+
+def test_openai_responses_mode_fails_closed_when_key_not_configured(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    response = client.post("/api/run", json={"scenario": "happy_path", "worker_mode": "openai_responses"})
+    assert response.status_code == 503
+    assert "OpenAI Responses worker not configured" in response.json()["detail"]
