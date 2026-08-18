@@ -17,9 +17,10 @@ from .agent_runtime import AgentGateway
 from .agent_tool_proxy import AgentToolProxy
 from .agent_tools import synthetic_sjk_registry
 from .agent_worker import AgentDraft, bind_tool_proposal, validate_low_consequence_draft
+from .openai_responses_worker import OpenAIResponsesReasoningWorker
 
 Scenario = Literal["happy_path", "wrong_patient", "prompt_injection", "source_unavailable", "stale_result", "unauthorised_write"]
-WorkerMode = Literal["deterministic", "external_model"]
+WorkerMode = Literal["deterministic", "external_model", "openai_responses"]
 
 
 class CapstoneRunRequest(BaseModel):
@@ -83,19 +84,29 @@ SYNTHETIC_FACTS = [
 
 
 def capstone_capabilities() -> dict[str, object]:
-    configured = bool(os.getenv("CAREOS_MODEL_ENDPOINT") and os.getenv("CAREOS_MODEL_ID") and os.getenv("CAREOS_MODEL_VERSION"))
+    generic_configured = bool(os.getenv("CAREOS_MODEL_ENDPOINT") and os.getenv("CAREOS_MODEL_ID") and os.getenv("CAREOS_MODEL_VERSION"))
+    openai_configured = bool(os.getenv("OPENAI_API_KEY"))
     return {
         "public_data_mode": "synthetic-only",
         "live_identifiable_phi_allowed": False,
         "consequential_actions_enabled": False,
         "deterministic_worker_available": True,
-        "external_model_gateway_configured": configured,
+        "external_model_gateway_configured": generic_configured,
+        "openai_responses_worker_configured": openai_configured,
+        "worker_modes": ["deterministic", "external_model", "openai_responses"],
         "external_model_contract": {
             "transport": "HTTPS JSON",
             "request": "{kind, model, input}",
             "response": "schema-constrained proposals or draft",
             "retention_or_training_allowed": False,
             "live_modes_allowed": False,
+        },
+        "openai_responses_contract": {
+            "endpoint": "https://api.openai.com/v1/responses",
+            "structured_outputs": True,
+            "store": False,
+            "live_modes_allowed": False,
+            "model_is_authority": False,
         },
     }
 
@@ -122,9 +133,25 @@ def _external_worker():
     return HttpJsonReasoningWorker(policy=policy, mode=AgentOperatingMode.SYNTHETIC, client=httpx.Client(headers=headers))
 
 
+def _openai_worker():
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("OpenAI Responses worker not configured: set OPENAI_API_KEY")
+    model_id = os.getenv("CAREOS_OPENAI_MODEL", "gpt-5.6").strip()
+    model_version = os.getenv("CAREOS_OPENAI_MODEL_VERSION", model_id).strip()
+    return OpenAIResponsesReasoningWorker(
+        api_key=api_key,
+        model_id=model_id,
+        model_version=model_version,
+        mode=AgentOperatingMode.SYNTHETIC,
+    )
+
+
 def _worker(request: CapstoneRunRequest):
     if request.worker_mode == "external_model":
         return _external_worker()
+    if request.worker_mode == "openai_responses":
+        return _openai_worker()
     if request.scenario in {"prompt_injection", "unauthorised_write"}:
         return CompromisedSyntheticWorker()
     return SafeSyntheticWorker()
@@ -252,12 +279,26 @@ def run_capstone(request: CapstoneRunRequest) -> CapstoneRunResponse:
     evaluation = _evaluate(request.scenario, facts, draft, blocked_reason, source_failure_visible)
     passed, total = evaluation.score()
     status = "degraded" if source_failure_visible else ("blocked" if blocked_reason else gateway.execution.status.value)
+    usage_totals = getattr(worker, "usage_totals", {}) or {}
+    request_ids = getattr(worker, "request_ids", []) or []
     return CapstoneRunResponse(
         run_id=gateway.execution.execution_id, scenario=request.scenario, worker_mode=request.worker_mode,
         model_id=worker.model_id, model_version=worker.model_version, execution_status=status, draft=draft, trace=trace, evaluation=evaluation,
-        metrics={"total_duration_ms":round((perf_counter()-started)*1000,2), "tool_calls_used":gateway.execution.tool_calls_used,
-                 "records_used":gateway.execution.records_used, "pages_used":gateway.execution.pages_used, "trace_events":len(trace),
-                 "eval_passed":passed, "eval_total":total, "external_model_configured":bool(capstone_capabilities()["external_model_gateway_configured"])},
+        metrics={
+            "total_duration_ms":round((perf_counter()-started)*1000,2),
+            "tool_calls_used":gateway.execution.tool_calls_used,
+            "records_used":gateway.execution.records_used,
+            "pages_used":gateway.execution.pages_used,
+            "trace_events":len(trace),
+            "eval_passed":passed,
+            "eval_total":total,
+            "external_model_gateway_configured":bool(capstone_capabilities()["external_model_gateway_configured"]),
+            "openai_responses_configured":bool(capstone_capabilities()["openai_responses_worker_configured"]),
+            "model_input_tokens":usage_totals.get("input_tokens"),
+            "model_output_tokens":usage_totals.get("output_tokens"),
+            "model_total_tokens":usage_totals.get("total_tokens"),
+            "provider_request_count":len(request_ids) if request_ids else None,
+        },
         boundary={"data":"synthetic-only", "identifiable_live_phi":False, "autonomous_clinical_decisions":False,
                   "production_write_back":False, "model_is_authority":False},
     )
