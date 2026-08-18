@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
 
 from .care_coordination import CareRequestState, synthetic_coordination_request, transition_request
+from .end_to_end_journey import run_golden_journey
 from .patient_view import default_teach_back, synthetic_patient_view
 from .resilience_drills import standard_recovery_drill
 from .service_operating_model import DEFAULT_SERVICE_CATALOG, CommitmentState
@@ -12,7 +13,7 @@ from .time_returned_to_care import ROLE_TARGETS, WorkflowObservation, build_time
 
 app = FastAPI(
     title="CareOS Healthcare Future Foundation",
-    version="0.2.0",
+    version="0.3.0",
     description="Synthetic/pre-hospital API for stakeholder, resilience, coordination and workflow-evidence contracts. Not for clinical use.",
 )
 
@@ -30,6 +31,16 @@ def health() -> dict:
         "mode": "synthetic-pre-hospital",
         "clinical_use": False,
         "production_phi": False,
+    }
+
+
+@app.get("/api/journey/golden")
+def golden_journey() -> dict:
+    result = run_golden_journey()
+    return {
+        "journey": result.model_dump(mode="json"),
+        "all_passed": result.all_passed,
+        "boundary": "synthetic end-to-end regression journey; not clinical validation or production evidence",
     }
 
 
