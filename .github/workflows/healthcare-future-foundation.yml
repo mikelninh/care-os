@@ -81,6 +81,7 @@ on:
 permissions:
   contents: read
 
+# CI-only marker: verify the exact current main state before Pavlo outreach.
 jobs:
   foundation:
     runs-on: ubuntu-24.04
