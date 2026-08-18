@@ -5,7 +5,7 @@ import pytest
 from app.agent_execution_store import InMemoryDelegationStore, DelegationState
 from app.agent_identity import RevocationSet, WorkloadIdentity
 from app.agent_policy import AgentDelegation, AgentOperation, AgentRequest
-from app.agent_runtime import AgentExecutionState, AgentGateway
+from app.agent_runtime import AgentExecutionState, AgentGateway, ExecutionStatus
 from app.agent_tool_proxy import AgentToolProxy
 from app.agent_tools import synthetic_sjk_registry
 
@@ -88,3 +88,16 @@ def test_tool_proxy_has_no_bypass_for_unregistered_or_cross_patient_request():
     bad = _request().model_copy(update={"patient_ref": "patient-2"})
     with pytest.raises(PermissionError):
         proxy.call(bad, now=NOW)
+
+
+def test_trusted_tool_failure_aborts_execution_instead_of_leaving_it_active():
+    gateway = AgentGateway(delegation=_delegation(), registry=synthetic_sjk_registry(), execution=AgentExecutionState(started_at=NOW))
+
+    def unavailable(_):
+        raise RuntimeError("LIS unavailable")
+
+    proxy = AgentToolProxy(gateway, {"read-clinical-context": unavailable})
+    with pytest.raises(RuntimeError, match="LIS unavailable"):
+        proxy.call(_request(), now=NOW)
+    assert gateway.execution.status == ExecutionStatus.ABORTED
+    assert gateway.execution.last_denial_reason == "trusted tool handler failed: RuntimeError"
