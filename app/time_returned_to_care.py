@@ -217,6 +217,7 @@ class WorkflowObservation(BaseModel):
 
     participant_code: str = Field(min_length=1)
     workflow_id: str = Field(min_length=1)
+    case_variant: str = Field(min_length=1)
     role: StakeholderRole
     condition: StudyCondition
     order_index: int = Field(ge=1, le=2)
@@ -240,6 +241,10 @@ class PairedWorkflowResult(BaseModel):
     participant_code: str
     workflow_id: str
     role: StakeholderRole
+    baseline_case_variant: str
+    careos_case_variant: str
+    baseline_order_index: int
+    careos_order_index: int
     baseline_seconds: int
     careos_seconds: int
     seconds_returned: int
@@ -262,6 +267,9 @@ class RoleAggregate(BaseModel):
     median_seconds_careos: float
     total_careos_safety_stops: int
     verification_decay_pairs: int
+    baseline_first_pairs: int
+    careos_first_pairs: int
+    order_balance_ok: bool
     result_publishable: bool
     directional_only: bool
 
@@ -280,6 +288,11 @@ def pair_observations(observations: list[WorkflowObservation]) -> list[PairedWor
             continue
         baseline = conditions[StudyCondition.BASELINE]
         careos = conditions[StudyCondition.CAREOS]
+        if {baseline.order_index, careos.order_index} != {1, 2}:
+            raise ValueError(f"paired observations must use distinct order_index values 1 and 2: {(participant_code, workflow_id, role)}")
+        if baseline.case_variant == careos.case_variant:
+            raise ValueError(f"paired observations must use different matched synthetic case variants: {(participant_code, workflow_id, role)}")
+
         careos_stops = set(careos.safety_stops)
         if careos.missed_pending_items > baseline.missed_pending_items:
             careos_stops.add(SafetyStop.MISSED_PENDING)
@@ -296,6 +309,10 @@ def pair_observations(observations: list[WorkflowObservation]) -> list[PairedWor
                 participant_code=participant_code,
                 workflow_id=workflow_id,
                 role=role,
+                baseline_case_variant=baseline.case_variant,
+                careos_case_variant=careos.case_variant,
+                baseline_order_index=baseline.order_index,
+                careos_order_index=careos.order_index,
                 baseline_seconds=baseline.task_seconds,
                 careos_seconds=careos.task_seconds,
                 seconds_returned=seconds_returned,
@@ -324,8 +341,12 @@ def aggregate_by_role(pairs: list[PairedWorkflowResult], *, minimum_pairs: int =
         verification_decay_pairs = sum(
             1 for pair in role_pairs if SafetyStop.VERIFICATION_COLLAPSE in pair.careos_safety_stops
         )
+        baseline_first_pairs = sum(1 for pair in role_pairs if pair.baseline_order_index == 1)
+        careos_first_pairs = sum(1 for pair in role_pairs if pair.careos_order_index == 1)
         enough_pairs = len(role_pairs) >= minimum_pairs
         safe = safety_stops == 0
+        order_balance_ok = baseline_first_pairs > 0 and careos_first_pairs > 0
+        publishable = enough_pairs and safe and order_balance_ok
         aggregates.append(
             RoleAggregate(
                 role=role,
@@ -335,8 +356,11 @@ def aggregate_by_role(pairs: list[PairedWorkflowResult], *, minimum_pairs: int =
                 median_seconds_careos=median(pair.careos_seconds for pair in role_pairs),
                 total_careos_safety_stops=safety_stops,
                 verification_decay_pairs=verification_decay_pairs,
-                result_publishable=enough_pairs and safe,
-                directional_only=not (enough_pairs and safe),
+                baseline_first_pairs=baseline_first_pairs,
+                careos_first_pairs=careos_first_pairs,
+                order_balance_ok=order_balance_ok,
+                result_publishable=publishable,
+                directional_only=not publishable,
             )
         )
     return aggregates
