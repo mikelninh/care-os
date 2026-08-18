@@ -35,6 +35,12 @@ class DeploymentIntent(str, Enum):
     CONTROLLED_WRITE = "controlled-write"
 
 
+class PatientIdentityStrategy(str, Enum):
+    SHARED_ENTERPRISE_ID = "shared-enterprise-id"
+    TRUSTED_MPI = "trusted-mpi"
+    UNKNOWN = "unknown"
+
+
 class SourceSystem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -92,6 +98,8 @@ class HospitalManifest(BaseModel):
 
     oidc_or_sso_available: bool = False
     trusted_patient_context_launch: bool = False
+    patient_identity_strategy: PatientIdentityStrategy = PatientIdentityStrategy.UNKNOWN
+    trusted_mpi_resolver_available: bool = False
     audit_destination_available: bool = False
     rollback_owner_named: bool = False
     security_owner_named: bool = False
@@ -102,9 +110,11 @@ class HospitalManifest(BaseModel):
     allow_any_write: bool = False
 
     @model_validator(mode="after")
-    def controlled_write_requires_explicit_opt_in(self) -> "HospitalManifest":
+    def validate_governed_identity_and_write(self) -> "HospitalManifest":
         if self.deployment_intent == DeploymentIntent.CONTROLLED_WRITE and not self.allow_any_write:
             raise ValueError("controlled-write planning requires allow_any_write=true")
+        if self.patient_identity_strategy == PatientIdentityStrategy.TRUSTED_MPI and not self.trusted_mpi_resolver_available:
+            raise ValueError("trusted-mpi strategy requires trusted_mpi_resolver_available=true")
         return self
 
 
@@ -150,9 +160,8 @@ READ_PRIORITY = (
 )
 
 
-# This catalog is deliberately about *CareOS implementation maturity*, not what a
-# hospital/vendor supports. Do not turn a standards label in a site manifest into a
-# claim that a working CareOS adapter exists.
+# CareOS implementation maturity only. Never infer runtime support merely because a
+# hospital declares that it exposes a standard/interface.
 ADAPTER_CATALOG: dict[InterfaceKind, dict[str, object]] = {
     InterfaceKind.ISIK_FHIR: {
         "adapter_id": "standard-isik-fhir",
@@ -195,7 +204,7 @@ ADAPTER_CATALOG: dict[InterfaceKind, dict[str, object]] = {
         "risk": "amber",
         "implementation_status": "contract-only",
         "runtime_available": False,
-        "rationale": "CareOS has document-processing research components but not a generic production source-feed connector contract implementation.",
+        "rationale": "CareOS has document-processing research components but not a generic production source-feed connector implementation.",
     },
     InterfaceKind.UI_BRIDGE: {
         "adapter_id": "controlled-ui-bridge",
@@ -241,8 +250,6 @@ def _select_write_adapter(source: SourceSystem, manifest: HospitalManifest) -> A
     if not (manifest.allow_any_write and source.write_supported):
         return None
 
-    # Write remains contract-only in the current CareOS release. We still identify the
-    # best future target interface so a hospital/reviewer can see the migration path.
     for interface in (
         InterfaceKind.ISIK_FHIR,
         InterfaceKind.FHIR_R4,
@@ -349,7 +356,7 @@ def build_hospital_install_plan(manifest: HospitalManifest) -> HospitalInstallPl
             ]
         )
 
-    global_checks = (
+    global_checks = [
         ("identity:sso", manifest.oidc_or_sso_available, "Hospital identity/SSO path identified."),
         ("identity:patient-context", manifest.trusted_patient_context_launch, "Trusted same-patient launch/context path identified."),
         ("ops:audit", manifest.audit_destination_available, "Audit destination identified."),
@@ -357,7 +364,17 @@ def build_hospital_install_plan(manifest: HospitalManifest) -> HospitalInstallPl
         ("governance:security-owner", manifest.security_owner_named, "Security owner named."),
         ("governance:privacy-owner", manifest.privacy_owner_named, "Privacy/DPO owner named."),
         ("governance:clinical-owner", manifest.clinical_owner_named, "Clinical owner named."),
-    )
+    ]
+
+    if len(manifest.sources) > 1:
+        if manifest.patient_identity_strategy == PatientIdentityStrategy.SHARED_ENTERPRISE_ID:
+            global_checks.append(("identity:cross-source-mapping", True, "Sources use one governed enterprise patient identifier."))
+        elif manifest.patient_identity_strategy == PatientIdentityStrategy.TRUSTED_MPI and manifest.trusted_mpi_resolver_available:
+            # Contract exists, runtime integration of a real hospital MPI is still external.
+            global_checks.append(("identity:cross-source-mapping", False, "Trusted MPI declared, but CareOS still requires a real governed resolver integration before multi-source runtime."))
+        else:
+            global_checks.append(("identity:cross-source-mapping", False, "No governed cross-source patient mapping; never send one source patient ID to every system by assumption."))
+
     for check_id, ok, message in global_checks:
         checks.append(PreflightCheck(id=check_id, status="pass" if ok else "block", message=message))
 
@@ -372,7 +389,7 @@ def build_hospital_install_plan(manifest: HospitalManifest) -> HospitalInstallPl
     base_ready = not blocking and all_sources_have_runtime and bool(read_selections)
     shadow_ready = base_ready
     copilot_ready = shadow_ready and manifest.trusted_patient_context_launch and manifest.audit_destination_available
-    controlled_write_ready = False  # explicitly unsupported by current release
+    controlled_write_ready = False
 
     next_steps: list[str] = []
     for check in blocking:
