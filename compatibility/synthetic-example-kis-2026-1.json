@@ -1,0 +1,30 @@
+{
+  "record_id": "synthetic-example-kis-2026-1-fhir",
+  "adapter_id": "standard-fhir-r4",
+  "vendor": "Example KIS Vendor",
+  "product": "Example KIS",
+  "tested_version": "2026.1",
+  "version_match_policy": "exact",
+  "compatible_versions": [],
+  "interface_profile": "FHIR R4 synthetic fixture",
+  "supported_resources": [
+    "Patient",
+    "Encounter",
+    "Condition",
+    "MedicationStatement",
+    "DocumentReference"
+  ],
+  "authentication_pattern": "bearer-token reference only; no credential stored",
+  "patient_identity_behavior": "synthetic shared enterprise patient identifier",
+  "encounter_identity_behavior": "synthetic Encounter reference available",
+  "paging_behavior": "synthetic fixture supports bounded paging",
+  "versioning_behavior": "resource version identifiers represented in fixture",
+  "lifecycle_behavior": "synthetic lifecycle/state fixtures only",
+  "known_deviations": [],
+  "conformance_suite_version": "careos-hospital-self-install-v1",
+  "conformance_result": "synthetic tests pass; no real vendor claim",
+  "evidence_class": "synthetic-only",
+  "tested_on": "2026-08-18",
+  "known_upgrade_regressions": [],
+  "synthetic_only": true
+}
