@@ -1,0 +1,81 @@
+name: healthcare-future-foundation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/time_returned_to_care.py'
+      - 'app/clinical_graph.py'
+      - 'app/artifact_invalidation.py'
+      - 'app/resilience_mode.py'
+      - 'app/resilience_drills.py'
+      - 'app/recovery_reconciliation.py'
+      - 'app/patient_view.py'
+      - 'app/service_operating_model.py'
+      - 'scripts/aggregate_time_returned_to_care.py'
+      - 'tests/test_time_returned_to_care.py'
+      - 'tests/test_clinical_graph.py'
+      - 'tests/test_artifact_invalidation.py'
+      - 'tests/test_resilience_mode.py'
+      - 'tests/test_resilience_drills.py'
+      - 'tests/test_recovery_reconciliation.py'
+      - 'tests/test_patient_view.py'
+      - 'tests/test_service_operating_model.py'
+      - 'docs/HEALTHCARE_FUTURE_MASTER_PLAN.md'
+      - 'docs/TIME_RETURNED_TO_CARE_STUDY.md'
+      - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
+      - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
+      - '.github/workflows/healthcare-future-foundation.yml'
+  pull_request:
+    paths:
+      - 'app/time_returned_to_care.py'
+      - 'app/clinical_graph.py'
+      - 'app/artifact_invalidation.py'
+      - 'app/resilience_mode.py'
+      - 'app/resilience_drills.py'
+      - 'app/recovery_reconciliation.py'
+      - 'app/patient_view.py'
+      - 'app/service_operating_model.py'
+      - 'scripts/aggregate_time_returned_to_care.py'
+      - 'tests/test_time_returned_to_care.py'
+      - 'tests/test_clinical_graph.py'
+      - 'tests/test_artifact_invalidation.py'
+      - 'tests/test_resilience_mode.py'
+      - 'tests/test_resilience_drills.py'
+      - 'tests/test_recovery_reconciliation.py'
+      - 'tests/test_patient_view.py'
+      - 'tests/test_service_operating_model.py'
+      - 'docs/HEALTHCARE_FUTURE_MASTER_PLAN.md'
+      - 'docs/TIME_RETURNED_TO_CARE_STUDY.md'
+      - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
+      - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
+      - '.github/workflows/healthcare-future-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12.13'
+      - run: python -m pip install --upgrade pip
+      - run: pip install --requirement requirements.lock
+      - name: Test healthcare future foundation
+        run: >-
+          pytest -q
+          tests/test_time_returned_to_care.py
+          tests/test_clinical_graph.py
+          tests/test_artifact_invalidation.py
+          tests/test_resilience_mode.py
+          tests/test_resilience_drills.py
+          tests/test_recovery_reconciliation.py
+          tests/test_patient_view.py
+          tests/test_service_operating_model.py
+      - name: Validate study aggregation command
+        run: python scripts/aggregate_time_returned_to_care.py --help
