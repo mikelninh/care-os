@@ -1,4 +1,5 @@
 from app.recare_capstone import CapstoneRunRequest, capstone_capabilities, run_capstone
+from app.recare_eval_suite import run_recare_eval_suite
 
 
 def test_recare_capstone_happy_path_is_grounded_and_review_required():
@@ -47,3 +48,10 @@ def test_capabilities_never_claim_live_phi_or_write_back():
     assert caps["public_data_mode"] == "synthetic-only"
     assert caps["live_identifiable_phi_allowed"] is False
     assert caps["consequential_actions_enabled"] is False
+
+
+def test_recare_containment_suite_treats_safe_blocking_as_success():
+    suite = run_recare_eval_suite()
+    assert suite["total"] == 6
+    assert suite["all_pass"] is True
+    assert all(item["pass"] for item in suite["results"])
