@@ -8,10 +8,12 @@ from .recare_eval_suite import run_recare_eval_suite
 
 app = FastAPI(
     title="CareOS Recare Capstone API",
-    version="1.1.0",
+    version="1.2.0",
     description=(
-        "Synthetic-only runnable proof for agent routing, deterministic tool authorization, "
-        "grounded drafting, observability and evaluation. Not for clinical use."
+        "Synthetic-only runnable proof for model routing, deterministic tool authorization, "
+        "grounded drafting, observability and evaluation. Supports deterministic, provider-neutral "
+        "and optional direct OpenAI Responses workers without moving authority into the model. "
+        "Not for clinical use."
     ),
 )
 
@@ -29,7 +31,7 @@ def health():
     return {
         "status": "ok",
         "service": "careos-recare-capstone",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "data_mode": "synthetic-only",
         "live_identifiable_phi_allowed": False,
         "production_write_back": False,
