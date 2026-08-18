@@ -107,6 +107,8 @@ jobs:
         run: python scripts/generate_hospital_review_pack.py deploy/hospital.example.json --out-dir /tmp/hospital-review-pack
       - name: Validate one-command CLI parser
         run: python scripts/careos.py --help
+      - name: Validate one-command review pack
+        run: python scripts/careos.py review-pack deploy/hospital.example.json --out-dir /tmp/careos-cli-review
       - name: Validate compose syntax
         run: docker compose -f deploy/docker-compose.hospital.yml config
       - name: Build hardened hospital image
