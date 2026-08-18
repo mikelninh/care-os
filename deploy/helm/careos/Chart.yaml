@@ -1,0 +1,9 @@
+apiVersion: v2
+name: careos
+version: 0.1.0
+appVersion: "pre-hospital"
+description: Federated CareOS hospital data-plane deployment scaffold
+home: https://github.com/mikelninh/care-os
+sources:
+  - https://github.com/mikelninh/care-os
+type: application
