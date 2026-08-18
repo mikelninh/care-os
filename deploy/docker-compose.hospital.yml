@@ -10,7 +10,7 @@ services:
       CAREOS_DATA_MODE: ${CAREOS_DATA_MODE:-synthetic}
       FHIR_BASE_URL: ${FHIR_BASE_URL:-http://localhost:8080/fhir}
     volumes:
-      - ./hospital.example.json:/etc/careos/hospital.json:ro
+      - ${CAREOS_HOSPITAL_MANIFEST_FILE:-./hospital.example.json}:/etc/careos/hospital.json:ro
     read_only: true
     tmpfs:
       - /tmp:size=16m
@@ -23,13 +23,18 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+    command: ["uvicorn", "app.hospital_api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+    env_file:
+      - ${CAREOS_HOSPITAL_ENV_FILE:-./hospital.env.example}
     environment:
+      CAREOS_HOSPITAL_MANIFEST: /etc/careos/hospital.json
       CAREOS_DATA_MODE: ${CAREOS_DATA_MODE:-synthetic}
       FHIR_BASE_URL: ${FHIR_BASE_URL:-http://localhost:8080/fhir}
+      CAREOS_EXTERNAL_DEIDENTIFIED_ACK: ${CAREOS_EXTERNAL_DEIDENTIFIED_ACK:-false}
     ports:
       - "${CAREOS_PORT:-8000}:8000"
     volumes:
-      - ./hospital.example.json:/etc/careos/hospital.json:ro
+      - ${CAREOS_HOSPITAL_MANIFEST_FILE:-./hospital.example.json}:/etc/careos/hospital.json:ro
     read_only: true
     tmpfs:
       - /tmp:size=64m
@@ -37,8 +42,15 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3); d=json.load(r); raise SystemExit(0 if r.status==200 and d.get('status') in {'ok','preflight-blocked'} else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     restart: unless-stopped
 
-# This compose file is an evaluation/self-install scaffold, not approval for live PHI.
-# The CareOS runtime itself refuses live-readonly while G0-G5 remain incomplete and
-# refuses transactional mode under the current release policy.
+# Evaluation/self-install scaffold only. It is not approval for live PHI.
+# Source endpoints/credentials belong in the hospital-controlled env/secret injection.
+# The CareOS runtime still refuses live-readonly while G0-G5 remain incomplete and
+# refuses live transactional/write-back mode under the current release policy.
