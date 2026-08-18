@@ -16,11 +16,9 @@ The first reliability question is not:
 
 It is:
 
-> **"When CareOS or one of its dependencies fails, can the hospital keep caring for patients safely, understand what degraded, and recover without ambiguity?"**
+> **"When CareOS or one dependency fails, can the hospital keep caring for patients safely, understand what degraded, and recover without ambiguity?"**
 
 CareOS is deliberately **not** the authoritative KIS/system of record.
-
-That creates a safer operating pattern:
 
 ```text
 CareOS healthy   → faster coherent workflow
@@ -30,116 +28,147 @@ CareOS down      → existing hospital source workflows remain available
 
 ---
 
-# 2. Production service tiers
+# 2. Service hierarchy
 
-## Tier 0 — synthetic/deidentified evaluation
+## C0 — provider source truth
 
-- business-hours support acceptable;
-- no live clinical dependency;
-- no PHI unless approved deidentified environment;
-- no consequential write.
+KIS/EHR/LIS/RIS/PACS and other provider-owned authoritative sources.
 
-## Tier 1 — read-only shadow
+CareOS must never make C0 depend on a shared CareOS PHI/control plane. If CareOS fails, the provider's authoritative/legacy workflow remains the fallback.
 
-- production-like monitoring;
-- no clinician dependency;
-- incident response during agreed pilot window;
-- source and identity failures measured.
+## C1 — CareOS clinical context
 
-## Tier 2 — clinician read/draft copilot
+Source-linked composition, lifecycle/freshness/provenance and review state.
 
-- 24/7 critical support path for participating workflows;
-- source fallback remains available;
-- rollback tested;
-- model outage does not remove core source-linked context.
+A C1 outage is serious because users may depend on this layer for workflow efficiency. The provider must still retain a fallback to C0.
 
-## Tier 3 — bounded execution
+## C2 — bounded agent/model assistance
 
-Only after much stronger evidence.
+Drafting, explanation, orchestration and other model-assisted workflows.
 
-- 24/7 Sev-0/Sev-1 operations;
-- write/read-after-write verification;
-- idempotency;
-- human confirmation rules;
-- target-system rollback/escalation;
-- independently reviewed incident plans.
+C2 is deliberately more disposable. A model/provider failure must not remove C0/C1 access.
+
+## C3 — administrative analytics
+
+Aggregate reporting and other non-critical management capabilities.
+
+`app/service_operating_model.py` makes the hierarchy machine-readable and rejects designs where core bedside truth/context depends on routine PHI in a shared control plane.
 
 ---
 
-# 3. Target service objectives
+# 3. Incident severity
 
-Targets below are starting proposals for future contractual design, not current commitments.
+## SEV0 — systemic safety/security
 
-## Core data-plane availability
+Examples:
 
-```text
-pilot target:           ≥99.9%
-mature production:      ≥99.95%
-critical mature paths:  evaluate ≥99.99% only where architecture/dependencies justify it
-```
+- wrong-patient isolation risk;
+- unauthorized action capability;
+- corrupted lifecycle/provenance semantics;
+- compromised release affecting multiple providers.
 
-The metric must separate:
+Response rule: **contain first**. Narrow kill scopes should allow model/agent/tool/adapter/workflow/site/release to be disabled independently where possible.
 
-```text
-CareOS process availability
-source-system availability
-identity-provider availability
-network availability
-model-provider availability
-```
+## SEV1 — critical clinical workflow unavailable
 
-A composite "green" metric that hides source outages is unacceptable.
+CareOS clinical context is unavailable or unsafe for use. The hospital is told to use the authoritative/legacy path.
 
-## Latency targets
+## SEV2 — degraded optional capability
 
-For a provider-local environment under normal load:
+Example: model/agent assistance unavailable while source-linked context remains available.
 
-```text
-patient-context shell / cached metadata     p95 < 1 s
-core source-linked context                  p95 < 2 s when local sources allow
-source inspection                           p95 < 2 s excluding upstream viewer
-agent source-grounded question              target p95 < 5 s
-longer document/voice drafts                progressive feedback; no frozen UI
-```
+## SEV3 — non-critical degradation
 
-Never sacrifice correctness/source-state reporting to hit latency.
+Administrative/non-clinical feature issue.
 
-## Incident response target
-
-Future staffed service model:
-
-```text
-SEV-0 patient-safety / broad outage     acknowledgement ≤ 5 min
-SEV-1 major production degradation      acknowledgement ≤ 15 min
-SEV-2 workflow impairment               acknowledgement ≤ 4 h
-SEV-3 low-risk defect                   next business-day triage
-```
-
-Clinical safety owner and hospital incident owner must have direct escalation paths for Sev-0/1.
+`classify_incident()` provides the first deterministic classification baseline; production incident command remains an organisational responsibility.
 
 ---
 
-# 4. Failure modes and required behavior
+# 4. Local hospital authority
 
-## CareOS application unavailable
+Every production deployment should preserve provider-local authority to:
+
+- disable a workflow;
+- disable an adapter;
+- disable agents/model use;
+- return to the legacy workflow;
+- hold/reject an upgrade;
+- inspect local health/audit evidence;
+- escalate a provider/vendor dependency.
+
+A central CareOS service must not be the only kill switch.
+
+---
+
+# 5. Upgrade contract
+
+```text
+pinned release candidate
+→ manifest compatibility check
+→ adapter/conformance suite
+→ security checks
+→ shadow/canary
+→ observe safety + reliability + workflow metrics
+→ explicit promote OR rollback
+```
+
+A vendor/interface version change is a reason to revalidate, not a reason to assume compatibility.
+
+---
+
+# 6. SLO / SLA philosophy
+
+Do **not** publish one vanity uptime number and do not invent contractual percentages before the operating organisation exists.
+
+Future commitments should be capability-specific and evidence-backed, for example:
+
+- provider-source connector availability;
+- freshness age for each clinical source/domain;
+- identity/auth availability;
+- audit durability/ingestion;
+- context API latency/availability;
+- bounded agent service availability;
+- incident acknowledgement/restoration windows by severity.
+
+Targets must come from real target-environment measurement, staffing, failure exercises, dependency behaviour and hospital requirements.
+
+`ServiceCommitment(CONTRACTED)` is deliberately invalid unless the service has:
+
+- a concrete target;
+- staffed on-call coverage;
+- target-environment exercise evidence;
+- evidence references.
+
+## Current commitment
+
+**24/7 SLA: NOT OFFERED.**
+
+That changes only after the team, observability, exercises, responsibilities and contracts can actually carry the dependency.
+
+---
+
+# 7. Failure behaviour
+
+## CareOS unavailable
 
 Required:
 
 - KIS/source workflows remain accessible;
 - no partial write left ambiguous;
-- status page/IT health endpoint identifies outage;
+- hospital IT can identify the outage;
 - last-known local display, if enabled, is unmistakably stale/read-only;
-- recovery does not require reconstructing authoritative truth from CareOS storage.
+- recovery rebuilds from authoritative sources rather than treating CareOS cache as truth.
 
-## One source unavailable
+## One clinical source unavailable
 
 Required:
 
-- other admitted facts may remain visible;
-- unavailable source named;
-- `complete=false`;
-- `may_assert_absence=false`;
-- dependent agent claims suppressed;
+- other source-linked context may remain visible;
+- unavailable source is named;
+- completeness becomes false/partial;
+- absence assertions are disabled;
+- dependent agent claims are suppressed;
 - no reassuring empty state.
 
 ## Identity unavailable
@@ -148,170 +177,104 @@ Required:
 
 - no patient-context guessing;
 - no fuzzy fallback matching;
-- launch blocks or returns user to source workflow;
-- cached identity mapping only under explicitly approved rules.
+- agent/consequential operations disabled;
+- legacy/source path remains the fallback.
 
-## Model provider unavailable
+## Model unavailable
 
 Required:
 
 - source-linked context still works;
 - deterministic features remain;
-- draft/agent features show unavailable state;
-- no silent swap to an unapproved model/provider.
+- agent/draft assistance shows unavailable state;
+- no silent swap to an unapproved provider/model.
 
-## Audit destination unavailable
+## Audit unavailable
 
-For consequential workflows:
-
-- actions requiring durable audit fail closed or enter a specifically approved bounded buffer;
-- no unlogged write/send path.
+Consequential/agent operations requiring durable audit fail closed. No unlogged clinical write/send path.
 
 ## KIS/vendor upgrade
 
 - compare last-known-good capability manifest;
-- conformance replay;
-- canary/shadow;
-- promote only after explicit evidence;
-- rollback path tested.
+- replay conformance;
+- run shadow/canary;
+- promote only after evidence;
+- retain rollback.
+
+`app/resilience_drills.py` provides the first executable synthetic failure/recovery contract.
 
 ---
 
-# 5. Release strategy
+# 8. Release strategy
 
-## No fleet-wide surprise updates
-
-Release rings:
+No fleet-wide surprise updates.
 
 ```text
-0. internal synthetic
-1. integration sandbox
-2. hospital shadow/canary
-3. one workflow / one ward
-4. hospital/site
-5. hospital group / wider fleet
+0 internal synthetic
+1 integration sandbox
+2 hospital shadow/canary
+3 one workflow / one ward
+4 hospital/site
+5 hospital group / wider fleet
 ```
 
 Promotion requires evidence from the previous ring.
 
-## Version everything consequential
+Version every consequential input:
 
-- container/build digest;
+- build/container;
 - adapter;
 - hospital capability profile;
 - terminology/mapping;
 - policy;
-- prompt;
-- model/provider;
-- agent definition/tool registry;
+- prompt/model/provider;
+- agent/tool registry;
 - workflow pack;
 - schema.
 
-## Never silently change
-
-- model;
-- clinical prompt behavior;
-- write/send capability;
-- mapping semantics;
-- patient identity strategy;
-- source prioritisation;
-- alert threshold with clinical consequence.
+Never silently change model, clinical prompt behaviour, action authority, mapping semantics, patient identity strategy or source prioritisation.
 
 ---
 
-# 6. Security patching target
+# 9. Hospital relationship cadence
 
-Future production process:
+## Pilot
 
-- continuously monitor dependencies/images;
-- emergency security lane for critical exploitable vulnerabilities;
-- validate patch against conformance/safety suite;
-- canary before fleet promotion unless active exploitation makes emergency process necessary;
-- publish customer-facing security advisory where appropriate;
-- maintain rollback artifact.
+Weekly implementation/value/safety review:
 
-"Patch fast" never means "skip the clinical regression suite".
+- incidents/friction;
+- Time Returned to Care;
+- safety stops;
+- source/adapter health;
+- user questions;
+- workflow changes;
+- regression items.
 
----
+For the first go-live days, increase support presence without turning clinicians into infrastructure debuggers.
 
-# 7. Disaster recovery
+## Stable production target
 
-CareOS should minimise authoritative state so recovery is simpler.
-
-## Clinical truth
-
-Systems of record remain authoritative.
-
-Provider-local context/cache is rebuildable from sources.
-
-## Configuration
-
-- signed/versioned deployment configuration;
-- encrypted backups;
-- tested restore.
-
-## Audit
-
-Audit is not disposable cache.
-
-- durable provider-approved storage;
-- tamper-evident controls;
-- replication/backup appropriate to deployment;
-- regular restore verification.
-
-## Target exercises
-
-At least annually in mature production:
-
-- regional/cloud/cluster failure;
-- IdP failure;
-- source outage;
-- compromised credential;
-- bad release rollback;
-- lost audit sink;
-- model-provider outage;
-- KIS upgrade incompatibility.
-
----
-
-# 8. Hospital relationship cadence
-
-## Implementation phase
-
-```text
-shared implementation channel
-named hospital IT owner
-named clinical champion
-named CareOS/partner integration owner
-weekly workflow review
-weekly safety/metrics review
-```
-
-For first go-live days, increase cadence to a live war-room-style channel without making clinicians responsible for debugging infrastructure.
-
-## Mature production
-
-### Monthly operations review
+Monthly operations review:
 
 - availability/degradation;
 - source reliability;
-- incidents;
-- support tickets;
+- incidents/near misses;
+- support burden;
 - adapter/version changes;
 - upcoming hospital upgrades;
 - security actions.
 
-### Quarterly value/clinical review
+Quarterly value + safety review:
 
 - Time Returned to Care;
-- adoption;
-- correction/rejection;
+- adoption/abandonment;
+- corrections/rejections;
 - safety stops;
-- verification behavior;
-- workflow friction;
-- next expansion decision.
+- verification behaviour;
+- clinician/nursing/patient feedback;
+- roadmap/expansion decisions.
 
-### Annual resilience review
+Annual resilience review where appropriate:
 
 - disaster recovery;
 - penetration/security review;
@@ -322,35 +285,35 @@ For first go-live days, increase cadence to a live war-room-style channel withou
 
 ---
 
-# 9. Support experience
+# 10. Support experience
 
-A nurse or doctor should not need to know whether an issue is "FHIR", "Kubernetes" or "LLM".
+A nurse or doctor should not need to know whether the problem is "FHIR", "Kubernetes" or "LLM".
 
-User-facing support should capture automatically, where privacy permits:
+Where privacy permits, support tooling should automatically capture non-clinical diagnostics such as:
 
 ```text
 hospital/site
 user role
-patient-context pseudonymous correlation ID
+pseudonymous correlation ID
 CareOS version
 adapter/source health
 workflow/module
-exact visible error state
+visible error state
 trace ID
 ```
 
 Never require a clinician to paste patient data into a support ticket.
 
-## Help layers
+Help layers:
 
 1. inline self-explanation;
-2. product-support agent with no clinical authority;
+2. product-support agent with **no clinical authority**;
 3. human support;
-4. clinical/integration/security escalation as appropriate.
+4. integration/security/clinical-safety escalation as appropriate.
 
 ---
 
-# 10. Status transparency
+# 11. Status transparency
 
 Hospital IT should always be able to answer:
 
@@ -358,65 +321,71 @@ Hospital IT should always be able to answer:
 is CareOS up?
 which sources are up?
 is identity working?
-which feature is degraded?
+which capability is degraded?
 which users/workflows are affected?
 what release is running?
 what changed?
 what is the rollback version?
 ```
 
-Clinicians should see only clinically useful degradation information, not infrastructure noise.
+Clinicians should see clinically useful degradation information, not infrastructure noise.
 
 Example:
 
-> **Microbiology source unavailable since 10:42. Other patient information is current. Pending/negative microbiology conclusions are disabled until the source recovers.**
-
-This is safer than a generic red "system error" banner.
+> **Microbiology source unavailable. Other admitted patient information remains available. Pending/negative microbiology conclusions are disabled until the source is verified again.**
 
 ---
 
-# 11. Dependency budget
+# 12. Post-incident learning
 
-Critical workflow value should not require every optional dependency to be healthy.
+Every generalisable incident or near miss should produce at least one of:
 
-Order of independence:
+- regression fixture;
+- conformance test;
+- policy rule;
+- adapter compatibility record;
+- degraded-state UX improvement;
+- runbook change.
 
-```text
-core source-linked context
-  should not require external model
-
-patient/source identity
-  should not depend on model
-
-source-state/freshness
-  should not depend on model
-
-authorization
-  should not depend on model
-
-audit policy
-  should not depend on model
-```
-
-The model is an enhancement layer, not the system's nervous system.
+If hospital #20 repeats a known failure from hospital #3, the infrastructure flywheel is not working.
 
 ---
 
-# 12. Long-term customer promise
+# 13. Disaster / downtime game days
+
+Before critical dependency, exercises should cover:
+
+- network loss;
+- KIS/FHIR/LIS loss;
+- stale source;
+- IdP loss;
+- audit loss;
+- model-provider loss;
+- control-plane loss;
+- bad release;
+- compromised agent/tool;
+- recovery with missed corrected results;
+- rollback under load.
+
+Synthetic drills are useful engineering evidence. A real hospital disaster/downtime exercise remains an external gate.
+
+---
+
+# 14. Long-term customer promise
 
 The relationship should feel like:
 
 > **"You can depend on the workflow, understand every important change, keep control of your data and systems, and leave without being trapped."**
 
-That means:
+That requires:
 
 - exportable configuration/evidence;
 - open interfaces;
 - no proprietary patient identity;
 - no hidden source transformations;
 - explicit compatibility records;
-- documented migration/offboarding path;
+- documented migration/offboarding;
 - hospital-owned kill authority;
-- stable old-version support windows defined contractually.
+- contractually defined support windows once production commitments exist.
 
 Critical infrastructure earns trust partly by making exit possible.
