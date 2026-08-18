@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from app.hospital_install import (
@@ -134,6 +134,17 @@ def cmd_doctor(args) -> int:
     return 2 if failures else 0
 
 
+def cmd_discover_fhir(args) -> int:
+    cmd = [sys.executable, str(ROOT / "scripts" / "fhir_discover.py"), args.manifest]
+    if args.source_id:
+        cmd.extend(["--source-id", args.source_id])
+    if args.env_file:
+        cmd.extend(["--env-file", args.env_file])
+    if args.json_out:
+        cmd.extend(["--json-out", args.json_out])
+    return subprocess.run(cmd, check=False).returncode
+
+
 def _compose_env(args) -> dict[str, str]:
     env = dict(os.environ)
     env["CAREOS_HOSPITAL_MANIFEST_FILE"] = str(Path(args.manifest).resolve())
@@ -204,6 +215,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("manifest")
     p.add_argument("--env-file")
     p.set_defaults(func=cmd_doctor)
+
+    p = sub.add_parser("discover-fhir", help="inspect permitted FHIR CapabilityStatements without rewriting the manifest")
+    p.add_argument("manifest")
+    p.add_argument("--source-id")
+    p.add_argument("--env-file")
+    p.add_argument("--json-out")
+    p.set_defaults(func=cmd_discover_fhir)
 
     p = sub.add_parser("up", help="start the synthetic/deidentified hospital-local data plane")
     p.add_argument("manifest")
