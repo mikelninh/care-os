@@ -98,6 +98,8 @@ def test_openai_worker_uses_strict_structured_output_and_store_false():
     assert "LIS:BC-1842:FINAL" in draft.source_fact_ids
     assert worker.last_request_id == "req_synthetic_123"
     assert worker.last_usage["total_tokens"] == 160
+    assert worker.usage_totals["total_tokens"] == 320
+    assert len(worker.request_ids) == 2
     assert len(seen) == 2
 
 
@@ -113,7 +115,7 @@ def test_openai_worker_refuses_live_mode_before_network():
         api_key="test-key",
         model_id="gpt-5.6",
         model_version="gpt-5.6",
-        mode=AgentOperatingMode.LIVE_READONLY,
+        mode=AgentOperatingMode.READ_ONLY_LIVE,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
