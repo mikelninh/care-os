@@ -18,6 +18,7 @@ from .hospital_install import (
     PatientIdentityStrategy,
     build_hospital_install_plan,
 )
+from .patient_id_resolver import PatientIdResolver, ResolutionState
 from .source_state import SourceAvailability
 
 
@@ -56,8 +57,6 @@ class BearerFhirClient(FhirClient):
             external_deidentified_ack=external_deidentified_ack,
         )
         if token:
-            # FhirClient owns this httpx client. Authentication belongs to the
-            # deployment adapter, never the source manifest or model layer.
             self._client.headers["Authorization"] = f"Bearer {token}"
 
 
@@ -146,9 +145,10 @@ def build_connectors_from_manifest(
     return connectors
 
 
-def _namespace_fact(source_id: str, fact: ClinicalFact) -> ClinicalFact:
+def _namespace_fact(source_id: str, fact: ClinicalFact, *, enterprise_patient_ref: str) -> ClinicalFact:
     clone = fact.model_copy(deep=True)
     clone.fact_id = f"{source_id}:{fact.fact_id}"
+    clone.patient_ref = enterprise_patient_ref
     if clone.supersedes_fact_id:
         clone.supersedes_fact_id = f"{source_id}:{clone.supersedes_fact_id}"
     clone.source.system = source_id
@@ -156,28 +156,69 @@ def _namespace_fact(source_id: str, fact: ClinicalFact) -> ClinicalFact:
 
 
 class HospitalRuntime:
-    def __init__(self, manifest: HospitalManifest, connectors: Mapping[str, ClinicalConnector]):
+    def __init__(
+        self,
+        manifest: HospitalManifest,
+        connectors: Mapping[str, ClinicalConnector],
+        *,
+        patient_id_resolver: PatientIdResolver | None = None,
+    ):
         self.manifest = manifest
         self.connectors = dict(connectors)
+        self.patient_id_resolver = patient_id_resolver
         if set(self.connectors) != {source.source_id for source in manifest.sources}:
             raise HospitalRuntimeError("runtime connector set must exactly match manifest sources")
-        if len(manifest.sources) > 1 and manifest.patient_identity_strategy != PatientIdentityStrategy.SHARED_ENTERPRISE_ID:
-            raise HospitalRuntimeError(
-                "current multi-source runtime requires a governed shared-enterprise-id; trusted MPI integration is not implemented yet"
-            )
+        if len(manifest.sources) > 1:
+            if manifest.patient_identity_strategy == PatientIdentityStrategy.UNKNOWN:
+                raise HospitalRuntimeError("multi-source runtime requires an explicit governed patient identity strategy")
+            if manifest.patient_identity_strategy == PatientIdentityStrategy.TRUSTED_MPI and patient_id_resolver is None:
+                raise HospitalRuntimeError("trusted-mpi strategy requires a deterministic PatientIdResolver")
 
     @classmethod
-    def from_environment(cls, manifest: HospitalManifest, *, env: Mapping[str, str] | None = None) -> "HospitalRuntime":
-        return cls(manifest, build_connectors_from_manifest(manifest, env=env))
+    def from_environment(
+        cls,
+        manifest: HospitalManifest,
+        *,
+        env: Mapping[str, str] | None = None,
+        patient_id_resolver: PatientIdResolver | None = None,
+    ) -> "HospitalRuntime":
+        return cls(
+            manifest,
+            build_connectors_from_manifest(manifest, env=env),
+            patient_id_resolver=patient_id_resolver,
+        )
+
+    def _source_patient_refs(self, enterprise_patient_ref: str) -> dict[str, str]:
+        source_ids = tuple(source.source_id for source in self.manifest.sources)
+        if len(source_ids) == 1 or self.manifest.patient_identity_strategy == PatientIdentityStrategy.SHARED_ENTERPRISE_ID:
+            return {source_id: enterprise_patient_ref for source_id in source_ids}
+
+        if self.manifest.patient_identity_strategy != PatientIdentityStrategy.TRUSTED_MPI or self.patient_id_resolver is None:
+            raise HospitalRuntimeError("patient identity strategy is not runnable by this hospital runtime")
+
+        resolution = self.patient_id_resolver.resolve(enterprise_patient_ref, source_ids)
+        if resolution.state != ResolutionState.RESOLVED:
+            raise HospitalRuntimeError(
+                f"patient identity resolution failed closed: {resolution.state.value}: {resolution.detail or 'no detail'}"
+            )
+        try:
+            return {
+                source_id: resolution.mapping_for(source_id).source_patient_ref
+                for source_id in source_ids
+            }
+        except ValueError as exc:
+            raise HospitalRuntimeError(f"patient identity resolution failed closed: {exc}") from exc
 
     def read_patient_context(self, patient_ref: str) -> HospitalContextResult:
         source_status: list[HospitalSourceStatus] = []
         facts: list[ClinicalFact] = []
         warnings: list[str] = []
         complete = True
+        source_patient_refs = self._source_patient_refs(patient_ref)
 
         for source in self.manifest.sources:
-            result: ConnectorReadResult = self.connectors[source.source_id].read_patient_truth(patient_ref)
+            source_patient_ref = source_patient_refs[source.source_id]
+            result: ConnectorReadResult = self.connectors[source.source_id].read_patient_truth(source_patient_ref)
             availability = result.source_state.evaluated_availability()
             source_status.append(
                 HospitalSourceStatus(
@@ -200,10 +241,12 @@ class HospitalRuntime:
                 if result.truth is None:
                     continue
 
+            if result.truth.patient_ref != source_patient_ref:
+                raise HospitalRuntimeError(f"{source.source_id}: connector returned a truth envelope for the wrong source patient")
             for fact in result.truth.facts:
-                if fact.patient_ref != patient_ref:
-                    raise HospitalRuntimeError(f"{source.source_id}: connector returned a fact for the wrong patient")
-                facts.append(_namespace_fact(source.source_id, fact))
+                if fact.patient_ref != source_patient_ref:
+                    raise HospitalRuntimeError(f"{source.source_id}: connector returned a fact for the wrong source patient")
+                facts.append(_namespace_fact(source.source_id, fact, enterprise_patient_ref=patient_ref))
 
         truth = TruthEnvelope(patient_ref=patient_ref, facts=facts) if facts else None
         return HospitalContextResult(
