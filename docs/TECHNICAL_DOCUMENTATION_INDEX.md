@@ -55,24 +55,26 @@ Baseline date: **2026-08-18**.
 | Document/model candidate boundary | `app/document_pipeline.py`, `app/extractors/model_schema.py` |
 | Temporal handling | temporal normalizer / truth contract tests |
 | Unit normalization | `app/unit_normalization.py` |
-| Contradictions/reconciliation | `app/contradictions.py`, reconciliation modules/tests |
+| Contradictions/reconciliation | reconciliation modules + `tests/test_reconciliation.py` |
 | Source state/freshness | `app/source_state.py` |
 | Portable clinical item / trust state | `app/global_interop.py` |
 | IPS-shaped portability preview | `app/portability.py` |
 
-## 4. External interfaces
+## 4. External interfaces and model boundaries
 
 | Interface | Evidence/status |
 |---|---|
 | FHIR | `app/fhir_adapter.py`, integration tests |
 | Connector contract | `app/connectors/base.py`, `docs/CONNECTOR_SDK.md` |
-| ISiK validation | `.github/workflows/isik5-validation.yml` + pinned validator/plugin evidence |
+| ISiK validation | `.github/workflows/isik5-validation.yml` + validator evidence |
 | Provider OIDC | `app/auth_oidc.py` |
 | Context launch | `app/context_launch.py` |
 | ePA/TI/KIM/ISiP | architecture only; see `docs/NATIONAL_INTEGRATION_MAP.md` |
 | Global portability API/contract | `app/global_interop.py`, global-interoperability tests/CI |
 | Recare capstone API | `app/recare_api.py` |
-| External-model synthetic/deidentified adapter | `app/agent_model_adapter.py` |
+| Provider-neutral model gateway | `app/agent_model_adapter.py` |
+| Direct OpenAI Responses adapter | `app/openai_responses_worker.py` — synthetic/deidentified only; `store:false`; structured output; no model authority |
+| Provider-backed evidence capture | `scripts/capture_recare_model_run.py` — requires a real credential/run; no mock may be relabelled as provider evidence |
 
 ## 5. Security and privacy
 
@@ -111,24 +113,26 @@ Baseline date: **2026-08-18**.
 
 | Evidence | Purpose |
 |---|---|
-| Unit/integration CI | regression evidence |
-| HAPI FHIR integration | real FHIR-server transport evidence |
+| Full pytest workflow | regression evidence |
+| HAPI FHIR integration | FHIR-server transport evidence |
 | ISiK validator CI | structural/profile validation evidence |
 | G1 synthetic benchmarks | extraction/reconciliation failure measurement |
 | Holdout #3 | frozen unseen-format benchmark |
 | safety failure-injection CI | fail-closed behavior |
 | platform red-team CI | cross-layer adversarial evidence |
 | agent red-team CI | compromised-worker containment |
-| Recare capstone CI | focused API/model-gateway/tool-boundary/containment proof |
+| Recare capstone CI | focused API/provider-adapter/model-gateway/tool-boundary/containment proof |
+| `tests/test_openai_responses_worker.py` | direct-provider request contract, structured output, no-live-mode and redirect-denial tests |
 | six-case Recare eval suite | happy path + wrong patient + injection + outage + stale + write denial |
 | global-interoperability CI | cross-border state/trust/translation regression evidence |
 | SJK synthetic team protocol | workflow/usability hypothesis test |
 | paired study local export + aggregator | `scripts/aggregate_recare_study.py` |
+| real provider-backed capstone run | **capture path implemented; evidence only after a real credential/run** |
 | future real shadow study | **not yet performed** |
 
 ## 8. Clinical truth performance evidence
 
-Current frozen Holdout #3 evidence is documented in `docs/BENCHMARK.md`.
+Current frozen synthetic evidence is documented in `docs/BENCHMARK.md`.
 
 The result demonstrates conservative safety behavior but insufficient recall/review burden for production. This is intentionally recorded as a blocker rather than hidden.
 
@@ -150,7 +154,7 @@ Current evidence:
 - `.github/workflows/global-interoperability.yml`;
 - IPS-shaped preview in `app/portability.py`.
 
-Current limitations remain explicit: the prototype is not yet validated as IPS-conformant and has no real cross-border issuer/trust-network verification.
+Limitations remain explicit: no claimed IPS conformance and no real cross-border issuer/trust-network verification.
 
 ## 10. Regulatory / quality documentation
 
@@ -172,23 +176,17 @@ Git history provides implementation history, but production-grade lifecycle evid
 
 - release identifier;
 - architecture version;
-- connector versions;
-- model/parser versions;
-- terminology versions;
-- policy versions;
+- connector/model/parser/terminology/policy versions;
 - safety-impact assessment;
 - validation evidence;
-- rollout decision;
-- rollback decision;
+- rollout / rollback decisions;
 - post-release incidents/corrections.
 
 `docs/CHANGE_CONTROL.md` defines the initial discipline.
 
 ## 12. EHDS-oriented documentation mapping
 
-Regulation (EU) 2025/327 Annex III includes technical-documentation expectations for EHR systems/components within scope, including system description, intended purpose, hardware/software interaction, versions, architecture, technical specifications, lifecycle changes, instructions, performance evaluation, standards/common specifications, verification/validation results, information sheet and declaration of conformity.
-
-CareOS maps these categories as follows **without claiming that CareOS is currently an EHR system in scope or that conformity has been established**:
+CareOS maintains an EHDS-oriented documentation map **without claiming that CareOS is currently an EHR system in scope or that conformity has been established**.
 
 | EHDS-style category | CareOS location |
 |---|---|
@@ -196,7 +194,7 @@ CareOS maps these categories as follows **without claiming that CareOS is curren
 | software interactions | Architecture V2 + integration map |
 | versions/update requirements | Git/release/change-control records |
 | architecture diagrams | Architecture V2 + trust/data-flow docs |
-| data structures/I/O | Clinical truth + connector contracts + global interop contract |
+| data structures/I/O | clinical truth + connector contracts + global interop contract |
 | lifecycle changes | change-control + release history |
 | instructions | deployment/runbook/implementation/pilot documentation |
 | performance evaluation | benchmark + pilot protocols + paired-study aggregator |
@@ -207,16 +205,15 @@ CareOS maps these categories as follows **without claiming that CareOS is curren
 
 ## 13. Missing evidence before live-data production
 
-This index intentionally exposes missing evidence:
-
 - real clinician paired-study results;
-- real hospital IdP and authorization mapping;
+- a captured real-provider synthetic model run if that proof is desired;
+- real hospital IdP/authorization mapping;
 - real KIS/LIS/vendor integration;
-- real terminology/local-code mapping governance;
+- real terminology/local-code governance;
 - production KMS/secrets/encryption evidence;
 - protected central audit/SIEM integration;
 - backup/restore RPO/RTO test;
-- real target-environment failure injection;
+- target-environment failure injection;
 - penetration test;
 - hospital-specific DSFA/AVV approvals;
 - regulatory/classification determination;
@@ -226,6 +223,6 @@ This index intentionally exposes missing evidence:
 - actual EU/global trust/issuer verification;
 - second independent hospital/vendor deployment.
 
-Those are release blockers or external evidence dependencies, not documentation omissions to be papered over.
+Those are release blockers or external evidence dependencies, not omissions to paper over.
 
-See `docs/CURRENT_STATUS_AND_GAPS.md` for the canonical current gap register.
+See `docs/CURRENT_STATUS_AND_GAPS.md` for the canonical gap register.
