@@ -232,11 +232,17 @@ Critique the system, evidence and assumptions — not the person.
 
 Healthcare brings together people from very different disciplines. Engineers will miss clinical context. Clinicians will not know every systems constraint. Security reviewers will deliberately break things. Designers will question the workflow. That tension is useful when it stays respectful.
 
-## Licensing note
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-The repository currently needs an explicit project license before we should call it fully open source or invite broad code reuse without ambiguity.
+## License and contribution terms
 
-Contributions are welcome for discussion and review, but **license selection is an explicit repository-level blocker we should resolve before scaling outside contributions.**
+CareOS is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE).
+
+Unless you explicitly state otherwise, a contribution intentionally submitted for inclusion in CareOS is provided under the same Apache-2.0 terms, consistent with section 5 of the license. You retain copyright in your original contribution.
+
+If your employer or another party owns rights in work you want to contribute, make sure you are authorised to submit it.
+
+Do not contribute third-party code, data, documents or assets unless their licence and provenance are compatible and clearly documented.
 
 ## Where to start
 
