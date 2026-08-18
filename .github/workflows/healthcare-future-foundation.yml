@@ -13,6 +13,7 @@ on:
       - 'app/patient_view.py'
       - 'app/care_coordination.py'
       - 'app/service_operating_model.py'
+      - 'app/end_to_end_journey.py'
       - 'app/future_api.py'
       - 'scripts/aggregate_time_returned_to_care.py'
       - 'tests/test_time_returned_to_care.py'
@@ -24,11 +25,13 @@ on:
       - 'tests/test_patient_view.py'
       - 'tests/test_care_coordination.py'
       - 'tests/test_service_operating_model.py'
+      - 'tests/test_end_to_end_journey.py'
       - 'tests/test_future_api.py'
       - 'docs/HEALTHCARE_FUTURE_MASTER_PLAN.md'
       - 'docs/TIME_RETURNED_TO_CARE_STUDY.md'
       - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
       - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
+      - 'docs/FOUNDATION_IMPLEMENTATION_STATUS.md'
       - '.github/workflows/healthcare-future-foundation.yml'
   pull_request:
     paths:
@@ -41,6 +44,7 @@ on:
       - 'app/patient_view.py'
       - 'app/care_coordination.py'
       - 'app/service_operating_model.py'
+      - 'app/end_to_end_journey.py'
       - 'app/future_api.py'
       - 'scripts/aggregate_time_returned_to_care.py'
       - 'tests/test_time_returned_to_care.py'
@@ -52,11 +56,13 @@ on:
       - 'tests/test_patient_view.py'
       - 'tests/test_care_coordination.py'
       - 'tests/test_service_operating_model.py'
+      - 'tests/test_end_to_end_journey.py'
       - 'tests/test_future_api.py'
       - 'docs/HEALTHCARE_FUTURE_MASTER_PLAN.md'
       - 'docs/TIME_RETURNED_TO_CARE_STUDY.md'
       - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
       - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
+      - 'docs/FOUNDATION_IMPLEMENTATION_STATUS.md'
       - '.github/workflows/healthcare-future-foundation.yml'
   workflow_dispatch:
 
@@ -86,6 +92,7 @@ jobs:
           tests/test_patient_view.py
           tests/test_care_coordination.py
           tests/test_service_operating_model.py
+          tests/test_end_to_end_journey.py
           tests/test_future_api.py
       - name: Validate study aggregation command
         run: python scripts/aggregate_time_returned_to_care.py --help
