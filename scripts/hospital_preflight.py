@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import json
+import sys
 from pathlib import Path
+
+# `python scripts/...` places the scripts directory, not the repository root, on
+# sys.path. Make the documented direct-entrypoint command work from a clean clone.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from app.hospital_install import HospitalManifest, build_hospital_install_plan
 
@@ -50,8 +56,6 @@ def main() -> int:
         out.write_text(plan.model_dump_json(indent=2) + "\n", encoding="utf-8")
         print(f"\nplan saved: {out}")
 
-    # Preflight can succeed for planning even when a live mode is intentionally
-    # release-gated. A malformed/unsafe manifest fails before this point.
     return 0
 
 
