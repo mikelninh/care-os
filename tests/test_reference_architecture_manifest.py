@@ -11,8 +11,8 @@ def _load():
 
 def test_reference_architecture_manifest_is_explicitly_not_production_clearance():
     data = _load()
-    assert data["reference_architecture_readiness"]["score"] == 10
-    assert data["reference_architecture_readiness"]["max_score"] == 10
+    assert data["reference_architecture_readiness"]["state"] == "proposal-ready"
+    assert "not production approval" in data["reference_architecture_readiness"]["meaning"]
     assert data["production_claim"] == "not-production-ready"
     assert data["live_patient_data_allowed"] is False
 
@@ -24,7 +24,7 @@ def test_careos_is_not_system_of_record_or_central_phi_control_plane():
     assert data["default_data_locality"] == "provider-data-plane"
 
 
-def test_read_write_and_model_safety_boundaries_are_machine_readable():
+def test_read_write_model_and_cross_source_identity_boundaries_are_machine_readable():
     data = _load()
     assert data["default_clinical_mode"] == "read-only"
     assert data["autonomous_clinical_writeback"] is False
@@ -33,12 +33,15 @@ def test_read_write_and_model_safety_boundaries_are_machine_readable():
     assert "read-write-capability-separation" in principles
     assert "mandatory-provenance" in principles
     assert "explicit-unknown-and-failure-state" in principles
+    assert "explicit-cross-source-patient-identity" in principles
+    assert "adapter-maturity-is-machine-readable" in principles
 
 
-def test_provider_data_plane_has_identity_truth_policy_and_audit():
+def test_provider_data_plane_has_install_identity_truth_policy_and_audit():
     data = _load()
     components = set(data["planes"]["provider_data_plane"]["components"])
     assert {
+        "hospital-capability-manifest",
         "connector-gateway",
         "patient-and-encounter-identity",
         "clinical-truth-layer",
@@ -47,11 +50,24 @@ def test_provider_data_plane_has_identity_truth_policy_and_audit():
     }.issubset(components)
 
 
+def test_self_install_manifest_does_not_claim_real_hospital_repeatability():
+    data = _load()
+    install = data["self_install"]
+    assert install["state"] == "synthetic-deidentified-scaffold"
+    assert install["live_self_service_proven"] is False
+    assert install["multi_hospital_repeatability_proven"] is False
+    assert data["adapter_maturity"]["hl7v2"] == "contract-only"
+    assert data["adapter_maturity"]["live-write"] == "unsupported-current-release"
+
+
 def test_every_key_reference_document_is_declared():
     data = _load()
     docs = data["documents"]
     expected = {
         "canonical_architecture",
+        "endgame",
+        "hospital_self_install",
+        "connector_sdk",
         "government_reference",
         "deployment_patterns",
         "trust_and_data_flow",
