@@ -26,7 +26,7 @@ class ReasoningWorker(Protocol):
 class SafeSyntheticWorker:
     """Deterministic test worker. No network, no PHI, no clinical recommendation."""
     model_id = "careos-synthetic-worker"
-    model_version = "1.0.0"
+    model_version = "1.1.0"
 
     def propose(self, item: WorkerInput) -> list[AgentToolProposal]:
         return [
@@ -41,8 +41,19 @@ class SafeSyntheticWorker:
 
     def draft(self, *, facts: list[dict], task: str) -> AgentDraft:
         sources = [str(f.get("source_ref")) for f in facts if f.get("source_ref")]
+        lines = []
+        for fact in facts:
+            source = str(fact.get("source_ref") or "source-unknown")
+            state = str(fact.get("state") or "source-linked")
+            value = fact.get("text") or fact.get("value") or fact.get("summary") or "source-linked item"
+            lines.append(f"- [{state}] {value} ({source})")
+        body = "\n".join(lines) if lines else "- No admitted source-linked facts."
         return AgentDraft(
-            text=f"Prepared {task} draft from {len(facts)} source-linked synthetic items.",
+            text=(
+                f"Human-review-required synthetic draft for: {task}\n\n"
+                f"{body}\n\n"
+                "This draft reports admitted source context only; it is not a treatment recommendation."
+            ),
             source_fact_ids=sources,
             review_required=True,
             contains_recommendation=False,
