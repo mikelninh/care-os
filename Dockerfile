@@ -17,6 +17,8 @@ RUN python -m pip install --upgrade pip \
 
 COPY --chown=careos:careos app ./app
 COPY --chown=careos:careos architecture ./architecture
+COPY --chown=careos:careos scripts ./scripts
+COPY --chown=careos:careos deploy ./deploy
 COPY --chown=careos:careos pilot_protocol.json ./pilot_protocol.json
 
 USER 10001:10001
