@@ -84,3 +84,5 @@ jobs:
           tests/test_future_api.py
       - name: Validate study aggregation command
         run: python scripts/aggregate_time_returned_to_care.py --help
+
+# Verification marker v2: includes the integrated Future API layer.
