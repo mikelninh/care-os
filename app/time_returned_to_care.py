@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from enum import Enum
+from statistics import median
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StakeholderRole(str, Enum):
@@ -192,3 +194,173 @@ def synthetic_inspiration_cases() -> list[WorkflowImpactMeasurement]:
             source_opens_after=3,
         ),
     ]
+
+
+class StudyCondition(str, Enum):
+    BASELINE = "baseline"
+    CAREOS = "careos"
+
+
+class SafetyStop(str, Enum):
+    WRONG_PATIENT = "wrong-patient"
+    MISSED_PENDING = "missed-pending"
+    UNSUPPORTED_CLAIM = "unsupported-claim"
+    STALE_AS_CURRENT = "stale-as-current"
+    DRAFT_AS_RECOMMENDATION = "draft-as-recommendation"
+    VERIFICATION_COLLAPSE = "verification-collapse"
+
+
+class WorkflowObservation(BaseModel):
+    """One bounded workflow observation with no names or free-text clinical data."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    participant_code: str = Field(min_length=1)
+    workflow_id: str = Field(min_length=1)
+    role: StakeholderRole
+    condition: StudyCondition
+    order_index: int = Field(ge=1, le=2)
+    task_seconds: int = Field(gt=0)
+    systems_opened: int = Field(ge=0)
+    searches: int = Field(ge=0)
+    context_switches: int = Field(ge=0)
+    copy_paste_actions: int = Field(ge=0)
+    clarification_contacts: int = Field(ge=0)
+    wrong_answers: int = Field(ge=0)
+    missed_pending_items: int = Field(ge=0)
+    source_opens: int = Field(ge=0)
+    corrections: int = Field(ge=0)
+    accepted_without_source_check: int = Field(ge=0)
+    cognitive_effort: int = Field(ge=1, le=5)
+    safety_stops: tuple[SafetyStop, ...] = ()
+    friction_tags: tuple[str, ...] = ()
+
+
+class PairedWorkflowResult(BaseModel):
+    participant_code: str
+    workflow_id: str
+    role: StakeholderRole
+    baseline_seconds: int
+    careos_seconds: int
+    seconds_returned: int
+    minutes_returned: float
+    baseline_source_opens: int
+    careos_source_opens: int
+    baseline_wrong_answers: int
+    careos_wrong_answers: int
+    baseline_missed_pending: int
+    careos_missed_pending: int
+    careos_safety_stops: tuple[SafetyStop, ...]
+    passes_safety_gate: bool
+
+
+class RoleAggregate(BaseModel):
+    role: StakeholderRole
+    pair_count: int
+    median_minutes_returned: float
+    median_seconds_baseline: float
+    median_seconds_careos: float
+    total_careos_safety_stops: int
+    verification_decay_pairs: int
+    result_publishable: bool
+    directional_only: bool
+
+
+def pair_observations(observations: list[WorkflowObservation]) -> list[PairedWorkflowResult]:
+    grouped: dict[tuple[str, str, StakeholderRole], dict[StudyCondition, WorkflowObservation]] = defaultdict(dict)
+    for observation in observations:
+        key = (observation.participant_code, observation.workflow_id, observation.role)
+        if observation.condition in grouped[key]:
+            raise ValueError(f"duplicate condition for pair: {key} / {observation.condition.value}")
+        grouped[key][observation.condition] = observation
+
+    pairs: list[PairedWorkflowResult] = []
+    for (participant_code, workflow_id, role), conditions in grouped.items():
+        if set(conditions) != {StudyCondition.BASELINE, StudyCondition.CAREOS}:
+            continue
+        baseline = conditions[StudyCondition.BASELINE]
+        careos = conditions[StudyCondition.CAREOS]
+        careos_stops = set(careos.safety_stops)
+        if careos.missed_pending_items > baseline.missed_pending_items:
+            careos_stops.add(SafetyStop.MISSED_PENDING)
+        verification_decay = (
+            baseline.source_opens > 0
+            and careos.source_opens == 0
+            and careos.accepted_without_source_check > baseline.accepted_without_source_check
+        )
+        if verification_decay:
+            careos_stops.add(SafetyStop.VERIFICATION_COLLAPSE)
+        seconds_returned = baseline.task_seconds - careos.task_seconds
+        pairs.append(
+            PairedWorkflowResult(
+                participant_code=participant_code,
+                workflow_id=workflow_id,
+                role=role,
+                baseline_seconds=baseline.task_seconds,
+                careos_seconds=careos.task_seconds,
+                seconds_returned=seconds_returned,
+                minutes_returned=round(seconds_returned / 60.0, 2),
+                baseline_source_opens=baseline.source_opens,
+                careos_source_opens=careos.source_opens,
+                baseline_wrong_answers=baseline.wrong_answers,
+                careos_wrong_answers=careos.wrong_answers,
+                baseline_missed_pending=baseline.missed_pending_items,
+                careos_missed_pending=careos.missed_pending_items,
+                careos_safety_stops=tuple(sorted(careos_stops, key=lambda item: item.value)),
+                passes_safety_gate=not careos_stops,
+            )
+        )
+    return sorted(pairs, key=lambda pair: (pair.role.value, pair.participant_code, pair.workflow_id))
+
+
+def aggregate_by_role(pairs: list[PairedWorkflowResult], *, minimum_pairs: int = 5) -> list[RoleAggregate]:
+    grouped: dict[StakeholderRole, list[PairedWorkflowResult]] = defaultdict(list)
+    for pair in pairs:
+        grouped[pair.role].append(pair)
+
+    aggregates: list[RoleAggregate] = []
+    for role, role_pairs in sorted(grouped.items(), key=lambda item: item[0].value):
+        safety_stops = sum(len(pair.careos_safety_stops) for pair in role_pairs)
+        verification_decay_pairs = sum(
+            1 for pair in role_pairs if SafetyStop.VERIFICATION_COLLAPSE in pair.careos_safety_stops
+        )
+        enough_pairs = len(role_pairs) >= minimum_pairs
+        safe = safety_stops == 0
+        aggregates.append(
+            RoleAggregate(
+                role=role,
+                pair_count=len(role_pairs),
+                median_minutes_returned=round(median(pair.minutes_returned for pair in role_pairs), 2),
+                median_seconds_baseline=median(pair.baseline_seconds for pair in role_pairs),
+                median_seconds_careos=median(pair.careos_seconds for pair in role_pairs),
+                total_careos_safety_stops=safety_stops,
+                verification_decay_pairs=verification_decay_pairs,
+                result_publishable=enough_pairs and safe,
+                directional_only=not (enough_pairs and safe),
+            )
+        )
+    return aggregates
+
+
+class TimeBackReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    observations: list[WorkflowObservation]
+    pairs: list[PairedWorkflowResult]
+    aggregates: list[RoleAggregate]
+    clinical_efficacy_claim: bool = False
+
+    @model_validator(mode="after")
+    def never_claim_clinical_efficacy(self) -> "TimeBackReport":
+        if self.clinical_efficacy_claim:
+            raise ValueError("Time Returned to Care is workflow evidence, not clinical efficacy validation")
+        return self
+
+
+def build_time_back_report(observations: list[WorkflowObservation], *, minimum_pairs: int = 5) -> TimeBackReport:
+    pairs = pair_observations(observations)
+    return TimeBackReport(
+        observations=observations,
+        pairs=pairs,
+        aggregates=aggregate_by_role(pairs, minimum_pairs=minimum_pairs),
+    )
