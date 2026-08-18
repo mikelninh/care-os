@@ -79,3 +79,5 @@ jobs:
           tests/test_service_operating_model.py
       - name: Validate study aggregation command
         run: python scripts/aggregate_time_returned_to_care.py --help
+
+# Verification marker: run the complete current master-foundation slice on a PR merge ref.
