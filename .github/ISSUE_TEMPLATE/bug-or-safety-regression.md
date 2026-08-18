@@ -1,7 +1,7 @@
 ---
 name: Bug or safety regression
 description: Report a reproducible synthetic failure or unsafe state
- title: "[bug] "
+title: "[bug] "
 labels: []
 assignees: []
 ---
