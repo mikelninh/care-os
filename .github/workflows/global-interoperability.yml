@@ -1,0 +1,49 @@
+name: global-interoperability
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/global_interop.py'
+      - 'app/global_packs.py'
+      - 'app/portability.py'
+      - 'tests/test_global_interop.py'
+      - 'tests/test_v9.py'
+      - 'docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md'
+      - '.github/workflows/global-interoperability.yml'
+  pull_request:
+    paths:
+      - 'app/global_interop.py'
+      - 'app/global_packs.py'
+      - 'app/portability.py'
+      - 'tests/test_global_interop.py'
+      - 'tests/test_v9.py'
+      - 'docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md'
+      - '.github/workflows/global-interoperability.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  portability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12.13'
+      - run: python -m pip install --upgrade pip
+      - name: Install locked dependencies
+        run: pip install --requirement requirements.lock
+      - name: Run global portability and pack contract tests
+        run: pytest -q tests/test_global_interop.py tests/test_v9.py
+      - name: Smoke-test Berlin to Hanoi safety-state preservation
+        run: >-
+          python -c "from app.global_interop import synthetic_cross_border_envelope, ClinicalState;
+          e=synthetic_cross_border_envelope(target_country='VN', presentation_language='vi');
+          s={x.item_id:x.clinical_state for x in e.items};
+          assert s['micro-1'] == ClinicalState.PENDING;
+          assert s['allergy-1'] == ClinicalState.CONTRADICTORY;
+          assert e.issuer.trust_state.value == 'unverified';
+          print(e.model_dump_json(indent=2))"
