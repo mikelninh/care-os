@@ -1,0 +1,75 @@
+{
+  "schema_version": "1",
+  "claim_boundary": "Implementation status describes CareOS code maturity only. It does not certify any hospital/vendor integration.",
+  "adapters": [
+    {
+      "id": "standard-isik-fhir",
+      "interface": "isik-fhir",
+      "family": "fhir",
+      "direction": ["read"],
+      "implementation_status": "validation-path",
+      "runtime_available": true,
+      "evidence": [
+        "app/connectors/fhir_connector.py",
+        "integration/isik5/",
+        ".github/workflows/isik5-validation.yml"
+      ],
+      "missing_evidence": ["real hospital/vendor ISiK runtime compatibility"]
+    },
+    {
+      "id": "standard-fhir-r4",
+      "interface": "fhir-r4",
+      "family": "fhir",
+      "direction": ["read"],
+      "implementation_status": "implemented",
+      "runtime_available": true,
+      "evidence": [
+        "app/fhir_adapter.py",
+        "app/connectors/fhir_connector.py",
+        "integration/docker-compose.fhir.yml"
+      ],
+      "missing_evidence": ["real hospital/vendor runtime compatibility"]
+    },
+    {
+      "id": "standard-hl7v2-read",
+      "interface": "hl7v2",
+      "family": "hl7v2",
+      "direction": ["read"],
+      "implementation_status": "contract-only",
+      "runtime_available": false,
+      "evidence": ["docs/CONNECTOR_SDK.md"],
+      "missing_evidence": ["generic HL7 v2 adapter implementation", "synthetic conformance suite", "real interface-engine evidence"]
+    },
+    {
+      "id": "vendor-api-configured",
+      "interface": "vendor-api",
+      "family": "vendor-api",
+      "direction": ["read"],
+      "implementation_status": "contract-only",
+      "runtime_available": false,
+      "evidence": ["docs/CONNECTOR_SDK.md"],
+      "missing_evidence": ["specific API adapter implementation and versioned conformance evidence"]
+    },
+    {
+      "id": "standard-document-ingest",
+      "interface": "document-feed",
+      "family": "documents",
+      "direction": ["read"],
+      "implementation_status": "contract-only",
+      "runtime_available": false,
+      "evidence": ["app/document_pipeline.py", "docs/CONNECTOR_SDK.md"],
+      "missing_evidence": ["generic source-feed connector implementation"]
+    },
+    {
+      "id": "controlled-ui-bridge",
+      "interface": "ui-bridge",
+      "family": "computer-use",
+      "direction": ["write"],
+      "implementation_status": "contract-only",
+      "runtime_available": false,
+      "evidence": ["docs/HOSPITAL_SELF_INSTALL_PLATFORM.md"],
+      "missing_evidence": ["CareOS UI bridge implementation", "screen/version compatibility tests", "read-after-write verification"]
+    }
+  ],
+  "write_policy": "No live transactional/write adapter is runnable in the current CareOS release."
+}
