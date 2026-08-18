@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contribution roadmap
+    url: https://github.com/mikelninh/care-os/blob/main/docs/COMMUNITY_ROADMAP.md
+    about: Pick a bounded problem by difficulty and domain.
+  - name: Security-sensitive finding
+    url: https://github.com/mikelninh/care-os/blob/main/SECURITY.md
+    about: Please do not publish sensitive exploit details in a public issue.
