@@ -1,5 +1,7 @@
 # Recare AI / ML Engineer capstone
 
+[![recare-capstone](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml)
+
 > Synthetic-only engineering work sample. No identifiable patient data. No clinical use. No production write-back.
 
 This capstone turns the CareOS agent-security architecture into one runnable, hiring-focused proof:
@@ -89,6 +91,46 @@ The deterministic suite is a regression test of orchestration and containment, n
 | unauthorised write | deny write/tool escalation |
 
 A blocked hostile run is a **pass** when blocking is the specified safe behavior.
+
+The dedicated `recare-capstone` workflow runs the focused API, model-adapter, orchestration, tool-boundary, containment and study-aggregation tests plus a six-case smoke test. It exists so this hiring proof can be reviewed independently from the larger CareOS suite.
+
+## Formative clinician evidence loop
+
+The paired synthetic clinician study is already available at:
+
+`https://mikelninh.github.io/careos/sjk/ab.html`
+
+It counterbalances case/order automatically and records only structured, PHI-free observations:
+
+- task time;
+- wrong answers;
+- missed pending items;
+- source opens;
+- corrections after source review;
+- acceptance without source checking;
+- pending-as-negative misunderstanding;
+- documented-therapy-as-recommendation misunderstanding;
+- agent-draft-as-truth confusion;
+- effort;
+- would-use-tomorrow.
+
+Results remain local in the browser until the observer exports anonymous JSON/CSV.
+
+After multiple complete paired sessions, aggregate the JSON exports with:
+
+```bash
+python scripts/aggregate_recare_study.py careos-ab-*.json \
+  --json-out recare-study-report.json \
+  --md-out recare-study-report.md
+```
+
+The aggregator treats safety as a gate, not a secondary metric. A faster agent condition does **not** receive a positive formative-success signal if it creates a hard safety misunderstanding or worsens the acceptance-without-source-checking indicator.
+
+Evidence flow:
+
+`synthetic clinician A/B -> local anonymous export -> paired aggregation -> safety gates -> publishable JSON/Markdown report`
+
+No study result is committed or displayed until real synthetic-case sessions actually occur.
 
 ## What remains real-world evidence
 
