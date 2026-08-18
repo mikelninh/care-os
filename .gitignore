@@ -10,6 +10,14 @@ venv/
 coverage.xml
 htmlcov/
 
+# Hospital-local installation material. The checked-in examples are explicitly
+# named *.example.*; real site files may contain sensitive infrastructure metadata
+# even when credentials themselves live elsewhere.
+hospital.json
+hospital.local.json
+deploy/hospital.env
+deploy/hospital.local.env
+
 # Local synthetic clinician-study exports. Even pseudonymous research records should
 # not be accidentally committed to the public repository.
 pilot/exports/
