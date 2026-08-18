@@ -6,7 +6,7 @@
 
 A clinician-first research architecture for turning fragmented hospital data into **source-linked, reviewable clinical context** for humans and bounded AI agents.
 
-[**▶ Recare work sample**](https://mikelninh.github.io/recare/) · [**▶ Clinician demo**](https://mikelninh.github.io/careos/sjk/) · [**Architecture**](docs/ARCHITECTURE_V2.md) · [**Current gaps**](docs/CURRENT_STATUS_AND_GAPS.md)
+[**▶ Recare work sample**](https://mikelninh.github.io/recare/) · [**▶ Clinician demo**](https://mikelninh.github.io/careos/sjk/) · [**Architecture**](docs/ARCHITECTURE_V2.md) · [**Contribute**](CONTRIBUTING.md)
 
 [![tests](https://github.com/mikelninh/care-os/actions/workflows/test.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/test.yml)
 [![recare-capstone](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml)
@@ -69,12 +69,40 @@ These distinctions are treated as part of clinical correctness, not UI decoratio
 | **Recare / AI engineering** | [90-second Recare work sample](https://mikelninh.github.io/recare/) → [runnable capstone](docs/RECARE_CAPSTONE.md) |
 | **Clinician** | [Synthetic Infectiology workflow](https://mikelninh.github.io/careos/sjk/) |
 | **Testing usefulness** | [Paired synthetic clinician A/B study](https://mikelninh.github.io/careos/sjk/ab.html) |
+| **Software engineer / designer / researcher** | [Contributing guide](CONTRIBUTING.md) → [community roadmap](docs/COMMUNITY_ROADMAP.md) |
 | **Hospital implementation** | [Zero-Drama Hospital Rollout](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md) |
 | **CIO / CISO / senior engineer** | [Reference Architecture V2](docs/ARCHITECTURE_V2.md) |
 | **Checking what is actually ready** | [Current Status & Gap Register](docs/CURRENT_STATUS_AND_GAPS.md) |
 | **German public sector / interoperability** | [National / EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) |
 | **EU / global interoperability** | [Germany → Global Health Interoperability Blueprint](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md) |
 | **Reviewing the whole project** | [Pre-Hospital Handoff](docs/PRE_HOSPITAL_HANDOFF.md) |
+
+---
+
+## Build with us
+
+> **We are all in this together.**
+
+Healthcare is too important and too interconnected for one person, company or discipline to solve alone. CareOS welcomes careful contributions from **software engineers, clinicians, designers, security researchers, interoperability specialists, data scientists, product thinkers and people with lived experience of broken healthcare workflows**.
+
+You do **not** need to understand the whole architecture before helping.
+
+Start with one bounded problem:
+
+- 🟢 accessibility, mobile UX, synthetic fixtures, documentation;
+- 🔵 clinician workflow, source inspection, trace tooling;
+- 🟣 FHIR / ISiK / IPS / terminology / cross-border interoperability;
+- 🔴 agent security, prompt injection, patient isolation, audit integrity;
+- 🟠 evals, recall-vs-review burden, clinician-study analysis;
+- 🌍 country packs, portability and low-bandwidth global health.
+
+The contribution pattern is intentionally simple:
+
+> **Find one piece of friction or one way the system can fail → make it better → show the evidence.**
+
+[**How to contribute →**](CONTRIBUTING.md) · [**Pick a problem →**](docs/COMMUNITY_ROADMAP.md) · [**Open issues →**](https://github.com/mikelninh/care-os/issues)
+
+**Important:** the repository still needs an explicit project license before we should call it fully open source or encourage broad downstream reuse. That decision is tracked transparently in [Issue #22](https://github.com/mikelninh/care-os/issues/22).
 
 ---
 
@@ -192,8 +220,6 @@ A hostile run that is correctly blocked counts as a **safety success**, not a fa
 
 CareOS is designed around existing infrastructure.
 
-**Germany**
-
 ```text
 provider systems
      ↓
@@ -201,19 +227,11 @@ FHIR / ISiK / HL7 / vendor adapters
      ↓
 trusted clinical context
      ↓
-ePA / TI / national ecosystem where appropriate
-```
-
-**EU / world**
-
-```text
-Germany
-  ↓
-EHDS / European exchange
-  ↓
-FHIR + International Patient Summary
-  ↓
-content trust + issuer trust + local policy
+Germany: ePA / TI where appropriate
+     ↓
+EU: EHDS / European exchange
+     ↓
+Global: FHIR / International Patient Summary + trust
 ```
 
 The portability model keeps three questions separate:
@@ -222,15 +240,13 @@ The portability model keeps three questions separate:
 2. **Trust** — who issued it and can that issuer be verified?
 3. **Policy** — may the receiving context use it for this purpose?
 
-A pending result in Berlin must remain **pending** after translation or cross-border exchange. A contradiction must remain a contradiction. Translation may change presentation — never source truth.
+A pending result in Berlin must remain **pending** after translation or cross-border exchange. Translation may change presentation — never source truth.
 
 [Germany → Global Interoperability Blueprint →](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md)
 
 ---
 
 ## Hospital rollout: zero drama
-
-The implementation philosophy is deliberately conservative:
 
 ```text
 observe real workflow
@@ -249,12 +265,10 @@ bounded execution only when earned
         ↓
 measure benefit + safety
         ↓
-expand to second ward / vendor / hospital
+second ward / vendor / hospital
 ```
 
-A rollout is not successful because software was installed.
-
-It is successful when clinicians spend less time hunting and re-entering information **without worse verification, corrections, missed pending work or safety outcomes**.
+A rollout is not successful because software was installed. It is successful when clinicians spend less time hunting and re-entering information **without worse verification, corrections, missed pending work or safety outcomes**.
 
 [Hospital Implementation Playbook →](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md)
 
@@ -264,19 +278,11 @@ It is successful when clinicians spend less time hunting and re-entering informa
 
 CareOS is **not** intended as a competing pitch to Recare.
 
-The public Recare product layer already covers much of the workflow space CareOS independently converged toward. The useful question is therefore:
+The useful question is:
 
 > **Which CareOS invariants, evals and implementation patterns survive contact with Recare's real integrations and hospitals — and make the existing platform stronger?**
 
-Potential contribution areas:
-
-- clinical-state semantics;
-- provenance / evidence contracts;
-- deterministic agent authorization;
-- adversarial evals and replay;
-- verification-preserving outcome measurement;
-- interoperability / portability thinking;
-- low-friction hospital rollout.
+Potential contribution areas include clinical-state semantics, provenance contracts, deterministic agent authorization, adversarial evals, verification-preserving outcomes, interoperability and low-friction rollout.
 
 [Recare × CareOS Collaboration Map →](docs/RECARE_COLLABORATION_MAP.md)
 
@@ -315,8 +321,6 @@ That second score should remain low until reality provides the evidence.
 
 ## What happens next
 
-More speculative features are now lower value than external evidence.
-
 ```text
 synthetic clinician sessions
         ↓
@@ -333,9 +337,7 @@ limited live read-only pilot — only when gates allow
 second hospital / different vendor
 ```
 
-The next hard problems require **clinicians, hospital systems, implementation teams and production constraints**.
-
-That is the point.
+More speculative features are now lower value than external evidence.
 
 ---
 
@@ -348,30 +350,13 @@ pip install -r requirements.lock
 uvicorn app.main:app --reload
 ```
 
-Useful endpoints:
-
-```text
-/                         clinician UI
-/docs                     API docs
-/api/readiness/gates      production gate board
-/api/readiness/agents     agent gate board
-/api/readiness/data-mode  live-data lock state
-```
-
 Recare capstone:
 
 ```bash
 uvicorn app.recare_api:app --reload --port 8010
 ```
 
-Then inspect:
-
-```text
-GET  /health
-GET  /api/capabilities
-GET  /api/eval-suite
-POST /api/run
-```
+Then inspect `GET /api/eval-suite` or `POST /api/run`.
 
 ---
 
