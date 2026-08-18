@@ -155,6 +155,25 @@ source-linked preliminary clinical fact
 
 `tests/test_end_to_end_journey.py` and `/api/journey/golden` make this a permanent regression surface. It explicitly keeps Time Returned to Care as a **target to test** and production SLA as **not offered**.
 
+### 13. Hospital-scale reuse foundation
+
+The next scaling layer is now implemented as explicit contracts rather than prose:
+
+- **trusted MPI/source-ID resolver contract** — deterministic, source-specific identifiers, freshness/namespace/resolver evidence, no fuzzy/model matching; multi-source runtime queries each source with its own ID and normalizes admitted facts back to the enterprise patient;
+- **generated hospital review pack** — `careos review-pack` creates non-secret JSON/Markdown/Mermaid with sources, adapters, auth modes, owner lanes, read/write boundary, blockers and data flow; it is support evidence, not DSFA/DPIA/security approval;
+- **evidence-gated rollout controller** — preflight → conformance → canary → promote/rollback; patient-identity errors, incomplete reads, unsupported claims, safety stops, operator stop or newly detected write authority block promotion/force rollback;
+- **vendor/product/version compatibility registry** — evidence classes `synthetic-only`, `real-sandbox`, `real-shadow`, `production-observed`; exact/explicit version matching; compatibility evidence never auto-approves rollout;
+- **narrow HL7 v2 read connector** — synthetic/deidentified ADT patient/encounter context + ORU/OBX observations, message-control deduplication, preliminary/final/corrected/cancelled state mapping and fail-visible wrong-patient/malformed behavior.
+
+Important boundaries:
+
+- real hospital MPI integration is **not** configured by the self-install CLI yet; `careos doctor/up` blocks `trusted-mpi` until an approved resolver adapter is injected;
+- the HL7 library connector is **not yet a production/self-install MLLP or interface-engine adapter** and the adapter catalog must not advertise a green HL7 self-install path yet;
+- compatibility metadata is evidence, never certification;
+- the canary state machine is not proof of zero-downtime production behavior.
+
+See `docs/HOSPITAL_SCALE_FOUNDATION.md` for the canonical scale boundary.
+
 ## Operations evidence assets
 
 - `docs/CRITICAL_SERVICE_OPERATING_MODEL.md`
@@ -167,6 +186,7 @@ These define the operating discipline. They do not prove a staffed 24/7 producti
 
 - Master ground truth: `https://mikelninh.github.io/careos/master.html`
 - Future-day stakeholder simulator: `https://mikelninh.github.io/careos/future.html`
+- Golden end-to-end journey: `https://mikelninh.github.io/careos/journey.html`
 - Hard questions / FAQ: `https://mikelninh.github.io/careos/faq.html`
 - Clinician workflow: `https://mikelninh.github.io/careos/sjk/`
 - Patient/family synthetic view: `https://mikelninh.github.io/careos/patient.html`
@@ -178,6 +198,8 @@ These define the operating discipline. They do not prove a staffed 24/7 producti
 - real clinician/nursing/patient paired-study results;
 - real hospital workflow archaeology;
 - real KIS/LIS/vendor sandbox;
+- real hospital MPI/EMPI and source-ID behavior;
+- real HL7 interface-engine/transport compatibility;
 - real IdP/role/treatment-context integration;
 - hospital Datenschutz/DSFA/AVV/security approval;
 - production KMS/SIEM/audit/backup/recovery evidence;
