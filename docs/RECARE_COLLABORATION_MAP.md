@@ -2,62 +2,52 @@
 
 Baseline: **18 August 2026**
 
-> This is a comparison of public product information with CareOS research. It is **not** a claim about Recare's private architecture, internal controls or missing capabilities.
+> Comparison of Recare's public product information with CareOS research. This is **not** a claim about Recare's private architecture, controls, implementation burden or missing capabilities.
 
 ## Executive conclusion
 
 CareOS should **not** be positioned as a competing product to Recare.
 
-Recare already operates the real product layer across hospital workflows: Patient Overview, extraction, document generation, voice documentation, agent workflows, discharge coordination, prediction and KIS transfer. Publicly, Recare says 1,000+ hospitals trust Recare Discharge; Patient Overview and Agent integrate with existing KIS via HL7; Recare states ISO 27001 certification and BSI C5 Type 2 compliance.
+Recare already operates the real hospital product/integration layer across Patient Overview, extraction, documents, voice, agents, discharge, prediction and KIS transfer. CareOS is a narrower **synthetic R&D / assurance / interoperability artifact**.
 
-CareOS is a much narrower **synthetic R&D / evaluation artifact**.
+The collaboration question is:
 
-The collaboration question is therefore:
-
-> **Which CareOS invariants, evals and implementation patterns survive contact with Recare's real product, integrations and hospitals — and where can they make the existing platform stronger?**
+> **Which CareOS invariants, evals and integration patterns survive contact with Recare's real hospitals — and where can they make an existing production platform easier to scale?**
 
 ---
 
-## 1. Public Recare product baseline
+## 1. Public Recare baseline
 
 | Recare capability | Publicly described role | CareOS relationship |
 |---|---|---|
-| **Patient Overview** | structured role-based patient profile combining KIS/Recare/document information | strong product overlap |
-| **Extract** | structured extraction from findings, PDFs, scans and free text | strong overlap with evidence/truth pipeline |
-| **Docs** | creates reviewable clinical documents | overlap with grounded drafting |
-| **Voice** | real-time documentation and form/document filling | complementary |
-| **Agent** | combines documentation, extraction, transfer and patient-context interaction | strong workflow overlap |
-| **Clinical decision support via Prof. Valmed** | medical questions can be routed to MDR-certified Prof. Valmed in patient context | **broader intended use than CareOS prototype** |
-| **Operator** | computer-use transfer of Recare-created data into KIS without a traditional interface project | complementary legacy bridge |
-| **Discharge** | digital post-acute/discharge coordination network | Recare production moat |
-| **Predict** | earlier identification of post-acute needs | complementary |
+| **Patient Overview** | structured patient profile combining KIS/Recare/document information | strong product overlap |
+| **Extract** | structured extraction from findings, PDFs, scans and free text | overlap with evidence/truth pipeline |
+| **Docs** | reviewable clinical documents | overlap with grounded drafting |
+| **Voice** | real-time documentation/form filling | complementary |
+| **Agent** | documentation, extraction, transfer and patient-context interaction | strong workflow overlap |
+| **Clinical decision support via Prof. Valmed** | regulated CDS integrated into patient-context workflows | broader intended use than CareOS capstone |
+| **Operator** | computer-use transfer of Recare-created information into existing KIS UI | important legacy bridge |
+| **Discharge / Predict** | production discharge network and post-acute workflows | Recare production moat |
 
-Public sources:
+Public references are kept in [Recare Integration Accelerator](RECARE_INTEGRATION_ACCELERATOR.md).
 
-- https://recareai.com/krankenhaus
-- https://recareai.com/krankenhaus/recare-patient-overview
-- https://recareai.com/krankenhaus/recare-agent
-- https://recareai.com/krankenhaus/recare-operator
+### Maturity boundary
 
-### Important maturity boundary
+**Recare:** production hospital platform, real integrations, security/operations and real implementation experience.
+
+**CareOS:** synthetic/pre-hospital research, blocked live PHI/write-back, narrow capstone, reference contracts and evaluation methods.
 
 Do not imply equivalence.
 
-**Recare:** production hospital platform, real integrations, real clinical workflows, certified security claims, operating organisation and broad product scope.
-
-**CareOS:** synthetic/pre-hospital research, deliberately blocked live PHI and write-back, narrow non-recommendation capstone, reference architecture and evaluation methods.
-
-CareOS's rule `documented therapy ≠ AI recommendation` is a boundary for **this prototype**, not a claim that Recare should never support regulated clinical decision support. Recare publicly describes clinical decision support through Prof. Valmed. The useful question is how authority, provenance, routing, approval and evaluation should remain inspectable across different risk classes.
-
 ---
 
-## 2. Where CareOS research may contribute
+# 2. Where CareOS research may contribute
 
-These are **investigation areas**, not assertions that Recare lacks them internally.
+These are investigation areas — **not assertions that Recare lacks them internally**.
 
-### 2.1 Clinical lifecycle semantics
+## 2.1 Clinical lifecycle semantics
 
-CareOS treats state as part of correctness:
+CareOS makes states explicit:
 
 ```text
 preliminary
@@ -71,59 +61,53 @@ contradictory
 unknown
 ```
 
-Questions worth asking in a real Recare system:
+Questions for production reality:
 
-- How is lifecycle state normalized across KIS/LIS/document sources?
-- How are preliminary → final → corrected transitions represented?
-- How does source unavailability propagate to downstream summaries/agents?
+- How are these normalized across KIS/LIS/document sources?
 - Can pending/unavailable ever collapse into apparent absence?
-- How are unresolved conflicts shown rather than silently resolved?
+- How do preliminary → final → corrected transitions propagate through Patient Overview / Agent / Docs?
+- How are unresolved conflicts presented?
 
-Potential contribution: reusable state contract + lifecycle regression fixtures.
+Potential contribution: reusable lifecycle contract + regression fixtures.
 
-### 2.2 Provenance / evidence contracts
+## 2.2 Provenance contracts
 
-A consequential fact should be able to retain:
+Consequential information should be able to retain:
 
 ```text
-value + original wording
-source organisation/system
-resource/document identifier
+original value / wording
+source organisation/system/resource
 clinical effective time
-recorded/ingestion time
+recorded / ingestion time
 version + freshness
 terminology mapping lineage
-evidence span for document-derived content
-review state
-contradiction/supersession state
+evidence span
+review / contradiction / supersession state
 ```
 
-Potential contribution: test whether provenance survives the full path from integration → Patient Overview → Agent/Docs → human approval.
+Potential contribution: test provenance survival from integration → context → agent/document → human approval.
 
-### 2.3 Agent authority and containment
+## 2.3 Agent authority + containment
 
-Recare publicly says Agent actions are shown for user approval before execution. CareOS asks a narrower systems question:
+CareOS assumes reasoning models and source documents can be hostile.
 
-> **If a reasoning model or source document becomes hostile, what can it still cause the platform to do?**
+Authority stays outside the model through:
 
-CareOS keeps authority outside the model through:
-
-- narrow delegation;
-- patient/encounter/task binding;
+- patient/encounter/task-bound delegation;
 - versioned tools;
 - operation/data allowlists;
 - budgets;
 - deny-default egress;
-- human-confirmation requirements;
+- human-confirmation rules;
 - revocation/kill path;
-- audit;
-- trusted Tool Proxy.
+- trusted Tool Proxy;
+- audit.
 
-Potential contribution: hostile-worker/capability-manifest patterns as a red-team and regression layer around real agent workflows.
+Potential contribution: hostile-worker and tool-capability regressions around real agent workflows.
 
-### 2.4 Agent observability and evals
+## 2.4 Agent observability + evals
 
-The Recare capstone turns failures into replayable scenarios:
+CareOS turns failures into replayable scenarios:
 
 - wrong patient;
 - prompt injection;
@@ -132,43 +116,91 @@ The Recare capstone turns failures into replayable scenarios:
 - unauthorised write;
 - pending/conflict retention.
 
-Potential contribution: combine model quality, tool correctness, authorization and user-visible degraded behaviour into one eval surface.
+Potential contribution: one eval surface across model, tool, authorization and user-visible degraded behavior.
 
-### 2.5 Time Returned to Care — safety gated
+## 2.5 Time Returned to Care — safety gated
 
-CareOS's outcome set is:
+Measure:
 
 - task time;
 - source checks;
 - corrections;
-- missed pending items;
+- missed pending work;
 - unsupported claims;
 - verification decay;
 - effort;
-- adoption/abandonment;
-- degraded-mode behaviour.
+- adoption/abandonment.
 
 A safety-stop overrides a speed win.
 
-Potential contribution: pair Recare's production outcome metrics with verification and correction behaviour, not model-output metrics alone.
+## 2.6 Interoperability beyond transport
 
-### 2.6 Interoperability beyond transport
-
-Recare publicly describes HL7/KIS integration, while Operator uses computer-use as a legacy bridge where interface work is undesirable.
-
-CareOS separates three interoperability questions:
+CareOS separates:
 
 1. **content** — what does the clinical item mean?
-2. **trust** — who issued it and can the receiver verify that?
+2. **trust** — who issued it / can the receiver verify it?
 3. **policy** — may this receiving context use it for this purpose?
 
-Potential contribution: preserve lifecycle state and provenance across FHIR/ISiK → EHDS/IPS portability rather than treating successful transport as sufficient.
+Potential contribution: preserve lifecycle/provenance semantics across source integration and later EU/global portability.
 
 ---
 
-## 3. What to do if joining Recare
+# 3. New collaboration hypothesis: integration as a product
 
-### Days 1–15 — absorb production reality
+Recare already knows far more about real hospital integration than CareOS does.
+
+The useful hypothesis is therefore not:
+
+> "CareOS can teach Recare how to integrate hospitals."
+
+It is:
+
+> **"Can the integration knowledge already accumulated across hospitals become increasingly machine-readable, testable and reusable so marginal deployment effort trends toward configuration + conformance rather than bespoke engineering?"**
+
+CareOS now prototypes:
+
+```text
+Hospital Capability Manifest
+        ↓
+automatic adapter selection + maturity check
+        ↓
+FHIR capability discovery
+        ↓
+conformance / identity / source-state gates
+        ↓
+hospital-local data plane
+        ↓
+Docker / Helm deployment scaffold
+        ↓
+upgrade compatibility preflight
+        ↓
+shadow / rollout evidence
+```
+
+See [Recare Integration Accelerator](RECARE_INTEGRATION_ACCELERATOR.md) and [Hospital Self-Install Platform](HOSPITAL_SELF_INSTALL_PLATFORM.md).
+
+### Questions for Pavlo
+
+Before proposing any implementation, ask:
+
+- Do you already have an internal adapter SDK/capability registry?
+- How much site integration is configuration vs custom engineering?
+- How are KIS/vendor/version profiles tracked?
+- Where do HL7 integrations actually break most: identity, semantics, mapping, transport or operations?
+- How are upgrades regression-tested?
+- How is Operator UI/version compatibility tested?
+- Can hospital IT self-configure any part today?
+- Which security/network documents are recreated per customer?
+- What is the time from signed hospital to first useful integrated workflow?
+- Which step consumes the most integration-team time?
+
+If Recare already solves these better, retire the duplicate CareOS idea and learn from the real system.
+
+---
+
+# 4. If joining Recare
+
+## Days 1–15 — absorb reality
 
 Spend time with:
 
@@ -179,99 +211,84 @@ Spend time with:
 - clinicians;
 - hospital IT/security where possible.
 
-Ask:
+Create a simple matrix:
 
 ```text
-Which integrations create the most operational pain?
-What breaks most often?
-Which clinical-source states are hardest to normalize?
-Where do clinicians correct or distrust AI output?
-How are agent failures replayed today?
-Where does computer-use beat interface work — and where does it not?
-Which assumptions in CareOS are simply wrong?
+CareOS idea
+→ already solved better
+→ useful invariant/test
+→ wrong assumption
+→ unresolved production problem
 ```
 
-Output: `CareOS idea → Recare reality`.
+Do not preserve prototype ideas for ego.
 
-Every CareOS concept gets one disposition:
+## Days 15–30 — choose one production problem
 
-- already solved better → retire duplicate;
-- useful invariant → integrate into existing architecture;
-- useful test/eval → port;
-- wrong assumption → document and remove;
-- unresolved production problem → candidate roadmap item.
+Strong candidates:
 
-### Days 15–30 — choose one real problem
-
-Prefer one narrow production-relevant workflow:
-
-- Patient Overview state/provenance reliability;
-- source-grounded discharge preparation;
-- extraction validation/correction loop;
+- Patient Overview source-state/provenance reliability;
+- integration failure observability;
+- adapter/version conformance;
+- upgrade preflight;
 - agent tool-policy containment;
-- integration-failure observability;
-- verification/adoption measurement.
+- verification/correction measurement;
+- source-grounded discharge/documentation workflow.
 
-Do **not** build a parallel platform.
-
-### Month 2 — own one vertical slice
+## Month 2 — own one vertical slice
 
 ```text
 hospital source
     ↓
-Recare integration
+integration adapter
     ↓
-structured patient context
+structured clinical context
     ↓
-Agent / document workflow
+agent / documentation workflow
     ↓
 clinician review
     ↓
 correction + telemetry
     ↓
-eval / regression
+regression evidence
 ```
 
-Own the outcome end to end rather than only the model prompt.
-
-### Month 3 — follow the system into the hospital
-
-Work with implementation on an actual rollout: observe, deploy narrowly, inspect KIS/Citrix/network/support constraints, measure friction and turn what happens back into engineering decisions.
+## Month 3 — follow it into a hospital
 
 Desired loop:
 
 > **engineer → hospital → engineer**
 
+Observe real KIS/Citrix/network/support constraints, measure friction and turn what happens into platform improvements.
+
 ---
 
-## 4. Partnership architecture hypothesis
+# 5. Partnership architecture hypothesis
 
 ```text
-                   RECARE PRODUCT
+                         RECARE
 
- Integrations ─ Patient Overview ─ Agent ─ Docs/Voice/Operator
-       │               │             │
-       └───────────────┼─────────────┘
-                       │
-              ASSURANCE / EVAL PATTERNS
-                       │
-             provenance + state
-             contradiction/freshness
-             capability manifests
-             policy/tool traces
-             adversarial evals
-             correction telemetry
-                       │
-                 HOSPITAL PILOTS
-                       │
-               Time Returned to Care
+ integrations ─ Patient Overview ─ Agent ─ Docs/Voice/Operator
+      │                 │             │
+      └─────────────────┼─────────────┘
+                        │
+              reusable assurance layer
+                        │
+        provenance · lifecycle · identity
+        adapter/version conformance
+        policy/tool traces · adversarial evals
+        upgrade preflight · correction telemetry
+                        │
+                  hospital rollouts
+                        │
+              Time Returned to Care
 ```
 
 This is a discussion hypothesis, **not** a recommendation to create another standalone Recare product.
 
 ---
 
-## 5. Pitch posture
+# 6. Pitch posture
 
 Bad:
 
@@ -279,17 +296,17 @@ Bad:
 
 Better:
 
-> **"I independently converged toward many of the problems you already solve in production. While doing that I pushed hard on provenance, clinical state, agent authority, adversarial evals and implementation. I do not want to build a parallel stack. I want to learn which of those ideas survive your real hospital integrations and help implement the ones that do."**
-
-That demonstrates independent problem-solving without prototype ego.
+> **"I independently converged toward many of the problems you already solve in production. I pushed hard on provenance, clinical state, agent authority, adversarial evaluation and now repeatable hospital integration. I don't want to build a parallel stack. I want to learn which ideas survive your real architecture and help implement the ones that do."**
 
 ---
 
-## Related CareOS evidence
+## Related evidence
 
+- [Recare Integration Accelerator](RECARE_INTEGRATION_ACCELERATOR.md)
+- [Hospital Self-Install Platform](HOSPITAL_SELF_INSTALL_PLATFORM.md)
 - [Pre-Hospital Handoff](PRE_HOSPITAL_HANDOFF.md)
 - [Recare Capstone](RECARE_CAPSTONE.md)
 - [Hospital Implementation Playbook](HOSPITAL_IMPLEMENTATION_PLAYBOOK.md)
-- [Current Status and Gaps](CURRENT_STATUS_AND_GAPS.md)
+- [Current Status & Gaps](CURRENT_STATUS_AND_GAPS.md)
 - [Agent Security Model](AGENT_SECURITY_MODEL.md)
-- [Germany / Global Interoperability Blueprint](GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md)
+- [CareOS Endgame](ENDGAME.md)
