@@ -17,6 +17,8 @@ on:
       - 'app/future_api.py'
       - 'scripts/aggregate_time_returned_to_care.py'
       - 'tests/test_time_returned_to_care.py'
+      - 'tests/test_time_returned_to_care_export.py'
+      - 'tests/fixtures/time_back_study_v2_dry_run.json'
       - 'tests/test_clinical_graph.py'
       - 'tests/test_artifact_invalidation.py'
       - 'tests/test_resilience_mode.py'
@@ -32,6 +34,10 @@ on:
       - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
       - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
       - 'docs/FOUNDATION_IMPLEMENTATION_STATUS.md'
+      - 'docs/CURRENT_STATUS_AND_GAPS.md'
+      - 'docs/GATES.md'
+      - 'docs/ENDGAME.md'
+      - 'docs/CLAIM_EVIDENCE_MATRIX.md'
       - '.github/workflows/healthcare-future-foundation.yml'
   pull_request:
     paths:
@@ -48,6 +54,8 @@ on:
       - 'app/future_api.py'
       - 'scripts/aggregate_time_returned_to_care.py'
       - 'tests/test_time_returned_to_care.py'
+      - 'tests/test_time_returned_to_care_export.py'
+      - 'tests/fixtures/time_back_study_v2_dry_run.json'
       - 'tests/test_clinical_graph.py'
       - 'tests/test_artifact_invalidation.py'
       - 'tests/test_resilience_mode.py'
@@ -63,6 +71,10 @@ on:
       - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
       - 'docs/CRITICAL_SERVICE_OPERATING_MODEL.md'
       - 'docs/FOUNDATION_IMPLEMENTATION_STATUS.md'
+      - 'docs/CURRENT_STATUS_AND_GAPS.md'
+      - 'docs/GATES.md'
+      - 'docs/ENDGAME.md'
+      - 'docs/CLAIM_EVIDENCE_MATRIX.md'
       - '.github/workflows/healthcare-future-foundation.yml'
   workflow_dispatch:
 
@@ -84,6 +96,7 @@ jobs:
         run: >-
           pytest -q
           tests/test_time_returned_to_care.py
+          tests/test_time_returned_to_care_export.py
           tests/test_clinical_graph.py
           tests/test_artifact_invalidation.py
           tests/test_resilience_mode.py
