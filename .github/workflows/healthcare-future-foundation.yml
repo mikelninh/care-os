@@ -12,6 +12,7 @@ on:
       - 'app/recovery_reconciliation.py'
       - 'app/patient_view.py'
       - 'app/service_operating_model.py'
+      - 'app/future_api.py'
       - 'scripts/aggregate_time_returned_to_care.py'
       - 'tests/test_time_returned_to_care.py'
       - 'tests/test_clinical_graph.py'
@@ -21,6 +22,7 @@ on:
       - 'tests/test_recovery_reconciliation.py'
       - 'tests/test_patient_view.py'
       - 'tests/test_service_operating_model.py'
+      - 'tests/test_future_api.py'
       - 'docs/HEALTHCARE_FUTURE_MASTER_PLAN.md'
       - 'docs/TIME_RETURNED_TO_CARE_STUDY.md'
       - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
@@ -36,6 +38,7 @@ on:
       - 'app/recovery_reconciliation.py'
       - 'app/patient_view.py'
       - 'app/service_operating_model.py'
+      - 'app/future_api.py'
       - 'scripts/aggregate_time_returned_to_care.py'
       - 'tests/test_time_returned_to_care.py'
       - 'tests/test_clinical_graph.py'
@@ -45,6 +48,7 @@ on:
       - 'tests/test_recovery_reconciliation.py'
       - 'tests/test_patient_view.py'
       - 'tests/test_service_operating_model.py'
+      - 'tests/test_future_api.py'
       - 'docs/HEALTHCARE_FUTURE_MASTER_PLAN.md'
       - 'docs/TIME_RETURNED_TO_CARE_STUDY.md'
       - 'docs/PATIENT_FAMILY_EXPERIENCE.md'
@@ -77,5 +81,6 @@ jobs:
           tests/test_recovery_reconciliation.py
           tests/test_patient_view.py
           tests/test_service_operating_model.py
+          tests/test_future_api.py
       - name: Validate study aggregation command
         run: python scripts/aggregate_time_returned_to_care.py --help
