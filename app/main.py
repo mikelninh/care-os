@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -29,8 +29,13 @@ from .agent_tools import synthetic_sjk_registry
 BASE = Path(__file__).parent
 STATIC = BASE / "static"
 DATA_MODE = assert_data_mode_allowed(os.getenv("CAREOS_DATA_MODE", "synthetic"))
+RESEARCH_BASELINE = "2026.08"
 
-app = FastAPI(title="CareOS", version="9.1.0", description="Clinician-first, source-grounded healthcare workflow prototype")
+app = FastAPI(
+    title="CareOS",
+    version=RESEARCH_BASELINE,
+    description="Clinician-first, source-grounded healthcare workflow research prototype",
+)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
@@ -57,9 +62,19 @@ def _assert_public_fhir_lab_route() -> None:
         raise HTTPException(403, str(exc)) from exc
 
 
+def _research_cockpit_html() -> str:
+    """Keep the original synthetic cockpit while removing stale version-number framing."""
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    return (
+        html.replace("CareOS V9 — klinische Arbeit, ohne die Suche", "CareOS Research — klinische Arbeit, ohne die Suche")
+        .replace("<small>V9</small>", "<small>Research</small>")
+        .replace("<kbd>V9</kbd>", "<kbd>R&D</kbd>")
+    )
+
+
 @app.get("/")
 def home():
-    return FileResponse(STATIC / "index.html")
+    return HTMLResponse(_research_cockpit_html())
 
 
 @app.get("/platform")
@@ -144,7 +159,8 @@ def ethical_monetization_agent():
 def health():
     return {
         "status": "ok",
-        "version": "9.1.0",
+        "version": RESEARCH_BASELINE,
+        "evidence_stage": "synthetic-pre-hospital-research",
         "data_mode": DATA_MODE.value,
         "mode": "specialty-packs+reference-environments+integration-lab+evidence-backed-readiness-gates",
         "claims": [
