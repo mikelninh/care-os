@@ -1,0 +1,12 @@
+{{- if not .Values.hospital.existingManifestConfigMap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-careos-manifest
+  labels:
+    app.kubernetes.io/name: careos
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  hospital.json: |-
+{{ .Values.hospital.manifestJson | indent 4 }}
+{{- end }}
