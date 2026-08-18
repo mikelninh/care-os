@@ -4,9 +4,9 @@
 
 ### **Return time to care — without making clinical information less trustworthy.**
 
-A clinician-first research architecture for turning fragmented hospital data into **source-linked, reviewable clinical context** for humans and bounded AI agents.
+A clinician-first interoperability and assurance layer that sits **beside existing hospital systems**, turns fragmented sources into source-linked clinical context, and exposes that context safely to humans and bounded AI applications.
 
-[**▶ Explore CareOS**](https://mikelninh.github.io/careos/) · [**▶ Clinician demo**](https://mikelninh.github.io/careos/sjk/) · [**▶ Recare work sample**](https://mikelninh.github.io/recare/) · [**Contribute**](CONTRIBUTING.md)
+[**▶ Explore CareOS**](https://mikelninh.github.io/careos/) · [**▶ Clinician demo**](https://mikelninh.github.io/careos/sjk/) · [**▶ Recare work sample**](https://mikelninh.github.io/recare/) · [**Endgame**](docs/ENDGAME.md) · [**Contribute**](CONTRIBUTING.md)
 
 [![tests](https://github.com/mikelninh/care-os/actions/workflows/test.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/test.yml)
 [![recare-capstone](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml)
@@ -24,27 +24,120 @@ A clinician-first research architecture for turning fragmented hospital data int
 
 Hospitals already have KIS/EHR, LIS, RIS/PACS, documents, ePA and other systems of record.
 
-**CareOS does not replace them.** It explores the missing context and assurance layer between fragmented sources and clinical work.
+**CareOS does not replace them.** The target is to make each hospital progressively upgradeable without a big-bang migration:
 
 ```text
-KIS · LIS · FHIR · documents · ePA
-                ↓
-        source-linked context
- identity · provenance · time · state
- contradiction · freshness · pending work
-                ↓
-       deterministic policy boundary
-          ↙                    ↘
-     clinician UX          bounded agent
-          ↘                    ↙
-             human decision
+legacy KIS · LIS · RIS/PACS · documents · ePA
+                        ↓
+                 reusable adapters
+           ISiK/FHIR · FHIR · HL7 · APIs
+                        ↓
+            canonical clinical context
+ identity · provenance · time · lifecycle · freshness
+                        ↓
+             deterministic policy boundary
+                 ↙               ↘
+          clinician UX        bounded apps/agents
+                 ↘               ↙
+                    human authority
 ```
 
-The question is deliberately simple:
+The product question:
 
 > **Can clinicians spend less time hunting, reconciling and re-entering information without losing provenance, uncertainty or human control?**
 
+The infrastructure question:
+
+> **Can hospital #100 inherit the integration knowledge of hospitals #1–99 instead of starting another custom IT project?**
+
 North star: **Time Returned to Care — safety gated.**
+
+---
+
+# The endgame: integration becomes infrastructure
+
+```text
+legacy system
+      ↓
+standard / reusable adapter
+      ↓
+canonical interoperability layer
+      ↓
+every compatible clinical application
+```
+
+Different vendors should reuse the same standards-based adapter whenever their interfaces actually conform:
+
+```text
+Dedalus / FHIR ─┐
+SAP / FHIR ─────┼─► standard-fhir-r4 ─► CareOS context contract
+Vendor C / FHIR ┘
+```
+
+Site/vendor differences belong in **versioned capability profiles, mappings and conformance evidence**, not forks of the clinical core.
+
+Long-term goal:
+
+> **A normal hospital IT team can get from download to validated shadow-mode readiness in hours, not months — while clinical, privacy and security gates remain stricter than the install UX.**
+
+[**Read the full endgame →**](docs/ENDGAME.md) · [**Hospital self-install architecture →**](docs/HOSPITAL_SELF_INSTALL_PLATFORM.md)
+
+---
+
+## Self-install scaffold already in the repo
+
+CareOS now has a first executable path toward "describe the hospital once, reuse everything possible":
+
+### 1. Non-secret Hospital Capability Manifest
+
+`deploy/hospital.example.json`
+
+Describes:
+
+```text
+vendor/product/version
+KIS/LIS/etc. role
+available interfaces
+auth mode
+patient/encounter identity
+resource IDs/versions
+effective time/lifecycle support
+read/write capability
+SSO/context launch
+audit + accountable owners
+```
+
+Endpoints and credentials are **references to hospital secret-store environment variables**, not values committed to configuration.
+
+### 2. Deterministic preflight + adapter planner
+
+```bash
+python scripts/hospital_preflight.py deploy/hospital.example.json
+```
+
+The planner in `app/hospital_install.py` prefers:
+
+```text
+ISiK/FHIR
+→ FHIR R4
+→ HL7 v2
+→ stable vendor API
+→ document feed
+→ controlled UI/computer-use bridge only as fallback
+```
+
+Missing patient identity or a missing safe read path becomes a **blocker**, not a silently generated custom integration.
+
+### 3. Hardened local deployment scaffold
+
+```bash
+docker compose -f deploy/docker-compose.hospital.yml run --rm preflight
+docker compose -f deploy/docker-compose.hospital.yml up -d careos
+```
+
+Enterprise deployment scaffold: `deploy/helm/careos/`.
+
+These paths are currently for synthetic/deidentified evaluation. CareOS code still refuses live-data modes while the evidence gates remain incomplete.
 
 ---
 
@@ -57,7 +150,7 @@ North star: **Time Returned to Care — safety gated.**
 | **03** | **Documented therapy ≠ AI recommendation.** |
 | **04** | **Agent draft ≠ source truth.** |
 
-These are treated as correctness constraints, not UI decoration.
+These are correctness constraints, not UI decoration.
 
 ---
 
@@ -65,22 +158,23 @@ These are treated as correctness constraints, not UI decoration.
 
 | You are… | Open this |
 |---|---|
-| **Recare / AI engineering** | [90-second Recare work sample](https://mikelninh.github.io/recare/) → [runnable capstone](docs/RECARE_CAPSTONE.md) |
+| **Recare / AI engineering** | [90-second Recare work sample](https://mikelninh.github.io/recare/) → [Recare integration accelerator](docs/RECARE_INTEGRATION_ACCELERATOR.md) |
 | **Clinician** | [Synthetic Infectiology workflow](https://mikelninh.github.io/careos/sjk/) |
-| **Testing usefulness** | [Paired synthetic clinician A/B study](https://mikelninh.github.io/careos/sjk/ab.html) |
-| **Software engineer / designer / researcher** | [Contributing guide](CONTRIBUTING.md) → [community roadmap](docs/COMMUNITY_ROADMAP.md) |
+| **Hospital IT / integration** | [Self-install platform](docs/HOSPITAL_SELF_INSTALL_PLATFORM.md) → [Connector SDK](docs/CONNECTOR_SDK.md) |
 | **Hospital implementation** | [Zero-Drama Hospital Rollout](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md) |
 | **CIO / CISO / senior engineer** | [Reference Architecture V2](docs/ARCHITECTURE_V2.md) |
-| **Checking readiness / claims** | [Current Status & Gap Register](docs/CURRENT_STATUS_AND_GAPS.md) |
+| **Testing usefulness** | [Paired synthetic clinician A/B study](https://mikelninh.github.io/careos/sjk/ab.html) |
+| **Software engineer / designer / researcher** | [Contributing guide](CONTRIBUTING.md) → [community roadmap](docs/COMMUNITY_ROADMAP.md) |
 | **Germany / public sector** | [National / EU Integration Map](docs/NATIONAL_INTEGRATION_MAP.md) |
 | **EU / global interoperability** | [Germany → Global Health Interoperability Blueprint](docs/GERMANY_GLOBAL_HEALTH_INTEROP_BLUEPRINT.md) |
-| **Reviewing the whole project** | [Pre-Hospital Handoff](docs/PRE_HOSPITAL_HANDOFF.md) |
+| **Checking readiness / claims** | [Current Status & Gap Register](docs/CURRENT_STATUS_AND_GAPS.md) |
+| **Big vision** | [CareOS Endgame](docs/ENDGAME.md) |
 
 ---
 
-## What is actually built
+# What is actually built
 
-### 1 · A clinician workflow
+## 1 · Clinician workflow
 
 The first synthetic workflow is Infectiology: microbiology lifecycle, documented anti-infective therapy, hygiene/isolation context, trends, contradictions, pending work and source-linked handover/documentation drafts.
 
@@ -90,7 +184,7 @@ The first synthetic workflow is Infectiology: microbiology lifecycle, documented
 
 The paired study measures **task time, wrong answers, missed pending work, source checking, corrections, effort and verification decay** — not whether users simply like the UI.
 
-### 2 · Clinical truth with provenance
+## 2 · Clinical truth with provenance
 
 A consequential surfaced fact can retain:
 
@@ -109,7 +203,7 @@ contradiction / supersession / review state
 
 The model may propose structure. **It does not become the authority that creates trusted clinical truth.**
 
-#### Frozen synthetic holdout
+### Frozen synthetic holdout
 
 | Metric | Result |
 |---|---:|
@@ -124,7 +218,7 @@ This is deliberately **not a production pass**. The conservative path recalls to
 
 [Benchmark details →](docs/BENCHMARK.md)
 
-### 3 · A zero-trust agent boundary
+## 3 · Zero-trust agent boundary
 
 CareOS assumes the reasoning model can be wrong or compromised.
 
@@ -155,7 +249,15 @@ The reasoning worker cannot grant itself a different patient, tool, network dest
 
 [Agent Security Model →](docs/AGENT_SECURITY_MODEL.md)
 
-### 4 · Replayable failure tests
+## 4 · Reusable adapter/install contract
+
+`app/hospital_install.py` turns a site capability manifest into a deterministic adapter plan and readiness report.
+
+The key property is **reuse across hospitals**: adapter selection is driven by tested interfaces, not hospital names.
+
+`docs/CONNECTOR_SDK.md` defines the runtime and conformance contract.
+
+## 5 · Replayable failure tests
 
 The Recare capstone exercises the real CareOS gateway/tool/draft/eval path against synthetic scenarios:
 
@@ -176,13 +278,13 @@ A hostile run that is correctly blocked counts as a **safety success**, not fail
 
 ## Evidence state, not self-scores
 
-CareOS reports what has been demonstrated rather than awarding itself maturity numbers.
-
 | Area | Current evidence state |
 |---|---|
 | Clinician workflow | **DEMONSTRATED SYNTHETICALLY** |
 | Clinical truth / provenance | **DEMONSTRATED SYNTHETICALLY** |
 | Agent containment | **DEMONSTRATED SYNTHETICALLY** |
+| Hospital preflight / adapter planning | **IMPLEMENTED + SYNTHETICALLY TESTED** |
+| Docker/Helm self-install scaffold | **IMPLEMENTED — NON-LIVE** |
 | Adversarial evaluation | **DEMONSTRATED SYNTHETICALLY** |
 | German interoperability | **PARTIAL — real vendor sandbox required** |
 | EU/global portability | **RESEARCH PROOF** |
@@ -197,7 +299,7 @@ CareOS reports what has been demonstrated rather than awarding itself maturity n
 
 ---
 
-## Interoperability: connect, don't replace
+# Interoperability: connect, don't replace
 
 ```text
 provider systems
@@ -213,7 +315,7 @@ EU: EHDS / European exchange
 Global: FHIR / International Patient Summary + trust
 ```
 
-The portability work deliberately separates:
+The portability work separates:
 
 1. **Content** — what does the clinical item mean?
 2. **Trust** — who issued it and can that issuer be verified?
@@ -225,14 +327,14 @@ A pending result in Berlin must remain **pending** after translation or exchange
 
 ---
 
-## Hospital rollout: zero drama
+# Hospital rollout: zero drama
 
 ```text
-observe real workflow
+legacy stays available
         ↓
 technical + governance preflight
         ↓
-read-only context
+read-only connection
         ↓
 shadow mode
         ↓
@@ -242,45 +344,53 @@ human-approved copilot
         ↓
 bounded execution only when earned
         ↓
-measure benefit + safety
+retire one redundant legacy capability
         ↓
-second ward / vendor / hospital
+repeat
 ```
 
-Installation is not the outcome. A rollout earns expansion only when it removes work **without worse verification, corrections, missed pending items or safety behaviour**.
+We cannot guarantee that software never fails. We **can** design against dangerous migration failure:
+
+- no big-bang cutover;
+- operational failure falls back to the legacy workflow;
+- clinical uncertainty fails closed rather than becoming false absence;
+- every stage is reversible;
+- read does not imply write;
+- legacy capabilities retire one at a time only after evidence.
 
 [Hospital Implementation Playbook →](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md)
 
 ---
 
-## Recare: collaborate, don't duplicate
+# Recare: collaborate, don't duplicate
 
-Recare already operates the real product layer across hospital workflows. CareOS is **not** a proposal to replace it.
+Recare already operates the real product and integration layer across hospital workflows. CareOS is **not** a proposal to replace it.
 
 The useful question is:
 
-> **Which CareOS invariants, evals and implementation patterns survive contact with Recare's real integrations and hospitals — and make the existing platform stronger?**
+> **Can the integration knowledge Recare has accumulated across real hospitals become increasingly productized — typed capability manifests, reusable adapter/version profiles, automated conformance, upgrade preflight and fleet-safe regression tests?**
 
-The CareOS prototype also has a deliberately narrower authority boundary than Recare's full production product scope. That is intentional: this repository is an R&D/evaluation artifact, not a claim of equivalent production maturity.
+That is a collaboration hypothesis, not a claim that Recare lacks these capabilities internally.
 
-[Recare × CareOS Collaboration Map →](docs/RECARE_COLLABORATION_MAP.md)
+[Recare × CareOS Collaboration Map →](docs/RECARE_COLLABORATION_MAP.md) · [Recare Integration Accelerator →](docs/RECARE_INTEGRATION_ACCELERATOR.md)
 
 ---
 
-## Build with us
+# Build with us
 
 > **We are all in this together.**
 
 Healthcare is too important and too interconnected for one person, company or discipline to solve alone. CareOS welcomes careful contributions from **software engineers, clinicians, designers, security researchers, interoperability specialists, data scientists, product thinkers and people with lived experience of broken healthcare workflows**.
 
-Start with one bounded problem:
+Especially useful now:
 
-- 🟢 accessibility, mobile UX, synthetic fixtures, documentation;
-- 🔵 clinician workflow, source inspection, trace tooling;
-- 🟣 FHIR / ISiK / IPS / terminology / cross-border interoperability;
-- 🔴 agent security, prompt injection, patient isolation, audit integrity;
-- 🟠 evals, recall-vs-review burden, clinician-study analysis;
-- 🌍 country packs, portability and low-bandwidth global health.
+- 🏥 hospital manifest / installer UX;
+- 🔌 FHIR / ISiK / HL7 adapter and conformance fixtures;
+- 🧪 vendor/version compatibility tests;
+- 🔴 agent security and patient isolation;
+- 🎨 clinician/source-verification UX;
+- 🌍 IPS / cross-border portability;
+- 📊 integration effort + rollout evidence tooling.
 
 > **Find one piece of friction or one way the system can fail → make it better → show the evidence.**
 
@@ -291,24 +401,26 @@ Start with one bounded problem:
 ## What happens next
 
 ```text
+self-install / adapter hypothesis
+        ↓
 external engineering critique
         ↓
 synthetic clinician sessions
         ↓
-real workflow mapping
+real hospital capability manifest
         ↓
 deidentified KIS / LIS sandbox
         ↓
-hospital IT + privacy + security review
+measure custom work vs adapter reuse
         ↓
 shadow workflow
         ↓
-limited live read-only pilot — only when gates allow
-        ↓
 second hospital / different vendor
+        ↓
+prove configuration + conformance beats bespoke integration
 ```
 
-More speculative features are now lower value than external evidence.
+More speculative application features are lower value than proving this deployment model against reality.
 
 ---
 
@@ -321,13 +433,17 @@ pip install -r requirements.lock
 uvicorn app.main:app --reload
 ```
 
+Hospital preflight:
+
+```bash
+python scripts/hospital_preflight.py deploy/hospital.example.json
+```
+
 Recare capstone:
 
 ```bash
 uvicorn app.recare_api:app --reload --port 8010
 ```
-
-Then inspect `GET /api/eval-suite` or `POST /api/run`.
 
 ---
 
@@ -335,9 +451,12 @@ Then inspect `GET /api/eval-suite` or `POST /api/run`.
 
 | Need | Evidence |
 |---|---|
+| Big vision / endgame | [CareOS Endgame](docs/ENDGAME.md) |
+| Hospital self-install / scale | [Self-Install Platform](docs/HOSPITAL_SELF_INSTALL_PLATFORM.md) |
+| Connector / adapter contract | [Connector SDK](docs/CONNECTOR_SDK.md) |
+| Recare integration-scale hypothesis | [Recare Integration Accelerator](docs/RECARE_INTEGRATION_ACCELERATOR.md) |
 | Whole pre-hospital bundle | [Pre-Hospital Handoff](docs/PRE_HOSPITAL_HANDOFF.md) |
 | Current gaps / readiness | [Current Status & Gaps](docs/CURRENT_STATUS_AND_GAPS.md) |
-| Recare collaboration | [Recare Collaboration Map](docs/RECARE_COLLABORATION_MAP.md) |
 | Recare executable proof | [Recare Capstone](docs/RECARE_CAPSTONE.md) |
 | Hospital rollout | [Implementation Playbook](docs/HOSPITAL_IMPLEMENTATION_PLAYBOOK.md) |
 | Logical architecture | [Architecture V2](docs/ARCHITECTURE_V2.md) |
