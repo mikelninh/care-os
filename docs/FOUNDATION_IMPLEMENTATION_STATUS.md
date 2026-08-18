@@ -117,7 +117,9 @@ Not proven: production PHI/model operations or hospital-approved agent workflows
 - narrow kill-scope model;
 - upgrade rings/canary/rollback philosophy;
 - hospital relationship cadence;
-- evidence gate that rejects a contracted SLA without staffing + target-environment exercise evidence.
+- evidence gate that rejects a contracted SLA without staffing + target-environment exercise evidence;
+- synthetic critical-service game-day protocol;
+- reusable monthly/quarterly hospital value + safety review template.
 
 Current contractual state: **24/7 SLA NOT OFFERED**.
 
@@ -125,6 +127,7 @@ Current contractual state: **24/7 SLA NOT OFFERED**.
 
 `app/future_api.py` exposes one bounded synthetic API for:
 
+- golden end-to-end journey;
 - patient view + teach-back;
 - standard outage/recovery drill;
 - cross-provider coordination lifecycle;
@@ -132,6 +135,33 @@ Current contractual state: **24/7 SLA NOT OFFERED**.
 - service catalog/current SLA state.
 
 This API is synthetic/pre-hospital only.
+
+### 12. Golden end-to-end regression journey
+
+`app/end_to_end_journey.py` composes the foundation into one synthetic patient story:
+
+```text
+source-linked preliminary clinical fact
+→ patient-local graph
+→ unsigned source-dependent clinician draft
+→ corrected/final source result during outage
+→ RECOVERY mode
+→ supersession invalidates stale draft + audit
+→ NORMAL only after reconciliation
+→ source-linked patient/pending view
+→ minimum-purpose cross-provider follow-up request
+→ requested / received / accepted / scheduled / performed / result / follow-up complete
+```
+
+`tests/test_end_to_end_journey.py` and `/api/journey/golden` make this a permanent regression surface. It explicitly keeps Time Returned to Care as a **target to test** and production SLA as **not offered**.
+
+## Operations evidence assets
+
+- `docs/CRITICAL_SERVICE_OPERATING_MODEL.md`
+- `docs/OPERATIONS_GAME_DAY.md`
+- `docs/HOSPITAL_VALUE_SAFETY_REVIEW_TEMPLATE.md`
+
+These define the operating discipline. They do not prove a staffed 24/7 production organisation exists.
 
 ## Public surfaces
 
