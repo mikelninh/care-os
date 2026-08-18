@@ -1,5 +1,7 @@
 from app.resilience_mode import Capability, DependencyState, OperatingMode, decide_resilience
 
+# CI verification marker: run the current master-foundation invariants on a PR merge ref.
+
 
 def state(**overrides):
     base = dict(
