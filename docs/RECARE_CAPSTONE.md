@@ -2,9 +2,21 @@
 
 [![recare-capstone](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/recare-capstone.yml)
 
+> **For technical reviewers.** This is the local run/API/evaluation guide behind the public Recare browser work sample. If you only want the product story, use the [90-second work sample](https://mikelninh.github.io/recare/). If you want to inspect or run the backend, start here.
+>
 > **Synthetic-only engineering work sample.** No identifiable patient data. No clinical use. No production write-back.
 
-This capstone turns the CareOS agent-security architecture into one runnable proof:
+## What this guide lets you verify
+
+In roughly 5–10 minutes, an engineer can:
+
+1. start the FastAPI capstone locally;
+2. inspect the declared capabilities and safety boundaries;
+3. run one normal synthetic case;
+4. replay wrong-patient, prompt-injection, outage, stale-result and forbidden-write scenarios;
+5. inspect machine-readable traces, evidence IDs and automatic eval results.
+
+The capstone turns the CareOS agent-security architecture into one runnable proof:
 
 `task → untrusted reasoning worker → schema-constrained tool proposal → deterministic Agent Gateway → trusted Tool Proxy → source-linked facts → untrusted draft → draft firewall → human review`
 
@@ -79,144 +91,4 @@ It uses:
 - no model-controlled patient/encounter scope;
 - no model-controlled egress/write/break-glass authority.
 
-Configure locally:
-
-```bash
-export OPENAI_API_KEY='...'
-export CAREOS_OPENAI_MODEL='gpt-5.6'
-export CAREOS_OPENAI_MODEL_VERSION='gpt-5.6'
-```
-
-Then run:
-
-```bash
-curl -X POST http://127.0.0.1:8010/api/run \
-  -H 'content-type: application/json' \
-  -d '{"scenario":"happy_path","worker_mode":"openai_responses"}'
-```
-
-The provider only proposes tool requests and a draft. `bind_tool_proposal()` injects the authoritative delegated patient/encounter context, then the deterministic `AgentGateway` and `AgentToolProxy` decide whether any call is admitted.
-
-A provider failure, malformed structured output, policy violation or unsafe draft **fails closed**.
-
-### Capture a reproducible provider-backed proof
-
-Do not screenshot a terminal and call that evidence. Use the capture script:
-
-```bash
-python scripts/capture_recare_model_run.py \
-  --worker openai_responses \
-  --scenario happy_path \
-  --out artifacts/recare-provider-backed-run.json
-```
-
-The artifact records:
-
-```text
-captured timestamp
-synthetic-only claim boundary
-model + version
-execution status
-model / policy / tool trace
-evidence IDs
-eval result
-latency
-token usage when available
-```
-
-**Important:** no provider-backed result is claimed until this command has actually run with a real credential. A deterministic/mock run is not relabelled as a real model run.
-
----
-
-## Provider-neutral external model mode
-
-The existing `HttpJsonReasoningWorker` remains available when a hospital/company has an approved HTTPS model gateway.
-
-```bash
-export CAREOS_MODEL_ENDPOINT='https://approved-model-gateway.example/v1/agent'
-export CAREOS_MODEL_ALLOWED_HOST='approved-model-gateway.example'
-export CAREOS_MODEL_ID='approved-model'
-export CAREOS_MODEL_VERSION='2026-08'
-export CAREOS_MODEL_BEARER_TOKEN='...'
-```
-
-Then:
-
-```bash
-curl -X POST http://127.0.0.1:8010/api/run \
-  -H 'content-type: application/json' \
-  -d '{"scenario":"happy_path","worker_mode":"external_model"}'
-```
-
-The generic gateway receives a provider-neutral JSON contract. Redirects, host mismatches, oversized responses and schema-smuggling fields are rejected before output can influence the CareOS policy boundary.
-
-Both provider-backed modes remain disabled for live CareOS agent modes. A hospital deployment would still require the normal production/agent gates plus provider/data-processing approval and hospital-controlled identity, network and security operations.
-
----
-
-## What the six-case suite proves
-
-The deterministic suite is a regression test of **orchestration and containment**, not clinical efficacy or model quality.
-
-| Scenario | Expected behavior |
-|---|---|
-| happy path | source-linked draft; review required; no recommendation |
-| wrong patient | block before foreign data is admitted |
-| prompt injection | attempted policy/tool escalation is denied |
-| source unavailable | fail visibly; dependent claims suppressed |
-| stale result | preserve stale vs pending distinction |
-| unauthorised write | deny write/tool escalation |
-
-A blocked hostile run is a **pass** when blocking is the specified safe behavior.
-
-The dedicated `recare-capstone` workflow runs focused API, direct-provider-adapter, provider-neutral-adapter, orchestration, tool-boundary, containment and study-aggregation tests plus the six-case smoke suite.
-
----
-
-## Formative clinician evidence loop
-
-The paired synthetic clinician study is available at:
-
-`https://mikelninh.github.io/careos/sjk/ab.html`
-
-It counterbalances case/order and records only structured, PHI-free observations:
-
-- task time;
-- wrong answers;
-- missed pending items;
-- source opens;
-- corrections after source review;
-- acceptance without source checking;
-- pending-as-negative misunderstanding;
-- documented-therapy-as-recommendation misunderstanding;
-- agent-draft-as-truth confusion;
-- effort;
-- would-use-tomorrow.
-
-Results remain local until the observer exports anonymous JSON/CSV.
-
-Aggregate multiple complete paired sessions with:
-
-```bash
-python scripts/aggregate_recare_study.py careos-ab-*.json \
-  --json-out recare-study-report.json \
-  --md-out recare-study-report.md
-```
-
-The aggregator treats safety as a gate. Faster is **not** a positive result when verification degrades or a hard safety misunderstanding appears.
-
----
-
-## What remains real-world evidence
-
-This capstone intentionally does **not** claim:
-
-- clinical validation;
-- production-scale GenAI traffic;
-- real KIS/LIS vendor integration;
-- live identifiable PHI handling;
-- certified medical-device behavior;
-- measured clinician time savings before real synthetic-case sessions;
-- production security maturity equivalent to a real hospital platform.
-
-The next valuable evidence after the optional provider-backed synthetic run is external: clinician behaviour, real workflow observation and a governed deidentified integration sandbox.
+The remainder of this document describes the same synthetic-only capstone and its provider-backed capture path. Production PHI, production write-back and hospital deployment remain outside this work sample.
