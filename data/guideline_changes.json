@@ -1,4 +1,26 @@
 {
-  "changes": [],
-  "checked_at": "2026-08-17T05:51:13.308890+00:00"
+  "changes": [
+    {
+      "id": "kdigo-ckd",
+      "name": "KDIGO CKD Evaluation and Management",
+      "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+      "previous": "e5f4473112e1847d66ce816bdf5848fbc078dfc47dbc3ea48d8198182354b8f2",
+      "current": "8983bbe3dc0cdc52657339146740a1ca01b18eea3a9ecf13ec48cc967ae80a8f"
+    },
+    {
+      "id": "who-smart",
+      "name": "WHO SMART Guidelines",
+      "url": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
+      "previous": "991f1ca8418c0ab5f4cf52cbcb373639f2056ef6b0e417b64760968180f7fdda",
+      "current": "21e850c230bdbda5c2a4304155d218666d0ece4d849c1b483d70c75823b93645"
+    },
+    {
+      "id": "de-rki-krinko",
+      "name": "RKI / KRINKO recommendations",
+      "url": "https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
+      "previous": "7eea2f77abc2b558bc043d11c4b9a3c9f503ff5462339f51086b963bdb073dc4",
+      "current": "04f3f9227ff58da0d304279f72abc9e54ae15882d8e99935428cb7f352d78a45"
+    }
+  ],
+  "checked_at": "2026-08-24T05:53:58.197553+00:00"
 }
