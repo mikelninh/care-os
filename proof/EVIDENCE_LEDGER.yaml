@@ -1,0 +1,113 @@
+version: 1
+updated: 2026-08-24
+rules:
+  - every external session or review changes at least one claim state or adds a limitation
+  - negative evidence is retained
+  - synthetic evidence cannot upgrade a claim to real-world proven
+  - submitted evidence is not verified evidence
+  - external reviewer feedback is critique unless the reviewer has explicit institutional authority
+
+claims:
+  - id: C1-workflow-useful
+    claim: physician morning review is a valuable first CareOS workflow
+    current_state: research_hypothesis
+    owner: product
+    verifier: external_clinicians
+    next_evidence:
+      - five_or_more_safe_counterbalanced_clinician_pairs
+      - qualitative_observation_of_realistic_task_fit
+    falsifiers:
+      - workflow_does_not_match_real_work
+      - careos_duplicates_existing_fast_path
+      - verification_burden_erases_benefit
+    evidence: []
+
+  - id: C2-time-returned
+    claim: CareOS can reduce time/friction without reducing safety or verification
+    current_state: external_evidence_required
+    owner: study_facilitator
+    verifier: study_protocol_and_external_clinicians
+    next_evidence:
+      - paired_observations
+      - safety_gate_pass
+      - source_verification_behavior
+    falsifiers:
+      - no_time_improvement
+      - more_errors
+      - more_missed_pending_items
+      - verification_collapse
+    evidence: []
+
+  - id: C3-clinical-truth-useful
+    claim: source-linked clinical truth layer is useful enough for production-oriented workflow study
+    current_state: blocked
+    owner: clinical_truth_engineering
+    verifier: benchmark_plus_clinician_behavior
+    known_evidence:
+      - frozen_500_case_holdout_recall_26_32_percent
+      - review_case_burden_100_percent
+    next_evidence:
+      - fresh_development_corpus_improvement_without_holdout_tuning
+      - clinician_behavior_on_changed_pending_conflicting_cases
+    falsifiers:
+      - poor_recall_persists
+      - review_burden_remains_unusable
+    evidence: []
+
+  - id: C4-hospital-discovery
+    claim: a non-secret hospital capability manifest can capture enough reality to drive review and integration planning
+    current_state: research_hypothesis
+    owner: integration
+    verifier: hospital_it_dpo_ciso
+    next_evidence:
+      - one_real_hospital_manifest
+      - reviewer_corrections
+      - unknowns_and_custom_work_logged
+    falsifiers:
+      - critical_information_cannot_be_represented
+      - discovery_requires_mostly_bespoke_unstructured_work
+    evidence: []
+
+  - id: C5-fhir-isik-real
+    claim: CareOS read-only FHIR/ISiK assumptions survive a real approved sandbox
+    current_state: external_evidence_required
+    owner: integration
+    verifier: hospital_or_vendor_sandbox
+    next_evidence:
+      - named_vendor_and_version
+      - capability_statement
+      - auth_and_patient_context_behavior
+      - measured_partial_read_latency_and_profile_gaps
+    falsifiers:
+      - incompatible_profiles_or_auth
+      - patient_context_cannot_be_resolved_safely
+      - partial_reads_create_unsafe_state
+    evidence: []
+
+  - id: C6-review-pack-useful
+    claim: generated CareOS review artifacts help DPO CISO and hospital IT review the system
+    current_state: tested_synthetically
+    owner: platform
+    verifier: external_reviewers
+    next_evidence:
+      - three_independent_reviewer_perspectives
+      - missing_questions_and_corrections_logged
+    falsifiers:
+      - reviewers_need_material_information_not_representable
+      - package_hides_critical_risk_or_data_flow
+    evidence: []
+
+  - id: C7-shadow-ready
+    claim: CareOS is ready to request a governed read-only shadow evaluation
+    current_state: blocked
+    owner: pilot_sponsor
+    verifier: institution
+    prerequisites:
+      - C1-workflow-useful supported
+      - C2-time-returned directional_support_or_clear_non_time_value
+      - C4-hospital-discovery supported
+      - C5-fhir-isik-real supported_or_approved_equivalent_source_path
+      - C6-review-pack-useful supported
+      - intended_use_and_clinical_safety_review
+      - privacy_security_and_operational_approval
+    evidence: []
