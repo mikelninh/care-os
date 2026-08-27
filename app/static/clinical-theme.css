@@ -1,0 +1,125 @@
+/*
+ * CareOS clinical clarity layer
+ * Keeps the existing functional demo intact while making patient identity,
+ * source provenance, uncertainty and human review the dominant visual grammar.
+ */
+
+:root{
+  --care-bg:#f4f7f5;
+  --care-surface:#ffffff;
+  --care-surface-soft:#f8faf9;
+  --care-ink:#15342e;
+  --care-muted:#6d7f79;
+  --care-border:#dce6e1;
+  --care-mint:#2f745f;
+  --care-mint-soft:#e8f4ef;
+  --care-blue:#315f7b;
+  --care-blue-soft:#eaf2f6;
+  --care-amber:#986928;
+  --care-amber-soft:#fff5e6;
+  --care-red:#9e4845;
+  --care-red-soft:#fff0ef;
+  --care-shadow:0 16px 46px rgba(23,53,47,.065);
+}
+
+html{background:var(--care-bg)}
+body{background:
+  radial-gradient(circle at 74% -10%,rgba(139,201,181,.16),transparent 30rem),
+  var(--care-bg);color:var(--care-ink);-webkit-font-smoothing:antialiased}
+
+.sidebar{background:linear-gradient(180deg,#103c34 0%,#0f332d 100%);border-right:1px solid rgba(255,255,255,.06)}
+.brand{letter-spacing:-.045em}.brand small{letter-spacing:.08em;text-transform:uppercase}
+.nav{transition:background .16s ease,transform .16s ease,color .16s ease}
+.nav:hover{transform:translateX(2px)}
+.nav.active{background:#ffffff17;box-shadow:inset 3px 0 0 #8fd0bc}
+
+.topbar{padding-top:30px;padding-bottom:22px}
+.topbar h1{font-size:clamp(30px,3vw,40px);font-weight:720;line-height:1.05;letter-spacing:-.045em}
+.topbar .sub{margin-top:7px;max-width:650px;line-height:1.55}
+.top-search,.profile{box-shadow:0 7px 24px rgba(23,53,47,.035)}
+
+.panel{border-color:var(--care-border);box-shadow:var(--care-shadow)}
+.focus-grid{gap:18px}
+.patient-hero{padding:20px 22px;border-color:#cddfd7;box-shadow:0 14px 38px rgba(23,53,47,.07)}
+.patient-hero::before{content:'PATIENTENKONTEXT';display:block;margin-bottom:14px;font-size:10px;line-height:1;font-weight:850;letter-spacing:.16em;color:#6c8b81}
+.identity-left .avatar{box-shadow:inset 0 0 0 1px #c1ddd2}
+.name-line h2{font-size:25px;letter-spacing:-.035em}
+.patient-safety-line{border:1px solid #d9e7e1;background:#f7fbf9}
+.patient-safety-line>span:first-child{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#daf0e6;color:#276b55;font-weight:850}
+
+/* Learn once: clinical state language stays visible without consuming the chart. */
+.state-grammar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:-2px}
+.state-key{min-height:52px;display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--care-border);border-radius:13px;background:rgba(255,255,255,.72);color:var(--care-muted)}
+.state-key>span:first-child{display:grid;place-items:center;flex:0 0 24px;height:24px;border-radius:8px;font-weight:850;font-size:13px}
+.state-key p{margin:0;display:grid;gap:1px;line-height:1.2}
+.state-key b{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--care-ink)}
+.state-key small{font-size:10px;color:var(--care-muted)}
+.state-key.final>span:first-child{background:var(--care-mint-soft);color:var(--care-mint)}
+.state-key.pending>span:first-child{background:var(--care-amber-soft);color:var(--care-amber)}
+.state-key.review>span:first-child{background:var(--care-red-soft);color:var(--care-red)}
+.state-key.source>span:first-child{background:var(--care-blue-soft);color:var(--care-blue)}
+
+.attention-card{padding:22px;border-color:#d7e4df}
+.attention-header{align-items:flex-start}
+.attention-header h2{font-size:25px;letter-spacing:-.035em;line-height:1.12}
+.calm-badge{display:inline-flex;align-items:center;gap:6px;background:var(--care-blue-soft);color:var(--care-blue);border:1px solid #cfdee7}
+.calm-badge::before{content:'↗';font-size:11px;font-weight:850}
+.fact-grid{gap:12px;margin-top:17px}
+.fact{position:relative;min-height:132px;padding:15px 15px 14px;background:linear-gradient(180deg,#fff,#fbfcfb);border-color:#dfe8e4;box-shadow:0 7px 20px rgba(23,53,47,.025);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.fact:hover{transform:translateY(-1px);border-color:#cbded6;box-shadow:0 12px 26px rgba(23,53,47,.055)}
+.fact.warning{border-left:4px solid #d4a353;background:linear-gradient(90deg,#fffaf2 0,#fff 40%)}
+.fact.danger{border-left:4px solid #c75b57;background:linear-gradient(90deg,#fff5f4 0,#fff 40%)}
+.fact.success{border-left:4px solid #67a78c}
+.fact.info{border-left:4px solid #6c9bb5}
+.fact .eyebrow{margin-bottom:8px;color:#617f76}
+.fact b{font-size:15px;line-height:1.45}
+.fact-source{display:flex!important;align-items:center;gap:6px;margin-top:12px;padding-top:9px;border-top:1px solid #edf1ef;color:#6f817b!important;font-size:10.5px!important}
+.fact-source::before{content:'SOURCE';display:inline-grid;place-items:center;border:1px solid #d9e4df;border-radius:6px;padding:2px 5px;color:#52786b;font-size:8px;font-weight:850;letter-spacing:.08em}
+
+.next-action{border:1px solid #d5e6df;padding:14px 15px;background:#eef8f4}
+.next-action.warning{border-color:#ead7b7;background:#fff7eb}
+.next-action>span:first-child{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:#d8ede4;color:#276b55;font-weight:850}
+.next-action.warning>span:first-child{background:#f5e3c5;color:#8b6127}
+.next-action b{font-size:12px;text-transform:uppercase;letter-spacing:.07em}
+
+.ask-card{padding:19px 20px;background:#fbfdfc}
+.ask-head small{margin-top:2px;line-height:1.4;color:var(--care-muted)}
+.ask-box{margin-top:13px;background:#fff;border-color:#d8e5df;transition:border-color .16s ease,box-shadow .16s ease}
+.ask-box:focus-within{border-color:#74aa98;box-shadow:0 0 0 4px rgba(112,169,150,.12)}
+.ask-box button{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:9px;background:#143f36;color:#fff;font-weight:800}
+.ask-answer{border:1px solid #dce8e3;background:#f7fbf9}
+.ask-answer small{display:block;margin-top:10px;padding-top:8px;border-top:1px solid #e2ebe7;color:#59796e}
+
+.queue-card h3,.source-card h3{letter-spacing:-.02em}
+.queue-row{min-height:50px}.dot{width:9px;height:9px;box-shadow:0 0 0 4px #eef3f1}
+
+/* Provenance should read like a product capability, not footnote text. */
+.source-card{background:linear-gradient(145deg,#f7fbf9,#fff)}
+.source-card b{display:inline-flex;margin-top:12px;padding:5px 8px;border-radius:8px;background:#e9f3ef;color:#356d5c;font-size:11px}
+.timeline-item{background:#fff;transition:border-color .15s ease,background .15s ease}
+.timeline-item:hover{border-color:#cbded6;background:#fbfdfc}
+.timeline-item>small:first-child{font-size:10.5px;line-height:1.55;color:#71857e}
+.timeline-item>div>small:last-child{display:inline-block;margin-top:6px;padding:3px 6px;border-radius:6px;background:#edf5f2;color:#507367}
+
+/* Human approval is visually distinct from preparation. */
+.docs-grid .step>span{box-shadow:0 0 0 4px #edf4f1}
+.doc-review{border-color:#cbded6;background:linear-gradient(180deg,#fff,#f9fcfa)}
+.doc-review .primary:not(:disabled){background:#173f37;box-shadow:0 8px 18px rgba(18,59,52,.15)}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+
+.principle.success,.principle.danger{box-shadow:none}
+.principle.danger{background:#fff7f6;border-color:#eed4d2}
+.principle.success{background:#f6fbf8;border-color:#d5e7df}
+
+button,input,textarea{outline:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid rgba(82,142,121,.35);outline-offset:2px}
+
+@media(max-width:1150px){.state-grammar{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){
+  .state-grammar{grid-template-columns:1fr 1fr}
+  .patient-hero{padding:17px}
+  .identity-line{align-items:flex-start}
+  .name-line{align-items:flex-start;flex-direction:column;gap:6px}
+}
+@media(max-width:520px){.state-grammar{grid-template-columns:1fr}.topbar h1{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.nav,.fact,.toast{transition:none!important}}
