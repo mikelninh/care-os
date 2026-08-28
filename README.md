@@ -6,7 +6,7 @@
 
 CareOS is a clinician-first **interoperability, context and assurance layer** that sits beside existing hospital systems, composes source-linked clinical context and makes that context safely usable by people and bounded AI applications.
 
-[**▶ One patient end to end**](https://mikelninh.github.io/careos/journey.html) · [**▶ Synthetic study**](https://mikelninh.github.io/careos/study.html) · [**▶ Real-world proof plan**](proof/README.md)
+[**▶ Clinical review demo**](https://mikelninh.github.io/careos/clinical.html) · [**▶ One patient end to end**](https://mikelninh.github.io/careos/journey.html) · [**▶ Synthetic study**](https://mikelninh.github.io/careos/study.html) · [**▶ Release assurance**](docs/RELEASE_ASSURANCE.md) · [**▶ Real-world proof plan**](proof/README.md)
 
 [![tests](https://github.com/mikelninh/care-os/actions/workflows/test.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/test.yml)
 [![agent-redteam](https://github.com/mikelninh/care-os/actions/workflows/agent-redteam.yml/badge.svg)](https://github.com/mikelninh/care-os/actions/workflows/agent-redteam.yml)
@@ -48,11 +48,13 @@ North star: **Time Returned to Care — safety gated.**
 
 ## Try these first
 
-1. **One complete synthetic patient journey** — [source → draft → outage → correction → recovery → patient → follow-up](https://mikelninh.github.io/careos/journey.html)
-2. **Time Returned to Care study** — [synthetic paired-study surface](https://mikelninh.github.io/careos/study.html)
-3. **What is actually implemented** — [`FOUNDATION_IMPLEMENTATION_STATUS.md`](docs/FOUNDATION_IMPLEMENTATION_STATUS.md)
-4. **What is still unproven** — [`CURRENT_STATUS_AND_GAPS.md`](docs/CURRENT_STATUS_AND_GAPS.md)
-5. **How we now create real evidence** — [`proof/README.md`](proof/README.md)
+1. **Interactive clinical review** — [source review → human status review → documentation → ready-for-transfer](https://mikelninh.github.io/careos/clinical.html)
+2. **One complete synthetic patient journey** — [source → draft → outage → correction → recovery → patient → follow-up](https://mikelninh.github.io/careos/journey.html)
+3. **Time Returned to Care study** — [synthetic paired-study surface](https://mikelninh.github.io/careos/study.html)
+4. **What is actually implemented** — [`FOUNDATION_IMPLEMENTATION_STATUS.md`](docs/FOUNDATION_IMPLEMENTATION_STATUS.md)
+5. **What is automatically tested vs externally unproven** — [`RELEASE_ASSURANCE.md`](docs/RELEASE_ASSURANCE.md)
+6. **What is still unproven** — [`CURRENT_STATUS_AND_GAPS.md`](docs/CURRENT_STATUS_AND_GAPS.md)
+7. **How we now create real evidence** — [`proof/README.md`](proof/README.md)
 
 The intended reaction is not “nice AI demo.” It is:
 
@@ -69,6 +71,7 @@ The intended reaction is not “nice AI demo.” It is:
 | Bounded agent/tool authority | **tested synthetically + adversarial scenarios** |
 | NORMAL / DEGRADED / OFFLINE / RECOVERY behavior | **implemented + tested synthetically** |
 | Patient/family source-linked experience | **implemented synthetically** |
+| Human clinical review UX | **interactive synthetic demo + DOM smoke + desktop/mobile visual QA** |
 | FHIR R4 read path | **implemented research runtime** |
 | ISiK/FHIR-oriented validation path | **implemented research path** |
 | HL7 v2 ADT/ORU parsing | **synthetic/deidentified library connector** |
@@ -90,6 +93,12 @@ The intended reaction is not “nice AI demo.” It is:
 | **04** | **Agent draft ≠ source truth.** |
 
 The model may propose structure. It does **not** become the authority that creates trusted clinical truth.
+
+## Release assurance in one sentence
+
+CareOS has strong **synthetic engineering E2E + adversarial + integration-path coverage**, but it does **not** have clinical-production E2E proof. A green repository cannot substitute for real clinicians, approved hospital environments, privacy/security review or regulatory evidence.
+
+See [`RELEASE_ASSURANCE.md`](docs/RELEASE_ASSURANCE.md) for the exact automated layers and non-claims.
 
 ---
 
@@ -344,6 +353,7 @@ Every meaningful external finding should end up in the evidence ledger or as a r
 
 | Need | Start here |
 |---|---|
+| Release assurance / automated vs external proof | [`RELEASE_ASSURANCE.md`](docs/RELEASE_ASSURANCE.md) |
 | Real-world proof campaign | [`proof/README.md`](proof/README.md) |
 | Claim → evidence matrix | [`CLAIM_EVIDENCE_MATRIX.md`](docs/CLAIM_EVIDENCE_MATRIX.md) |
 | Current gaps | [`CURRENT_STATUS_AND_GAPS.md`](docs/CURRENT_STATUS_AND_GAPS.md) |
