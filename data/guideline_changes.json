@@ -4,23 +4,30 @@
       "id": "kdigo-ckd",
       "name": "KDIGO CKD Evaluation and Management",
       "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
-      "previous": "e5f4473112e1847d66ce816bdf5848fbc078dfc47dbc3ea48d8198182354b8f2",
-      "current": "8983bbe3dc0cdc52657339146740a1ca01b18eea3a9ecf13ec48cc967ae80a8f"
+      "previous": "8983bbe3dc0cdc52657339146740a1ca01b18eea3a9ecf13ec48cc967ae80a8f",
+      "current": "9fbec3f201e7899ba3d107fc32aa795962eeecca476507cba6c0b5448dbfc9d4"
     },
     {
       "id": "who-smart",
       "name": "WHO SMART Guidelines",
       "url": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
-      "previous": "991f1ca8418c0ab5f4cf52cbcb373639f2056ef6b0e417b64760968180f7fdda",
-      "current": "21e850c230bdbda5c2a4304155d218666d0ece4d849c1b483d70c75823b93645"
+      "previous": "21e850c230bdbda5c2a4304155d218666d0ece4d849c1b483d70c75823b93645",
+      "current": "80af4130f39dece1db7326f8fe3676eec519f8c14771800203954a10ff8fee27"
     },
     {
       "id": "de-rki-krinko",
       "name": "RKI / KRINKO recommendations",
       "url": "https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
-      "previous": "7eea2f77abc2b558bc043d11c4b9a3c9f503ff5462339f51086b963bdb073dc4",
-      "current": "04f3f9227ff58da0d304279f72abc9e54ae15882d8e99935428cb7f352d78a45"
+      "previous": "04f3f9227ff58da0d304279f72abc9e54ae15882d8e99935428cb7f352d78a45",
+      "current": "6ed359a17f827be1036727859fa96912064d707cf79728cd59f44c02be1f6007"
+    },
+    {
+      "id": "de-onkopedia",
+      "name": "Onkopedia guidelines",
+      "url": "https://www.onkopedia.com/de/onkopedia/guidelines",
+      "previous": "593ce9ffed144cb15c235081add2c0bf6f7b85f6e7ccc0509ced71ccd7e39b29",
+      "current": "58809aa1db58f3a13b5d0b60d73ef186293d007914dace780c530293c9cfbbf0"
     }
   ],
-  "checked_at": "2026-08-24T05:53:58.197553+00:00"
+  "checked_at": "2026-08-31T11:36:17.953877+00:00"
 }
