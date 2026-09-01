@@ -1,0 +1,14 @@
+{
+  "id": "careos-clinical-review-policy/v1",
+  "title": "CareOS source-linked clinical review policy",
+  "version": "1.0.0",
+  "source_url": "https://github.com/mikelninh/care-os/blob/main/data/trust/clinical-review-policy-v1.json",
+  "status": "case_specific",
+  "rules": [
+    "Every clinical statement used downstream must remain bound to an exact source locator.",
+    "An agent or model draft is never promoted to clinical source truth by generation alone.",
+    "A named qualified clinician must review a prepared clinical finding before it can pass the human-review gate.",
+    "No autonomous diagnosis, treatment decision, order, medication change or clinical write-back is authorized by this policy.",
+    "A complete trust chain does not override CareOS clinical production release gates or external regulatory, privacy, security and hospital governance requirements."
+  ]
+}
