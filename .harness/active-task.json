@@ -16,5 +16,15 @@
   "failures": [{"kind":"release_gate","detail":"Current frozen-holdout recall is insufficient to advance the proof ladder."}],
   "uncertainties": [],
   "next_owner": "builder",
-  "next_step": "Classify the frozen-holdout false negatives, implement the smallest recall improvement, and rerun the exact holdout before considering any clinician-evaluation step."
+  "next_step": "Classify the frozen-holdout false negatives, implement the smallest recall improvement, and rerun the exact holdout before considering any clinician-evaluation step.",
+  "decision_estimate": {
+    "scale": "1-5",
+    "impact": 4.5,
+    "urgency": 3,
+    "unlock_value": 4.5,
+    "effort": 4,
+    "confidence": 4,
+    "rationale": "The recall gate blocks the next proof stage, but the work is more investigation-heavy than the current unblocked A2 opportunities elsewhere in the portfolio.",
+    "source": "chief_estimate_v1"
+  }
 }
