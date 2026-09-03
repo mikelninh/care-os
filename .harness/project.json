@@ -1,0 +1,47 @@
+{
+  "schema": "mikel-harness-project-v0.1",
+  "project": {
+    "name": "CareOS",
+    "repository": "mikelninh/care-os",
+    "purpose": "Source-linked clinical context and assurance layer for research/synthetic evaluation with human authority and fail-closed safety boundaries."
+  },
+  "sources_of_truth": [
+    {"area": "product_status", "paths": ["README.md", "docs/CURRENT_STATUS_AND_GAPS.md"]},
+    {"area": "release_and_claims", "paths": ["docs/RELEASE_ASSURANCE.md", "docs/GATES.md", "docs/CLAIM_EVIDENCE_MATRIX.md"]},
+    {"area": "agent_security", "paths": ["docs/AGENT_SECURITY_MODEL.md"]},
+    {"area": "runtime", "paths": ["app/", "architecture/"]},
+    {"area": "evidence", "paths": ["benchmark/", "proof/"]},
+    {"area": "interoperability", "paths": ["compatibility/"]},
+    {"area": "verification", "paths": [".github/workflows/"]},
+    {"area": "work_state", "paths": [".harness/"]}
+  ],
+  "roles": ["chief", "scout", "builder", "verifier", "operator"],
+  "commands": {
+    "harness_check": ["python scripts/harness_check.py"],
+    "quick_verification": ["pytest -q"],
+    "full_ci_reference": [".github/workflows/"]
+  },
+  "sensors": {
+    "clinical_truth": ["source provenance", "lifecycle state", "freshness", "contradictions"],
+    "invariants": ["pending_not_negative", "unavailable_not_absent", "documented_therapy_not_ai_recommendation", "agent_draft_not_source_truth"],
+    "agent_safety": ["patient scope", "encounter scope", "tool/operation budgets", "human review"],
+    "release": ["holdout metrics", "claim evidence", "production gates", "red-team workflows"],
+    "interoperability": ["FHIR/ISiK validation", "synthetic HL7 paths", "explicit unproven live integrations"]
+  },
+  "action_policy": {
+    "A0": {"meaning": "observe", "approval_required": false},
+    "A1": {"meaning": "local_reversible", "approval_required": false},
+    "A2": {"meaning": "shared_reversible", "approval_required": false},
+    "A3": {"meaning": "consequential", "approval_required": true},
+    "A4": {"meaning": "clinical_or_high_impact", "approval_required": true}
+  },
+  "retry_policy": {"max_retries": 3, "escalate_on_same_failure": 2},
+  "receipt_dir": ".harness/receipts",
+  "failure_upgrade_required": true,
+  "current_release_boundary": {
+    "research_synthetic_only": true,
+    "clinical_use": false,
+    "production_writeback": false,
+    "g1_production": "blocked"
+  }
+}
