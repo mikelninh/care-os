@@ -3,24 +3,20 @@
   "project": "CareOS",
   "north_star": "Return time to care — safety gated — by making source-linked clinical context easier to find, reconcile and prepare without losing provenance, uncertainty or human authority.",
   "achieved": [
-    {"title": "Source-linked clinical context, lifecycle and stale-artifact invalidation", "evidence": ["README.md", "docs/RELEASE_ASSURANCE.md"]},
-    {"title": "Bounded agent gateway plus FHIR/ISiK/HL7 research paths", "evidence": ["README.md", "docs/AGENT_SECURITY_MODEL.md"]},
-    {"title": "500-case holdout exposed the real recall blocker instead of hiding it", "evidence": ["README.md", "docs/CURRENT_STATUS_AND_GAPS.md"]}
+    {"title": "Source-linked clinical context, lifecycle and stale-artifact invalidation", "label": "Clinical context", "evidence": ["README.md", "docs/RELEASE_ASSURANCE.md"]},
+    {"title": "Bounded agent gateway plus FHIR/ISiK/HL7 research paths", "label": "FHIR / HL7 paths", "evidence": ["README.md", "docs/AGENT_SECURITY_MODEL.md"]},
+    {"title": "500-case holdout exposed the real recall blocker instead of hiding it", "label": "500-case holdout", "evidence": ["README.md", "docs/CURRENT_STATUS_AND_GAPS.md"]}
   ],
-  "current": {
-    "title": "Improve recall without sacrificing precision, provenance or reviewability",
-    "status": "blocked",
-    "outcome": "Earn the right to move from synthetic proof toward clinician evaluation while keeping production G1 blocked until evidence improves."
-  },
+  "current": {"title": "Improve recall without sacrificing precision, provenance or reviewability", "label": "Recall", "status": "blocked", "outcome": "Earn the right to move from synthetic proof toward clinician evaluation while keeping production G1 blocked until evidence improves."},
   "next": [
-    {"title": "Raise clinical-truth recall on the frozen holdout while preserving safety invariants", "why": "26.32% recall with 100% review burden is the concrete blocker to advancing the proof ladder."},
-    {"title": "Run real clinicians on synthetic paired cases", "why": "The north-star metric is time returned to care without worse verification or error behaviour."},
-    {"title": "Obtain independent clinical, privacy, security and hospital-IT critique", "why": "External evidence is required before any real-data or named-system claim."}
+    {"title": "Raise clinical-truth recall on the frozen holdout while preserving safety invariants", "label": "Holdout recall", "why": "26.32% recall with 100% review burden is the concrete blocker to advancing the proof ladder."},
+    {"title": "Run real clinicians on synthetic paired cases", "label": "Clinician eval", "why": "The north-star metric is time returned to care without worse verification or error behaviour."},
+    {"title": "Obtain independent clinical, privacy, security and hospital-IT critique", "label": "External review", "why": "External evidence is required before any real-data or named-system claim."}
   ],
   "later": [
-    "Map one real non-secret hospital capability surface and approved sandbox.",
-    "Run a governed shadow workflow for physician morning review and documentation preparation.",
-    "Earn a bounded read-only pilot before any consideration of write-back."
+    {"title": "Map one real non-secret hospital capability surface and approved sandbox.", "label": "Hospital sandbox"},
+    {"title": "Run a governed shadow workflow for physician morning review and documentation preparation.", "label": "Shadow workflow"},
+    {"title": "Earn a bounded read-only pilot before any consideration of write-back.", "label": "Read-only pilot"}
   ],
   "sources": ["README.md", "docs/CURRENT_STATUS_AND_GAPS.md", "docs/GATES.md", "docs/AGENT_SECURITY_MODEL.md", "proof/README.md"],
   "updated_at": "2026-09-03"
