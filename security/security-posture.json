@@ -1,0 +1,41 @@
+{
+  "version": "security-posture/v1",
+  "project": {
+    "id": "care-os",
+    "repository": "mikelninh/care-os",
+    "domain": "clinical context, interoperability and bounded clinical agents"
+  },
+  "thesis": "An AI agent is a separately identified delegated principal; patient, encounter, tool, data, egress and clinical authority remain outside the model.",
+  "controls": [
+    { "id": "authority_outside_model", "status": "implemented", "evidence": [{ "type": "code", "path": "app/agent_policy.py", "claim": "Agent operations are evaluated against an explicit delegated authority envelope." }, { "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "Agents are never clinicians or systems of record and cannot grant themselves authority." }] },
+    { "id": "least_privilege", "status": "implemented", "evidence": [{ "type": "code", "path": "app/agent_policy.py", "claim": "Delegations bind exact patient, encounter, tools, operations, data categories and ceilings." }, { "type": "test", "path": "tests/test_agent_policy.py", "claim": "Delegated tool and operation boundaries are regression tested." }] },
+    { "id": "tenant_isolation", "status": "partial", "evidence": [{ "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "Organisation and patient context isolation are explicit production requirements." }, { "type": "test", "path": "tests/test_agent_gateway.py", "claim": "Patient/task-scoped gateway behavior is tested in the synthetic runtime." }] },
+    { "id": "human_approval", "status": "implemented", "evidence": [{ "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "Consequential clinical operations require explicit human confirmation; write-back remains separately gated." }, { "type": "doc", "path": "README.md", "claim": "Human authority remains final and clinical production write-back is blocked." }] },
+    { "id": "provenance", "status": "implemented", "evidence": [{ "type": "doc", "path": "README.md", "claim": "CareOS preserves source identity, provenance, time, lifecycle and freshness." }, { "type": "test", "path": "tests/test_agent_gateway.py", "claim": "Source-linked agent results remain inside patient/task boundaries." }] },
+    { "id": "protected_data", "status": "implemented", "evidence": [{ "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "PHI egress, credentials, arbitrary URLs, broad patient search and unrestricted MCP access are denied by policy." }, { "type": "test", "path": "tests/test_agent_hijacking.py", "claim": "Hijacking and protected-data access attempts are adversarially tested." }] },
+    { "id": "bounded_execution", "status": "implemented", "evidence": [{ "type": "code", "path": "app/agent_policy.py", "claim": "Delegations include hard limits for tool calls, records, pages, runtime and sub-agent depth." }, { "type": "test", "path": "tests/test_agent_policy.py", "claim": "Expired, excessive and out-of-envelope behavior is tested." }] },
+    { "id": "auditability", "status": "implemented", "evidence": [{ "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "Audit requirements distinguish human delegator, agent version, patient/task scope, tools, authorization decisions and outcomes." }, { "type": "report", "path": "artifacts/agent-redteam-report.json", "claim": "The containment suite produces inspectable attack/result evidence when generated in CI or locally." }] },
+    { "id": "supply_chain", "status": "partial", "evidence": [{ "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "Models, MCP servers, plugins and connectors are treated as non-implicitly-trusted supply-chain components." }, { "type": "test", "path": "tests/test_agent_hijacking.py", "claim": "Malicious tool/content behavior is included in agent security tests." }] },
+    { "id": "adversarial_evals", "status": "implemented", "evidence": [{ "type": "code", "path": "app/agent_redteam.py", "claim": "Six synthetic compromised-worker attack cases test deterministic containment." }, { "type": "test", "path": "tests/test_agent_redteam.py", "claim": "The red-team containment suite is regression tested." }, { "type": "report", "path": "scripts/agent_redteam_report.py", "claim": "A machine-readable containment report can be generated from the same suite." }] },
+    { "id": "production_monitoring", "status": "partial", "evidence": [{ "type": "doc", "path": "docs/AGENT_SECURITY_MODEL.md", "claim": "Security-relevant audit, rate, blast-radius and kill-switch requirements are specified." }, { "type": "doc", "path": "README.md", "claim": "Identifiable production use remains blocked; real production security telemetry is not claimed." }] }
+  ],
+  "adversarial": {
+    "taxonomy": "CareOS clinical-agent containment suite aligned to agent hijacking, exfiltration, excessive agency and tool misuse",
+    "cases": 6,
+    "passed": 6,
+    "criticalEscapes": 0,
+    "liveModel": false
+  },
+  "claims": {
+    "productionSecure": false,
+    "promptInjectionSolved": false,
+    "certified": false
+  },
+  "residualRisks": [
+    "All CareOS agent production gates A0-A9 remain NOT PASS for identifiable live clinical use.",
+    "The six-case suite uses a deterministic compromised synthetic worker, not a live frontier model.",
+    "Organisation/workload identity, signed delegation and deployment-specific PHI egress controls require real environment evidence.",
+    "Independent clinical safety, privacy and security review is required before identifiable production use.",
+    "The separate frozen clinical-truth holdout remains a blocker for production correctness and must not be confused with a security pass."
+  ]
+}
