@@ -47,3 +47,5 @@ jobs:
           tests/test_offline_policy.py
           tests/test_time_returned_to_care.py
           tests/test_clinical_context_graph.py
+
+# PR verification marker: exercise future-healthcare foundation contracts.
