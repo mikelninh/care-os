@@ -1,47 +1,33 @@
 {
   "changes": [
     {
-      "id": "de-awmf-latest",
-      "name": "AWMF aktuellste Leitlinien",
-      "url": "https://register.awmf.org/de/statistik/aktuellste-leitlinien",
-      "previous": "241eb0771f2690a224ad79b44c9e2d8a6a6d9bb01157c4607abfb6ee3f63d7c7",
-      "current": "d50b53a6d3d8d89a96876c3ebf1e505fd02564308cccc1346a3de2374bffb8a9"
-    },
-    {
       "id": "kdigo-ckd",
       "name": "KDIGO CKD Evaluation and Management",
       "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
-      "previous": "ea18e0bd44b7c6db2e222d08b1ebc6c295881a37f7982afb4d386aeab64e382e",
-      "current": "e6c3d60fc70bbfae5245dc6b2334bc5e14a12b41f2533a04344c9ba03e7cb3e6"
-    },
-    {
-      "id": "nice-ng203",
-      "name": "NICE CKD NG203",
-      "url": "https://www.nice.org.uk/guidance/ng203",
-      "previous": "3d9d65dd2103336accb8e24df928ecdf36dc3076f127b3a751a432051443b771",
-      "current": "81f5f19b2dff10506e52f5a398107b67d9dcef7dcf5e887990b1b82eaa65771f"
+      "previous": "e6c3d60fc70bbfae5245dc6b2334bc5e14a12b41f2533a04344c9ba03e7cb3e6",
+      "current": "049800456011224058f3fb37c1034633f85f05c1d63a9d58034a97ee4ccaaccf"
     },
     {
       "id": "who-smart",
       "name": "WHO SMART Guidelines",
       "url": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
-      "previous": "8567922cb34916a29365e6fcb0390526c585758288d1a3220e4c240c2cf36a29",
-      "current": "5d42304453c9c7b845146faa991734e8f5ec40d7e7440e8f7bdc1472e3636ba8"
+      "previous": "5d42304453c9c7b845146faa991734e8f5ec40d7e7440e8f7bdc1472e3636ba8",
+      "current": "a2977ac7b88255b455b114863bcf01e860f62b1d657c68e4478e461763ac3623"
     },
     {
       "id": "de-rki-krinko",
       "name": "RKI / KRINKO recommendations",
       "url": "https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
-      "previous": "e3a00af697c8bdac1c97a1bdf6f5e64c5186a1a29138585982e1c9b884f613a7",
-      "current": "0445e0cb59260f24a0c90ce0630013a319c2748da1d553f9897a8e27f8a2886b"
+      "previous": "0445e0cb59260f24a0c90ce0630013a319c2748da1d553f9897a8e27f8a2886b",
+      "current": "67610f986bd0b58192e922a3ffe36903c72c95c33c3c9923ca7c0424e4e02107"
     },
     {
       "id": "de-onkopedia",
       "name": "Onkopedia guidelines",
       "url": "https://www.onkopedia.com/de/onkopedia/guidelines",
-      "previous": "8782bf2c255c988ef346e0d28bb24efb3a115acd777d999e91f94dc3c4c8f5b7",
-      "current": "f85f6c60ecbbae0eb380bb8633d1241e41ec9504234e3904bf18951dde534661"
+      "previous": "f85f6c60ecbbae0eb380bb8633d1241e41ec9504234e3904bf18951dde534661",
+      "current": "5e968130f674c747686a29a946b116a4776b956aabce1bdcd7d5567077a9ef93"
     }
   ],
-  "checked_at": "2026-10-19T10:46:40.177067+00:00"
+  "checked_at": "2026-10-26T11:07:31.050597+00:00"
 }
