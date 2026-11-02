@@ -1,46 +1,47 @@
 {
   "de-nvl": {
     "sha256": "c2a53c14f25c5c2ffda91a8e9c71c56a3901e4a6c471e86d9a63954d2b73db48",
-    "checked_at": "2026-10-26T11:07:16.220596+00:00",
+    "checked_at": "2026-11-02T13:29:43.970708+00:00",
     "status_code": 200
   },
   "de-awmf-latest": {
     "sha256": "d50b53a6d3d8d89a96876c3ebf1e505fd02564308cccc1346a3de2374bffb8a9",
-    "checked_at": "2026-10-26T11:07:16.685019+00:00",
+    "checked_at": "2026-11-02T13:29:44.584800+00:00",
     "status_code": 200
   },
   "kdigo-ckd": {
-    "sha256": "049800456011224058f3fb37c1034633f85f05c1d63a9d58034a97ee4ccaaccf",
-    "checked_at": "2026-10-26T11:07:17.192225+00:00",
+    "sha256": "fd612be04b1676245b6cb77b18ffa8f16f02f07a40529109442575a9308c4ce9",
+    "checked_at": "2026-11-02T13:29:45.118394+00:00",
     "status_code": 200
   },
   "nice-ng203": {
-    "error": "Server error '504 Gateway Time-out' for url 'https://www.nice.org.uk/guidance/ng203'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504",
-    "checked_at": "2026-10-26T11:07:27.699628+00:00"
+    "sha256": "6c5673ac392be0264c950fd4105d528816e5ba19e101e2a3d54113dac24af53f",
+    "checked_at": "2026-11-02T13:29:45.827257+00:00",
+    "status_code": 200
   },
   "who-smart": {
-    "sha256": "a2977ac7b88255b455b114863bcf01e860f62b1d657c68e4478e461763ac3623",
-    "checked_at": "2026-10-26T11:07:28.211805+00:00",
+    "sha256": "5b0a97708a196fe3e23097773f5a541fab85f39d112965b380cf26ae8240219f",
+    "checked_at": "2026-11-02T13:29:46.042412+00:00",
     "status_code": 200
   },
   "de-rki-krinko": {
-    "sha256": "67610f986bd0b58192e922a3ffe36903c72c95c33c3c9923ca7c0424e4e02107",
-    "checked_at": "2026-10-26T11:07:29.325331+00:00",
+    "sha256": "0a835966a4a0963bd45094ec15a808203f7d7faa5b71d2b20afc8c6a971d7968",
+    "checked_at": "2026-11-02T13:29:47.211276+00:00",
     "status_code": 200
   },
   "de-onkopedia": {
-    "sha256": "5e968130f674c747686a29a946b116a4776b956aabce1bdcd7d5567077a9ef93",
-    "checked_at": "2026-10-26T11:07:29.977734+00:00",
+    "sha256": "c82f8067c64a47c07633b737fab71457c7faaf8e77980d57d745f428d397489d",
+    "checked_at": "2026-11-02T13:29:47.993538+00:00",
     "status_code": 200
   },
   "de-dgn": {
     "sha256": "a3b2f538ac5a97f242f991e65e7208601de9b251ea0eb5c9eceb631f531ee5c4",
-    "checked_at": "2026-10-26T11:07:30.747177+00:00",
+    "checked_at": "2026-11-02T13:29:48.669793+00:00",
     "status_code": 200
   },
   "hl7-ips": {
     "sha256": "1ee468258fb97d4000cc7aac6b6ff60532ec8595b43e7cfb15cc546294df16cd",
-    "checked_at": "2026-10-26T11:07:31.049915+00:00",
+    "checked_at": "2026-11-02T13:29:48.889660+00:00",
     "status_code": 200
   }
 }
