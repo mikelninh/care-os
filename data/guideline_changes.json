@@ -4,30 +4,30 @@
       "id": "kdigo-ckd",
       "name": "KDIGO CKD Evaluation and Management",
       "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
-      "previous": "049800456011224058f3fb37c1034633f85f05c1d63a9d58034a97ee4ccaaccf",
-      "current": "fd612be04b1676245b6cb77b18ffa8f16f02f07a40529109442575a9308c4ce9"
+      "previous": "fd612be04b1676245b6cb77b18ffa8f16f02f07a40529109442575a9308c4ce9",
+      "current": "6096d763899f0cfaa3e20aded4ba86d3889dbcf5c1d9123f42333bb8a9a72bb5"
     },
     {
       "id": "who-smart",
       "name": "WHO SMART Guidelines",
       "url": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
-      "previous": "a2977ac7b88255b455b114863bcf01e860f62b1d657c68e4478e461763ac3623",
-      "current": "5b0a97708a196fe3e23097773f5a541fab85f39d112965b380cf26ae8240219f"
+      "previous": "5b0a97708a196fe3e23097773f5a541fab85f39d112965b380cf26ae8240219f",
+      "current": "54e41dc35ff69a97aa610aa76e7ae15ead00c6ca63d9883abfbbff6841303df3"
     },
     {
       "id": "de-rki-krinko",
       "name": "RKI / KRINKO recommendations",
       "url": "https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
-      "previous": "67610f986bd0b58192e922a3ffe36903c72c95c33c3c9923ca7c0424e4e02107",
-      "current": "0a835966a4a0963bd45094ec15a808203f7d7faa5b71d2b20afc8c6a971d7968"
+      "previous": "0a835966a4a0963bd45094ec15a808203f7d7faa5b71d2b20afc8c6a971d7968",
+      "current": "3f791d1f126f11237ad9e1f0159aeea267b173bb3010cd3ba0145fea9aa2741e"
     },
     {
       "id": "de-onkopedia",
       "name": "Onkopedia guidelines",
       "url": "https://www.onkopedia.com/de/onkopedia/guidelines",
-      "previous": "5e968130f674c747686a29a946b116a4776b956aabce1bdcd7d5567077a9ef93",
-      "current": "c82f8067c64a47c07633b737fab71457c7faaf8e77980d57d745f428d397489d"
+      "previous": "c82f8067c64a47c07633b737fab71457c7faaf8e77980d57d745f428d397489d",
+      "current": "07b69a151459792c1f55eb02bfd88ef3c5eb20409a14fed34aa36624e27a4012"
     }
   ],
-  "checked_at": "2026-11-02T13:29:48.890511+00:00"
+  "checked_at": "2026-11-09T13:54:14.585617+00:00"
 }
