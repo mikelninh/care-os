@@ -4,30 +4,37 @@
       "id": "kdigo-ckd",
       "name": "KDIGO CKD Evaluation and Management",
       "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
-      "previous": "fd612be04b1676245b6cb77b18ffa8f16f02f07a40529109442575a9308c4ce9",
-      "current": "6096d763899f0cfaa3e20aded4ba86d3889dbcf5c1d9123f42333bb8a9a72bb5"
+      "previous": "6096d763899f0cfaa3e20aded4ba86d3889dbcf5c1d9123f42333bb8a9a72bb5",
+      "current": "f311278af4c4dc3b7ad8c96ddccd60b914214c9e96e2e728b1392f66788fa115"
+    },
+    {
+      "id": "nice-ng203",
+      "name": "NICE CKD NG203",
+      "url": "https://www.nice.org.uk/guidance/ng203",
+      "previous": "6c5673ac392be0264c950fd4105d528816e5ba19e101e2a3d54113dac24af53f",
+      "current": "e1a6e6c840054eb702e15a9167b7898a0ad8efd8c811d767cbdef7093584f92e"
     },
     {
       "id": "who-smart",
       "name": "WHO SMART Guidelines",
       "url": "https://www.who.int/teams/digital-health-and-innovation/smart-guidelines",
-      "previous": "5b0a97708a196fe3e23097773f5a541fab85f39d112965b380cf26ae8240219f",
-      "current": "54e41dc35ff69a97aa610aa76e7ae15ead00c6ca63d9883abfbbff6841303df3"
+      "previous": "54e41dc35ff69a97aa610aa76e7ae15ead00c6ca63d9883abfbbff6841303df3",
+      "current": "6293f97e241181677120b6267b814d8543c620031c73b688eb0d235bc245cfe0"
     },
     {
       "id": "de-rki-krinko",
       "name": "RKI / KRINKO recommendations",
       "url": "https://www.rki.de/DE/Themen/Infektionskrankheiten/Krankenhaushygiene/KRINKO/Empfehlungen-der-KRINKO/empfehlungen-der-krinko-node.html",
-      "previous": "0a835966a4a0963bd45094ec15a808203f7d7faa5b71d2b20afc8c6a971d7968",
-      "current": "3f791d1f126f11237ad9e1f0159aeea267b173bb3010cd3ba0145fea9aa2741e"
+      "previous": "3f791d1f126f11237ad9e1f0159aeea267b173bb3010cd3ba0145fea9aa2741e",
+      "current": "c57c7cd7a52e83a5568d59dd8600991389b28333f47db45e823da587e286e1f9"
     },
     {
       "id": "de-onkopedia",
       "name": "Onkopedia guidelines",
       "url": "https://www.onkopedia.com/de/onkopedia/guidelines",
-      "previous": "c82f8067c64a47c07633b737fab71457c7faaf8e77980d57d745f428d397489d",
-      "current": "07b69a151459792c1f55eb02bfd88ef3c5eb20409a14fed34aa36624e27a4012"
+      "previous": "07b69a151459792c1f55eb02bfd88ef3c5eb20409a14fed34aa36624e27a4012",
+      "current": "03f6262ca55784f8b25fae98d04eeb46733dbf42c35c8148370e6c6ca48ba0c7"
     }
   ],
-  "checked_at": "2026-11-09T13:54:14.585617+00:00"
+  "checked_at": "2026-11-16T13:38:49.131777+00:00"
 }
