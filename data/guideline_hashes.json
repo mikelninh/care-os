@@ -1,47 +1,47 @@
 {
   "de-nvl": {
     "sha256": "c2a53c14f25c5c2ffda91a8e9c71c56a3901e4a6c471e86d9a63954d2b73db48",
-    "checked_at": "2026-11-16T13:38:44.658730+00:00",
+    "checked_at": "2026-11-23T15:58:18.197166+00:00",
     "status_code": 200
   },
   "de-awmf-latest": {
     "sha256": "d50b53a6d3d8d89a96876c3ebf1e505fd02564308cccc1346a3de2374bffb8a9",
-    "checked_at": "2026-11-16T13:38:45.172442+00:00",
+    "checked_at": "2026-11-23T15:58:18.624465+00:00",
     "status_code": 200
   },
   "kdigo-ckd": {
-    "sha256": "f311278af4c4dc3b7ad8c96ddccd60b914214c9e96e2e728b1392f66788fa115",
-    "checked_at": "2026-11-16T13:38:45.926906+00:00",
+    "sha256": "1f8c165d71535f345bfc4f468f36ea4cbf7f9087f9b8328eaf023b0e77db9eb3",
+    "checked_at": "2026-11-23T15:58:19.390764+00:00",
     "status_code": 200
   },
   "nice-ng203": {
-    "sha256": "e1a6e6c840054eb702e15a9167b7898a0ad8efd8c811d767cbdef7093584f92e",
-    "checked_at": "2026-11-16T13:38:46.373852+00:00",
+    "sha256": "19b0f93627e3d70031169f29eb65e4a1afcfc271fbbf192b5a187c3313b64fb3",
+    "checked_at": "2026-11-23T15:58:20.017274+00:00",
     "status_code": 200
   },
   "who-smart": {
-    "sha256": "6293f97e241181677120b6267b814d8543c620031c73b688eb0d235bc245cfe0",
-    "checked_at": "2026-11-16T13:38:46.506733+00:00",
+    "sha256": "375f5f456fe1d41fc738b4e7759f19ea97e7d6d6f7a7135bf306d6e2e53c2eb2",
+    "checked_at": "2026-11-23T15:58:20.199868+00:00",
     "status_code": 200
   },
   "de-rki-krinko": {
-    "sha256": "c57c7cd7a52e83a5568d59dd8600991389b28333f47db45e823da587e286e1f9",
-    "checked_at": "2026-11-16T13:38:47.717045+00:00",
+    "sha256": "0e562427ea6ac3066a9aa497bfe8e07c544d77c9a37ba97fb585d51f44d3f49d",
+    "checked_at": "2026-11-23T15:58:21.446509+00:00",
     "status_code": 200
   },
   "de-onkopedia": {
-    "sha256": "03f6262ca55784f8b25fae98d04eeb46733dbf42c35c8148370e6c6ca48ba0c7",
-    "checked_at": "2026-11-16T13:38:48.286504+00:00",
+    "sha256": "cad92eba3eca2d0cc4f8d3a809b14ba4c4d558d9f49d0dd67bd67985ef6a1431",
+    "checked_at": "2026-11-23T15:58:22.117797+00:00",
     "status_code": 200
   },
   "de-dgn": {
     "sha256": "a3b2f538ac5a97f242f991e65e7208601de9b251ea0eb5c9eceb631f531ee5c4",
-    "checked_at": "2026-11-16T13:38:48.900646+00:00",
+    "checked_at": "2026-11-23T15:58:22.807014+00:00",
     "status_code": 200
   },
   "hl7-ips": {
     "sha256": "1ee468258fb97d4000cc7aac6b6ff60532ec8595b43e7cfb15cc546294df16cd",
-    "checked_at": "2026-11-16T13:38:49.131054+00:00",
+    "checked_at": "2026-11-23T15:58:22.958072+00:00",
     "status_code": 200
   }
 }
